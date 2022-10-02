@@ -5,6 +5,8 @@ package frc.robot;
  */
 import edu.wpi.first.wpilibj.TimedRobot;
 
+import edu.wpi.first.networktables.*;
+
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -17,6 +19,10 @@ public class Robot extends TimedRobot {
   public static final int PASS =  1;
   public static final int DONE =  2;
   public static final int CONT =  3;
+
+  // Networktables
+  private NetworkTable FMSInfo;
+  private NetworkTableEntry isRedAlliance;
 
   // Object creation
   Drive    drive;
@@ -48,6 +54,12 @@ public class Robot extends TimedRobot {
     // Instance creation
     drive    = new Drive();
     controls = new Controls();
+
+    //Creates a Network Tables instance
+    FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
+
+    //Creates the Networktable Entry
+    isRedAlliance = FMSInfo.getEntry("IsRedAlliance"); // Boolean
   }
 
   @Override
@@ -101,8 +113,8 @@ public class Robot extends TimedRobot {
     if (status == Robot.CONT) {
       switch (m_autoSelected) {
         default:
-          status = DONE;
-          break;
+        status = DONE;
+        break;
       }
     }
   }
@@ -169,22 +181,32 @@ public class Robot extends TimedRobot {
 
     // Manual driving
     if (driveMode == DriveMode.MANUAL) {
-      // Drives if we are out of dead zone
-      if ((Math.abs(driveX) > 0.05) ||
-          (Math.abs(driveY) > 0.05) || 
-          (Math.abs(rotatePower) > 0.01)) {
+    // Drives if we are out of dead zone
+    if ((Math.abs(driveX) > 0.05) ||
+        (Math.abs(driveY) > 0.05) || 
+        (Math.abs(rotatePower) > 0.01)) {
         drive.teleopSwerve(driveX, driveY, rotatePower, false, true);
-      }
-      else {
+    }
+    else {
         // Robot is in dead zone, doesn't drive
         drive.stopWheels();
-      }
+    }
     } 
 
     // Limelight targeting
     else {
-      //
+    //
     }
+  }
+
+  /**
+   * Determines if we are on the red alliance
+   * @return isRed
+   */
+  private boolean getRedAlliance() {
+    // Gets and returns if we are red from the FMS
+    boolean isRed = isRedAlliance.getBoolean(false);
+    return isRed;
   }
 }
 // End of the Robot class
