@@ -22,4 +22,7 @@ public final class Main {
   public static void main(String... args) {
     RobotBase.startRobot(Robot::new);
   }
+
 }
+
+// End of the Main class

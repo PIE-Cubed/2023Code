@@ -38,7 +38,6 @@ public class Controls {
      * JOYSTICK FUNCTIONS
      */
 
-
     /**
      * DRIVE FUNCTIONS
      */
@@ -123,6 +122,20 @@ public class Controls {
     public boolean toggleFieldDrive() {
         return joystick.getRawButton(10);
     }*/
+
+
+    /**
+     * XBOX FUNCTIONS
+     */
+
+    /**
+     * Checks if the start button is pressed
+     * @return start button pressed
+     */
+    public boolean autoKill() {
+        return xboxController.getStartButtonPressed();
+    }
+
 }
 
 // End of the Controls class

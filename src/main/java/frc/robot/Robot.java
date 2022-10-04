@@ -208,5 +208,7 @@ public class Robot extends TimedRobot {
     boolean isRed = isRedAlliance.getBoolean(false);
     return isRed;
   }
+
 }
+
 // End of the Robot class
