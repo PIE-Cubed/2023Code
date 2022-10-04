@@ -1,15 +1,31 @@
+package frc.robot;
+
 public class AprilTag {
 
+    // Variables
     private double x_coord;
     private double y_coord;
 
+    /**
+     * Constructor
+     * @param x
+     * @param y
+     */
     public AprilTag(double x, double y) {
         x_coord = x;
         y_coord = y;
     }
 
-    // To-do - make a function for 3+ tags where certainty would be factored in
-    // Note - angles are based on trigonometry standards - 0 degrees is right, increases counter-clockwise
+    /**
+     * Calulates the robot position from the location of AprilTags
+     * <p> Note: The angles are based on trigonometry standards (0 degrees is right, increases counter-clockwise)
+     * @param tag1
+     * @param angle1
+     * @param tag2
+     * @param angle2
+     * @return robot position
+     * @To-do Make a function for 3+ tags where certainty would be factored in
+     */
     public static double[] calculateRobotLocation(AprilTag tag1, double angle1, AprilTag tag2, double angle2) {
         double x1 = tag1.getX();
         double x2 = tag2.getX();
