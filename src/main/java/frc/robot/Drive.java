@@ -3,8 +3,8 @@ package frc.robot;
 /**
  * Imports
  */
-import com.kauailabs.navx.frc.AHRS;
 import edu.wpi.first.wpilibj.SPI;
+import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -19,16 +19,16 @@ public class Drive {
     public static AHRS ahrs;
 
     // PID controllers
-    private PIDController rotateController; // Used for turning of robot
+    private PIDController rotateController;        // Used for turning of robot
     private PIDController autoCrabDriveController; // Used during crab drive to keep the robot at same orientation
-    private PIDController autoSwerveController; // Used to control robot orientation in autoSwerveDrive() - rarely used or tested
+    private PIDController autoSwerveController;    // Used to control robot orientation in autoSwerveDrive() - Untested
 
-    private static final double rotateToleranceDegrees     = 2.0f;
+    private static final double rotateToleranceDegrees = 2.0f;
     
     // Turn Controller
-	private static final double kP = 0.01; 
-	private static final double kI = 0.00;
-    private static final double kD = 0.00;
+	private static final double kP   = 0.01; 
+	private static final double kI   = 0.00;
+    private static final double kD   = 0.00;
     
     // Auto crab drive controller
     private static final double acdP = 0.005; 
@@ -36,9 +36,9 @@ public class Drive {
     private static final double acdD = 0.000;
 
     // Swerve Controller
-    private static final double sP = 0.003;
-    private static final double sI = 0.000;
-    private static final double sD = 0.000;
+    private static final double sP   = 0.003;
+    private static final double sI   = 0.000;
+    private static final double sD   = 0.000;
 
 	// Variables
     private boolean crabFirstTime         = true;
@@ -81,8 +81,8 @@ public class Drive {
     }
     
     /**
-     * An enum containing each wheel's properties including: drive and rotate motor IDs, drive motor types, and rotate sensor IDs
-     */ 
+     * An enum containing each wheel's properties
+     */
     public enum WheelProperties {
         FRONT_RIGHT_WHEEL(14, // DRIVE MOTOR ID
                         17, // ROTATE MOTOR ID
