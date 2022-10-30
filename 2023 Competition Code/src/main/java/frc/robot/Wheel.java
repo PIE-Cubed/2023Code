@@ -24,15 +24,26 @@ public class Wheel {
 
     // The sensor is just a 0V to 5V voltage signal that plugs into the analog inputs in the RoboRio, hence the AnalogPotentiometer objects.
     private AnalogPotentiometer rotateMotorSensor;
-    private PIDController rotationPID;
 
-    // PID Controller Values 
-    private static final double kP = 0.03; 
-    private static final double kI = 0.00;
-    private static final double kD = 0.00;
-
+    private PIDController rotateController;
+    
     // CONSTANTS
-    private static final int WHEEL_CURRENT_LIMIT = 120;
+    private static final int    WHEEL_CURRENT_LIMIT = 120;
+    private static final double ticksPerFoot        = 5.65;
+    private static final double ticksPerRevolution  = 20; //CHANGE THIS
+
+    private static final double rP = 0.03;
+
+    // Kinematics Variables
+    private double xPos     = 0; // ft
+    private double xVel     = 0; // ft/s
+    private double prevXVel = 0; // ft/s
+    private double xAcc     = 0; // ft/s/s
+
+    private double yPos     = 0; // ft
+    private double yVel     = 0; // ft/s
+    private double prevYVel = 0; // f/s
+    private double yAcc     = 0; // ft/s/s
 
     /**
      * Wheels Constructor
@@ -46,6 +57,9 @@ public class Wheel {
         // Motor Controllers Instantiation
         this.driveMotor   = new CANSparkMax(driveMotorID, MotorType.kBrushless);
         this.driveEncoder = driveMotor.getEncoder();
+
+        driveEncoder.setPositionConversionFactor((1/60) * (ticksPerRevolution) * (1/ticksPerFoot)); //Minutes --> seconds, revolutions --> ticks, ticks --> feet
+
         this.rotateMotor  = new CANSparkMax(rotateMotorID, MotorType.kBrushed);
         this.name         = motorName;
 
@@ -57,11 +71,11 @@ public class Wheel {
 
         // Rotate Sensor Instantiation
         rotateMotorSensor = new AnalogPotentiometer(rotateMotorSensorID, -360, offsetDegrees);
-        
+
         //PID Controller
-        rotationPID = new PIDController(kP, kI, kD);
-        rotationPID.enableContinuousInput(-180, 180);
-        rotationPID.setTolerance(4);
+        rotateController = new PIDController(rP, 0, 0);
+        rotateController.enableContinuousInput(-180, 180);
+        rotateController.setTolerance(4);
     }
 
     /****************************************************************************************** 
@@ -76,13 +90,13 @@ public class Wheel {
 
         currWheelAngle = getRotateMotorPosition();
 
-        /*  Not working code - supposed to reverse wheel power instead of flipping around 180 degrees, caused unintended bugs
-        if ((normalizeAngle(targetWheelAngle) < 22.5 && normalizeAngle(targetWheelAngle) > -147.5) && teleop == true) {
-            targetWheelAngle = targetWheelAngle + 180;
-            drivePower = -1 * drivePower;
-        }*/
+        // If the distance to the target wheel angle is shorter when flipped 180 degrees, then flip target angle and power
+        if ( Math.abs(targetWheelAngle - currWheelAngle)   >   Math.abs( normalizeAngle(targetWheelAngle + 180) - currWheelAngle)) {
+            targetWheelAngle *= -1;
+            drivePower       *= -1;
+        }
 
-        rotatePower = rotationPID.calculate(currWheelAngle, normalizeAngle(targetWheelAngle));
+        rotatePower = rotateController.calculate(currWheelAngle, normalizeAngle(targetWheelAngle));
 
         /** FOR OLD ROBOT (victor SP):
          * If PID output is positive you want to rotate the wheel clockwise
@@ -95,9 +109,22 @@ public class Wheel {
         setRotateMotorPower(rotatePower);
         setDriveMotorPower(drivePower);
 
-        //Are we within (4) degrees of target wheel angle? 
+        // Kinematics updates
+        prevXVel = xVel;
+        prevYVel = yVel;
+
+        xVel = Math.cos(Math.toRadians(currWheelAngle)) * driveEncoder.getVelocity();
+        yVel = Math.sin(Math.toRadians(currWheelAngle)) * driveEncoder.getVelocity();
+
+        // Factors in 50 iterations per second
+        xPos += xVel / 50; 
+        yPos += yVel / 50;
+
+        xAcc = (xVel - prevXVel) * 50;
+        yAcc = (yVel - prevYVel) * 50;
+
         //The return value is only used in auto
-        if (rotationPID.atSetpoint()) {
+        if (rotateController.atSetpoint()) {
             return Robot.DONE;
         }
         else {
@@ -187,6 +214,31 @@ public class Wheel {
             tempValue *= -1;
         } 
         return tempValue;
+    }
+
+    /****************************************************************************************** 
+    *
+    *    getters for kinematics
+    * 
+    ******************************************************************************************/
+    public double getXPos() {
+        return xPos;
+    }
+    public double getXVel() {
+        return xVel;
+    }
+    public double getXAcc() {
+        return xAcc;
+    }
+
+    public double getYPos() {
+        return xPos;
+    }
+    public double getYVel() {
+        return xVel;
+    }
+    public double getYAcc() {
+        return xAcc;
     }
 
     /****************************************************************************************** 
