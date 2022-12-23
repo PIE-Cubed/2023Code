@@ -13,7 +13,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 
 /**
- * Start of class
+ * Start of the Wheel class
  */
 public class Wheel {
     // Motor Controllers Declaration

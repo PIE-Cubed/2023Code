@@ -12,7 +12,7 @@ import edu.wpi.first.math.controller.PIDController;
 import java.util.stream.DoubleStream;
 
 /**
- * Start of class
+ * Start of the Drive class
  */
 public class Drive {
     // NAVX
@@ -56,17 +56,11 @@ public class Drive {
     private final double ticksPerFoot     = 5.65;
     private final int    ON_ANGLE_COUNT   = 5;
 
-    // BLUE ROBOT
+    // WHEEL OFFSETS
     private static final double FL_OFFSET = 309.8;
     private static final double FR_OFFSET = 248.0;
     private static final double BL_OFFSET = 165.7;
     private static final double BR_OFFSET = -33.2;
-
-    // Yellow ROBOT
-    // private static final double FL_OFFSET = -151.21;
-    // private static final double FR_OFFSET = -150.36;
-    // private static final double BL_OFFSET =  143.73;
-    // private static final double BR_OFFSET =  22.073;
 
     /**
      * Enumerators
@@ -79,7 +73,7 @@ public class Drive {
         TRACKING,
         LOCKED;
     }
-    
+
     /**
      * An enum containing each wheel's properties
      */

@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 
 /**
- * Start of class
+ * Start of the Controls class
  */
 public class Controls {
     // CONSTANTS

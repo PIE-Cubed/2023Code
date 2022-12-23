@@ -11,7 +11,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
- * The class that runs eveything else
+ * Start of the Robot class
  */
 public class Robot extends TimedRobot {
   // ERROR CODES
@@ -125,6 +125,7 @@ public class Robot extends TimedRobot {
    * Runs once at the start of TeleOp
    */
   public void teleopInit() {
+    // Nothing yet...
   }
 
   @Override
@@ -140,7 +141,8 @@ public class Robot extends TimedRobot {
   /**
    * disabledInit()
    */
-  public void disabledInit() {    
+  public void disabledInit() {
+    // Nothing yet...   
   }
 
   @Override
@@ -168,6 +170,7 @@ public class Robot extends TimedRobot {
    * Runs constantly during test
    */
   public void testPeriodic() {
+    // Nothing yet...
   }
 
   /**
@@ -181,21 +184,21 @@ public class Robot extends TimedRobot {
 
     // Manual driving
     if (driveMode == DriveMode.MANUAL) {
-    // Drives if we are out of dead zone
-    if ((Math.abs(driveX) > 0.05) ||
-        (Math.abs(driveY) > 0.05) || 
-        (Math.abs(rotatePower) > 0.01)) {
+      // Drives if we are out of dead zone
+      if ((Math.abs(driveX) > 0.05) ||
+          (Math.abs(driveY) > 0.05) || 
+          (Math.abs(rotatePower) > 0.01)) {
         drive.teleopSwerve(driveX, driveY, rotatePower, false, true);
-    }
-    else {
+      }
+      else {
         // Robot is in dead zone, doesn't drive
         drive.stopWheels();
-    }
+      }
     } 
 
     // Limelight targeting
     else {
-    //
+      // Nothing yet...
     }
   }
 
