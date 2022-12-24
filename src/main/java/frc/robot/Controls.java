@@ -1,8 +1,5 @@
 package frc.robot;
 
-/**
- * Imports
- */
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
@@ -10,7 +7,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 
 /**
- * Start of class
+ * Start of the Controls class
  */
 public class Controls {
     // CONSTANTS
@@ -37,9 +34,11 @@ public class Controls {
     /**
      * JOYSTICK FUNCTIONS
      */
+
     /**
      * DRIVE FUNCTIONS
      */
+
     /**
      * Positive values are from clockwise rotation and negative values are from counter-clockwise
      * @return rotatePower
@@ -47,12 +46,12 @@ public class Controls {
     public double getRotatePower() {
         double power = joystick.getZ(); 
 
-        //If we are in deadzone or strafelock is on, rotatepower is 0
+        // If we are in deadzone or strafelock is on, rotatepower is 0
         if ((Math.abs(power) < 0.3) || (getStrafeLock() == true)) {
             power = 0;
         }
 
-        //Cubes the power and clamps it because the rotate is SUPER sensitive
+        // Cubes the power and clamps it because the rotate is SUPER sensitive
         power = Math.pow(power, 3.0);
         power = MathUtil.clamp(power, -.5, .5);
             
@@ -66,16 +65,17 @@ public class Controls {
     public double getDriveX() {
         double power = joystick.getX();
 
-        //Strafe lock removes deadzone and cubes power for more precision
+        // Strafe lock removes deadzone and cubes power for more precision
         if (getStrafeLock() == true) {
             power = Math.pow(power, 3);
         }
-        //If we are in deadzone or rotatelock is on, x is 0
+
+        // If we are in deadzone or rotatelock is on, x is 0
         if ((Math.abs(power) < 0.05) || (getRotateLock() == true)) {
             power = 0;
         }
 
-        //Prevents us from accelerating sideways too quickly
+        // Prevents us from accelerating sideways too quickly
         power = xLimiter.calculate(power);
  
         return power;
@@ -88,11 +88,11 @@ public class Controls {
     public double getDriveY() {
         double power = joystick.getY() * -1;
 
-        //Strafe lock removes deadzone and cubes power for more precision
+        // Strafe lock removes deadzone and cubes power for more precision
         if (getStrafeLock() == true) {
             power = Math.pow(power, 3);
         }
-        //If we are in deadzone or rotatelock is on, y is 0
+        // If we are in deadzone or rotatelock is on, y is 0
         else if ((Math.abs(power) < 0.05) || (getRotateLock() == true)) {
             power = 0;
         }
@@ -115,10 +115,28 @@ public class Controls {
         return joystick.getRawButton(3);
     }
 
-    /*
+    /**
+     * Checks if we are in field oriented drive
+     * @return
+     */
     public boolean toggleFieldDrive() {
-        return joystick.getRawButton(10);
-    }*/
+        //return joystick.getRawButton(10);
+        return false;
+    }
+
+
+    /**
+     * XBOX FUNCTIONS
+     */
+
+    /**
+     * Checks if the start button is pressed
+     * @return start button pressed
+     */
+    public boolean autoKill() {
+        return xboxController.getStartButtonPressed();
+    }
+
 }
 
 // End of the Controls class
