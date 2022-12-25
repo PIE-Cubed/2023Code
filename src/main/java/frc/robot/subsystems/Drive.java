@@ -6,6 +6,8 @@ package frc.robot.subsystems;
 
 import frc.robot.Robot;
 
+import frc.robot.EaseOfUse;
+
 import java.util.stream.DoubleStream;
 
 import edu.wpi.first.wpilibj.SPI;
@@ -16,7 +18,6 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -130,7 +131,7 @@ public class Drive extends SubsystemBase {
         ahrs.zeroYaw();
 
         // Odometry class for tracking robot pose
-        odometry = new SwerveDriveOdometry(DriveKinematics, rotation2dDeg(ahrs.getYaw()));
+        odometry = new SwerveDriveOdometry(DriveKinematics, EaseOfUse.generateRot2d( getHeading() ));
 
         // PID Controllers
         rotateController = new PIDController(kP, kI, kD);
@@ -145,21 +146,12 @@ public class Drive extends SubsystemBase {
     }
 
     /**
-     * Returns the currently-estimated pose of the robot.
-     *
-     * @return The pose.
-     */
-    public Pose2d getPose() {
-        return odometry.getPoseMeters();
-    }
-
-    /**
      * Resets the odometry to the specified pose.
      *
      * @param pose The pose to which to set the odometry.
      */
     public void resetOdometry(Pose2d pose) {
-        odometry.resetPosition(pose, rotation2dDeg(ahrs.getYaw()));
+        odometry.resetPosition(pose, EaseOfUse.generateRot2d( getHeading() ));
     }
 
     /**
@@ -175,7 +167,7 @@ public class Drive extends SubsystemBase {
         var swerveModuleStates =
             DriveKinematics.toSwerveModuleStates(
                 fieldDrive
-                ? ChassisSpeeds.fromFieldRelativeSpeeds(driveX, driveY, rotate, rotation2dDeg(ahrs.getYaw()))
+                ? ChassisSpeeds.fromFieldRelativeSpeeds(driveX, driveY, rotate, EaseOfUse.generateRot2d( getHeading() ))
                 : new ChassisSpeeds(driveX, driveY, rotate));
         
         // Limits the wheel speeds and sets the desired states
@@ -199,28 +191,10 @@ public class Drive extends SubsystemBase {
     }
 
     /**
-     * Resets the NavX reading.
+     * Reset the NavX reading.
      */
     public void zeroHeading() {
         ahrs.reset();
-    }
-
-    /**
-     * Returns the heading of the robot.
-     *
-     * @return the robot's heading in degrees, from -180 to 180
-     */
-    public double getHeading() {
-        return ahrs.getYaw();
-    }
-
-    /**
-     * Returns the turn rate of the robot.
-     *
-     * @return The turn rate of the robot, in degrees per second
-     */
-    public double getTurnRate() {
-        return ahrs.getRate();
     }
     
     /**
@@ -229,24 +203,12 @@ public class Drive extends SubsystemBase {
      */
     public void updateOdometry() {
         odometry.update(
-            rotation2dDeg(ahrs.getYaw()),
+            EaseOfUse.generateRot2d(getHeading()),
             frontLeftWheel.getState(),
             frontRightWheel.getState(),
             rearLeftWheel.getState(),
             rearRightWheel.getState()
         );
-    }
-
-    /**
-     * rotation2dDeg()
-     * <p>Creates a Rotation2d instance using degrees passed to the method
-     * 
-     * @param degrees
-     * @return Rotation2d
-     */
-    private Rotation2d rotation2dDeg(double degrees) {
-        double rad = Math.toRadians(degrees);
-        return new Rotation2d(rad);
     }
 
     /**
@@ -297,7 +259,7 @@ public class Drive extends SubsystemBase {
 		}
 
 		// Rotate
-        rotateError = rotateController.calculate(ahrs.getYaw(), degrees);
+        rotateError = rotateController.calculate(getHeading(), degrees);
         rotateError = MathUtil.clamp(rotateError, -0.5, 0.5);
 		teleopRotate(rotateError);
 
@@ -320,6 +282,38 @@ public class Drive extends SubsystemBase {
 			count = 0;
             return Robot.CONT;
 		}
+    }
+
+    /****************************************************************************************** 
+    *
+    *    GETTER FUNCTIONS
+    * 
+    ******************************************************************************************/
+    /**
+     * Returns the currently-estimated pose of the robot.
+     *
+     * @return The pose.
+     */
+    public Pose2d getPose() {
+        return odometry.getPoseMeters();
+    }
+
+    /**
+     * Returns the heading of the robot.
+     *
+     * @return the robot's heading in degrees, from -180 to 180
+     */
+    public double getHeading() {
+        return ahrs.getYaw();
+    }
+
+    /**
+     * Returns the turn rate of the robot.
+     *
+     * @return The turn rate of the robot, in degrees per second
+     */
+    public double getTurnRate() {
+        return ahrs.getRate();
     }
 
     /****************************************************************************************** 

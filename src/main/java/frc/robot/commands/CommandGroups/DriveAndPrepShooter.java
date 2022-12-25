@@ -8,6 +8,10 @@ import frc.robot.commands.*;
 import frc.robot.subsystems.*;
 import frc.robot.subsystems.Shooter.ShootLocation;
 
+import java.util.List;
+
+import edu.wpi.first.math.geometry.Pose2d;
+
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 
 /**
@@ -17,13 +21,13 @@ public class DriveAndPrepShooter extends ParallelCommandGroup {
     /**
      * Constructor for the DriveAndPrepShooter class
      */
-    public DriveAndPrepShooter(Drive drive, Shooter shooter, double[] startPos, double[] endPos) {
+    public DriveAndPrepShooter(Drive drive, Shooter shooter, List<Pose2d> points) {
         // Declare subsystem dependencies
         addRequirements(drive, shooter);
 
         // Adds commands to the group
         addCommands(
-            new DriveDistance(drive, startPos, endPos),
+            new AutoDrive(drive, points),
             new StartShooter(shooter, ShootLocation.HIGH_SHOT)
         );
     }

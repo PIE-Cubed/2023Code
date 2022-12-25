@@ -8,16 +8,11 @@ import java.util.List;
 
 import frc.robot.subsystems.Drive;
 
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 
+import edu.wpi.first.math.trajectory.*;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.trajectory.Trajectory;
-import edu.wpi.first.math.trajectory.TrajectoryConfig;
-import edu.wpi.first.math.trajectory.TrajectoryGenerator;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 
 import edu.wpi.first.wpilibj.Timer;
 
@@ -25,9 +20,12 @@ import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 
 /**
- * Start of the DriveDistance class
+ * Start of the AutoDrive class
  */
-public class DriveDistance extends CommandBase {
+public class AutoDrive extends CommandBase {
+    // Variables
+    private List<Pose2d> points;
+
     // CONSTANTS
     public final double MAX_AUTO_SPEED                = 3; // Meters per second
     public final double MAX_AUTO_ACCELERATION         = 3; // Meters per second per second
@@ -62,17 +60,6 @@ public class DriveDistance extends CommandBase {
     // Create xPosController
     private PIDController yPosController = new PIDController(yP, yI, yD);
 
-    // Variables
-    private double startX = 0.00;
-    private double startY = 0.00;
-    private double startHeading = 0.00;
-    private double endX = 0.00;
-    private double endY = 0.00;
-    private double endHeading = 0.00;
-    private double midX = 0.00;
-    private double midY = 0.00;
-    private double midHeading = 0.00;
-
     // Object creation
     private Drive drive;
     private Timer timer;
@@ -82,28 +69,14 @@ public class DriveDistance extends CommandBase {
     private SwerveControllerCommand swerveControllerCommand;
 
     /**
-     * Constructor for the DriveDistance class
+     * Constructor for the AutoDrive class
      *
      * @param subsystem The subsystem used by this command.
      */
-    public DriveDistance(Drive drive, double[] startCoor, double[] endCoor) {
-        // Localizes drive
+    public AutoDrive(Drive drive, List<Pose2d> drivePoints) {
+        // Localizes variables
         this.drive = drive;
-
-        // Gets the starting values
-        this.startX = startCoor[0];
-        this.startY = startCoor[1];
-        this.startHeading = startCoor[2];
-
-        // Gets the ending values
-        this.endX = endCoor[0];
-        this.endY = endCoor[1];
-        this.endHeading = endCoor[2];
-
-        // Calculate the mid values
-        midX = (this.startX + this.endX) / 2;
-        midY = (this.startY + this.endY) / 2;
-        midHeading = (this.startHeading + this.endHeading) / 2;
+        this.points = drivePoints;
 
         // Instance creation
         timer = new Timer();
@@ -125,11 +98,7 @@ public class DriveDistance extends CommandBase {
 
         // A trajectory to follow. Units are converted as needed.
         path = TrajectoryGenerator.generateTrajectory(
-            List.of(
-                new Pose2d(ftToM(startX), ftToM(startY), rotation2dDeg(startHeading)), // Start at the origin facing 0 direction
-                new Pose2d(ftToM(midX), ftToM(midY), rotation2dDeg(midHeading)),       // Pass through a mid point
-                new Pose2d(ftToM(endX), ftToM(endY), rotation2dDeg(endHeading))        // End end at the endPoint, facing in direction endHeading
-            ),
+            points,
             config);
         
         // Creates a SwerveControllerCommand
@@ -163,31 +132,13 @@ public class DriveDistance extends CommandBase {
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
+        // Gets the end X and Y
+        double endX = points.get(points.size() - 1).getX();
+        double endY = points.get(points.size() - 1).getY();
+
         // Prints that the command ran
         System.out.println("Moved to X" + endX + "Y" + endY);
     }
-
-    /**
-     * rotation2dDeg()
-     * <p>Creates a Rotation2d instance using degrees passed to the method
-     * @param degrees
-     * @return Rotation2d
-     */
-    private Rotation2d rotation2dDeg(double degrees) {
-        double rad = Math.toRadians(degrees);
-        return new Rotation2d(rad);
-    }
-
-    /**
-     * ftToM()
-     * <p>Converts feet to meters
-     * 
-     * @param feet
-     * @return
-     */
-    private double ftToM(double feet) {
-        return Units.feetToMeters(feet);
-    }
 }
 
-// End of the DriveDistance class
+// End of the AutoDrive class

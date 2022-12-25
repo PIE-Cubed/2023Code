@@ -17,8 +17,8 @@ import frc.robot.subsystems.Shooter.ShootLocation;
  */
 public class Controls {
     // CONSTANTS
-    private final int JOYSTICK_ID = 1;
     private final int XBOX_ID     = 0;
+    private final int JOYSTICK_ID = 1;
 
     // Controller object declaration
     private Joystick       joystick;
@@ -42,7 +42,10 @@ public class Controls {
     /**
      * JOYSTICK FUNCTIONS
      */
-    // SHOOTER ENABLED
+    /**
+     * Returns wheter to start the shooter
+     * @return
+     */
     public boolean getShooterEnable() {        
         return joystick.getTrigger();        
     }

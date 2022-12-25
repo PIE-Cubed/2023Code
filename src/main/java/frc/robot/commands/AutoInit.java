@@ -43,7 +43,7 @@ public class AutoInit extends CommandBase {
     @Override
     public void initialize() {
         // Clamps the wait timer
-        MathUtil.clamp(delaySec, 0.00, 5.00);
+        delaySec = MathUtil.clamp(delaySec, 0.00, 5.00);
     }
 
     // Called every time the scheduler runs while the command is scheduled.

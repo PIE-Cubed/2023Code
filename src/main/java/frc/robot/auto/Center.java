@@ -6,10 +6,15 @@ package frc.robot.auto;
 
 import frc.robot.commands.*;
 import frc.robot.commands.CommandGroups.*;
+import frc.robot.EaseOfUse;
 
 import frc.robot.subsystems.*;
 import frc.robot.subsystems.Shooter.ShootLocation;
 import frc.robot.subsystems.Grabber.GrabberDirection;
+
+import java.util.List;
+
+import edu.wpi.first.math.geometry.Pose2d;
 
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 
@@ -22,26 +27,43 @@ public class Center extends SequentialCommandGroup {
      */
     public Center(Drive drive, Shooter shooter, Grabber grabber, LedLights led, double delay) {
         // Starting position
-        double[] start = {0.0, 0.0, 0.0};
+        Pose2d startPos = EaseOfUse.generate2dPose(0.00, 0.00, 0.00);
+
+        // Arrays with movement locations
+        double[] end1  = {0.0, 3.5, 0.0};
+        double[] end2  = {0.0, 1.5, 0.0};
+        double[] end3  = {0.0, 4.5, 0.0};
 
         // First set of movements
-        double[] end1  = {0.0, 3.5, 0.0};
+        List<Pose2d> move1 =
+            List.of(
+                startPos,
+                EaseOfUse.generate2dPose(end1)
+            );
 
         // Second set of movements
-        double[] end2   = {0.0, 1.5, 0.0};
+        List<Pose2d> move2 =
+            List.of(
+                EaseOfUse.generate2dPose(end1),
+                EaseOfUse.generate2dPose(end2)
+            );
 
         // Third set of movements
-        double[] end3   = {0.0, 4.5, 0.0};
+        List<Pose2d> move3 =
+            List.of(
+                EaseOfUse.generate2dPose(end2),
+                EaseOfUse.generate2dPose(end3)
+            );
 
         //Adds commands to the group
         addCommands(
             new AutoInit(led, delay),
             new DeployGrabber(grabber),
             new GrabberControl(grabber, GrabberDirection.INTAKE),
-            new DriveDistance(drive, start, end1),
-            new DriveAndPrepShooter(drive, shooter, end1, end2),
+            new AutoDrive(drive, move1),
+            new DriveAndPrepShooter(drive, shooter, move2),
             new AutoShoot(drive, shooter, grabber, ShootLocation.AUTO_RING, 4),
-            new DriveDistance(drive, end2, end3),
+            new AutoDrive(drive, move3),
             new AutoEnd(drive, shooter, grabber, led)
         );
     }
