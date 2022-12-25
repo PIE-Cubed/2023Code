@@ -178,14 +178,8 @@ public class Drive extends SubsystemBase {
                 ? ChassisSpeeds.fromFieldRelativeSpeeds(driveX, driveY, rotate, rotation2dDeg(ahrs.getYaw()))
                 : new ChassisSpeeds(driveX, driveY, rotate));
         
-        // Limits the wheel speeds
-        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_TELEOP_SPEED);
-
-        // Sets the desired states
-        frontLeftWheel .setDesiredState(swerveModuleStates[0]);
-        frontRightWheel.setDesiredState(swerveModuleStates[1]);
-        rearLeftWheel  .setDesiredState(swerveModuleStates[2]);
-        rearRightWheel .setDesiredState(swerveModuleStates[3]);
+        // Limits the wheel speeds and sets the desired states
+        setModuleStates(swerveModuleStates);
     }
 
     /**
@@ -226,7 +220,7 @@ public class Drive extends SubsystemBase {
      * @return The turn rate of the robot, in degrees per second
      */
     public double getTurnRate() {
-        return ahrs.getVelocityZ();
+        return ahrs.getRate();
     }
     
     /**
