@@ -4,13 +4,14 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 
-import edu.wpi.first.math.filter.SlewRateLimiter;
-import frc.robot.subsystems.Grabber.GrabberDirection;
 import frc.robot.subsystems.Shooter.ShootLocation;
+import frc.robot.subsystems.Grabber.GrabberDirection;
+
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 
 /**
  * Start of the Controls class
@@ -19,6 +20,7 @@ public class Controls {
     // CONSTANTS
     private final int XBOX_ID     = 0;
     private final int JOYSTICK_ID = 1;
+    private final double LIMIT    = 0.50;
 
     // Controller object declaration
     private Joystick       joystick;
@@ -26,6 +28,8 @@ public class Controls {
 
     // Rate limiters
     private SlewRateLimiter xLimiter;
+    private SlewRateLimiter yLimiter;
+    private SlewRateLimiter rotateLimiter;
 
     /**
      * The constructor for the Controls class
@@ -36,7 +40,9 @@ public class Controls {
         xboxController = new XboxController(XBOX_ID);
 
         // Rate limiter
-        xLimiter = new SlewRateLimiter(0.75);
+        xLimiter      = new SlewRateLimiter(LIMIT);
+        yLimiter      = new SlewRateLimiter(LIMIT);
+        rotateLimiter = new SlewRateLimiter(LIMIT);
     }
 
     /**
@@ -54,41 +60,23 @@ public class Controls {
      * DRIVE FUNCTIONS
      */
     /**
-     * Positive values are from clockwise rotation and negative values are from counter-clockwise
-     * @return rotatePower
-     */
-    public double getRotatePower() {
-        double power = joystick.getZ(); 
-
-        //If we are in deadzone or strafelock is on, rotatepower is 0
-        if ((Math.abs(power) < 0.3) || (getStrafeLock() == true)) {
-            power = 0;
-        }
-
-        //Cubes the power and clamps it because the rotate is SUPER sensitive
-        power = Math.pow(power, 3.0);
-        power = MathUtil.clamp(power, -.5, .5);
-            
-        return power;    
-    }
-
-    /**
      * Gets the drive X
      * @return driveX
      */
     public double getDriveX() {
+        // Gets the joystick X
         double power = joystick.getX();
 
-        //Strafe lock removes deadzone and cubes power for more precision
+        // Strafe lock removes deadzone and cubes power for more precision
         if (getStrafeLock() == true) {
             power = Math.pow(power, 3);
         }
-        //If we are in deadzone or rotatelock is on, x is 0
+        // If we are in deadzone or rotatelock is on, x is 0
         if ((Math.abs(power) < 0.05) || (getRotateLock() == true)) {
             power = 0;
         }
 
-        //Prevents us from accelerating sideways too quickly
+        // Prevents us from accelerating sideways too quickly
         power = xLimiter.calculate(power);
  
         return power;
@@ -99,17 +87,45 @@ public class Controls {
      * @return driveY
      */
     public double getDriveY() {
+        // Gets the joystick Y and negates the power because forward is negative
         double power = joystick.getY() * -1;
 
-        //Strafe lock removes deadzone and cubes power for more precision
+        // Strafe lock removes deadzone and cubes power for more precision
         if (getStrafeLock() == true) {
             power = Math.pow(power, 3);
         }
-        //If we are in deadzone or rotatelock is on, y is 0
+        // If we are in deadzone or rotatelock is on, y is 0
         else if ((Math.abs(power) < 0.05) || (getRotateLock() == true)) {
             power = 0;
         }
+
+        // Prevents us from accelerating forward too quickly
+        power = yLimiter.calculate(power);
+
         return power;
+    }
+
+    /**
+     * Positive values are from clockwise rotation and negative values are from counter-clockwise
+     * @return rotatePower
+     */
+    public double getRotatePower() {
+        // Gets the joystick Z
+        double power = joystick.getZ(); 
+
+        // If we are in deadzone or strafelock is on, rotatepower is 0
+        if ((Math.abs(power) < 0.3) || (getStrafeLock() == true)) {
+            power = 0;
+        }
+
+        // Prevents us from accelerating in circles too quickly
+        power = rotateLimiter.calculate(power);
+
+        // Cubes the power and clamps it because the rotate is SUPER sensitive
+        power = Math.pow(power, 3.0);
+        power = MathUtil.clamp(power, -.5, .5);
+
+        return power;    
     }
 
     /**

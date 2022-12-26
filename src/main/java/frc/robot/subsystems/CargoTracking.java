@@ -268,14 +268,14 @@ public class CargoTracking extends SubsystemBase {
 		  deadZoneCount++;
 		}
 
-		if (pipelineEmpty == true) {
+		if (pipelineEmpty == true || emptyCount > FAIL_COUNT || deadZoneCount > FAIL_COUNT) {
 		  // Prints the emptyCount
 		  //System.out.println("IsEmpty: " + pipelineEmpty + " Empty Count: " + emptyCount + " Dead Zone " + deadZoneCount);
 
 		  // Sets turn to 0.00
 		  turn = 0.00;
 		}
-		else if (pipelineEmpty == false) {
+		else {
 		  // Does the math for tracking the balls
 		  turn = centerX - (IMG_WIDTH_SCALED / 2);
 
@@ -285,12 +285,6 @@ public class CargoTracking extends SubsystemBase {
 		  // Resets empty counters
 		  emptyCount    = 0;
 		  deadZoneCount = 0;
-		}
-		else {
-		  // Sets the values to 0 if otherwise
-		  emptyCount = 0.00;
-		  turn       = 0.00;
-		  centerX    = 0.00;
 		}
 		
 		return turn;
