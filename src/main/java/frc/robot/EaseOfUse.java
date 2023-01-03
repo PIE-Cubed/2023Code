@@ -16,7 +16,7 @@ public class EaseOfUse {
     /**
      * generate2dPose()
      * <p>Generates a Pose2d object using units more familiar to the team
-     * <p>The double array should be {xPos, yPos, orientation}
+     * <p>The double array should be [xPos, yPos, orientation]
      * 
      * @param coor Length Condenses the xPos (in feet)
      * @return Pose2D
@@ -37,8 +37,8 @@ public class EaseOfUse {
      */
     public static Pose2d generate2dPose(double xPos, double yPos, double degrees) {
         // Converts the feet inputs into meter outputs
-        double xMeters = ftToM(xPos);
-        double yMeters = ftToM(yPos);
+        double xMeters = feetToMeters(xPos);
+        double yMeters = feetToMeters(yPos);
 
         // Generates a Rotation2d object based on degrees
         Rotation2d rot = generateRot2d(degrees);
@@ -55,7 +55,7 @@ public class EaseOfUse {
      * @return Rotation2d
      */
     public static Rotation2d generateRot2d(double degrees) {
-        double rad = Math.toRadians(degrees);
+        double rad = degreesToRadians(degrees);
         return new Rotation2d(rad);
     }
 
@@ -66,7 +66,18 @@ public class EaseOfUse {
      * @param feet
      * @return meters
      */
-    private static double ftToM(double feet) {
+    public static double feetToMeters(double feet) {
         return Units.feetToMeters(feet);
+    }
+
+    /**
+     * degreesToRadians()
+     * <p>Converts feet to meters
+     * 
+     * @param degrees
+     * @return radians
+     */
+    public static double degreesToRadians(double degrees) {
+        return Math.toRadians(degrees);
     }
 }
