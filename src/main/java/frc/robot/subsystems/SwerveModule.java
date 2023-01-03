@@ -8,11 +8,15 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
@@ -36,9 +40,9 @@ public class SwerveModule {
     private final double ticksPerRevolution  = ticksPerFoot / wheelDiameterInches / 12;
 
     // Distance Calculations
-    private final double inchesDrivenPerTick  = (wheelDiameterInches * Math.PI) / ticksPerRevolution;
+    //private final double inchesDrivenPerTick  = (wheelDiameterInches * Math.PI) / ticksPerRevolution;
     private final double metersDrivenPerTick  = (wheelDiameterMeters * Math.PI) / ticksPerRevolution;
-    private final double degreesRotatedPerTick = 360 / ticksPerRevolution;
+    //private final double degreesRotatedPerTick = 360 / ticksPerRevolution;
     private final double radiansRotatedPerTick = (2 * Math.PI) / ticksPerRevolution;
 
     // Create motors
@@ -78,6 +82,10 @@ public class SwerveModule {
     private static final double DRIVE_I_MIN  = -1 * DRIVE_I_MAX;
     private static final double ROTATE_I_MAX = 0.05;
     private static final double ROTATE_I_MIN = -1 * ROTATE_I_MAX;
+
+    // Creates motor feedforward loops (These must be tuned)
+    private final SimpleMotorFeedforward m_driveFeedforward = new SimpleMotorFeedforward(1, 3);
+    private final SimpleMotorFeedforward m_turnFeedforward = new SimpleMotorFeedforward(1, 0.5);
 
     /**
      * The constructor for the SwerveModule class
@@ -132,16 +140,6 @@ public class SwerveModule {
     }
 
     /**
-     * getState()
-     * <p>Returns the current state of the module.
-     *
-     * @return The current state of the module.
-     */
-    public SwerveModuleState getState() {
-        return new SwerveModuleState(driveEncoder.getVelocity(), new Rotation2d( degToRad(getRotationPosition()) ));
-    }
-
-    /**
      * setDesiredState()
      * <p>Sets the desired state for the module.
      *
@@ -152,25 +150,51 @@ public class SwerveModule {
         SwerveModuleState state = SwerveModuleState.optimize(desiredState, new Rotation2d( degToRad(getRotationPosition()) ));
 
         // Calculate the drive output from the drive PID controller.
-        final double driveOutput = driveController.calculate(driveEncoder.getVelocity(), state.speedMetersPerSecond);
+        double driveOutput = driveController.calculate(driveEncoder.getVelocity(), state.speedMetersPerSecond);
+        double driveFeedforward = m_driveFeedforward.calculate(state.speedMetersPerSecond);
 
         // Calculate the turning motor output from the turning PID controller.
-        final double turnOutput = rotateController.calculate(getRotationPosition(), state.angle.getDegrees());
+        double rotateOutput = rotateController.calculate(getRotationPosition(), state.angle.getDegrees());
+        double rotateFeedforward = m_turnFeedforward.calculate(rotateController.getSetpoint().velocity);
 
         // Calculate the turning motor output from the turning PID controller.
-        driveMotor.set(driveOutput);
-        rotateMotor.set(turnOutput);
+        driveMotor.set(driveOutput + driveFeedforward);
+        rotateMotor.set(rotateOutput + rotateFeedforward);
+    }
+
+    /****************************************************************************************** 
+    *
+    *    GETTER FUNCTIONS
+    * 
+    ******************************************************************************************/
+    /**
+     * getPosition()
+     * <p>Returns the current position of the module.
+     *
+     * @return The current position of the module.
+     */
+    public SwerveModulePosition getPosition() {
+        return new SwerveModulePosition(getModuleVelocity(), new Rotation2d( degToRad(getRotationPosition()) ));
     }
 
     /**
-     * degtoRad()
-     * <p>Converts degrees to radians.
-     * 
-     * @param degrees
-     * @return radians
+     * getState()
+     * <p>Returns the current state of the module.
+     *
+     * @return The current state of the module.
      */
-    private double degToRad(double degrees) {
-        return Units.degreesToRadians(degrees);
+    public SwerveModuleState getState() {
+        return new SwerveModuleState(getModuleVelocity(), new Rotation2d( degToRad(getRotationPosition()) ));
+    }
+
+    /**
+     * getModuleVelocity()
+     * <p>Gets the velocity of the swerve module.
+     * 
+     * @return velocity (m/s)
+     */
+    public double getModuleVelocity() {
+        return driveEncoder.getVelocity();
     }
 
     /**
@@ -184,6 +208,21 @@ public class SwerveModule {
         return normalizeAngle(rawAngle);
     }
 
+    /**
+     * getEncoderValue()
+     * <p>Gets the drive motor encoder value
+     * 
+     * @return driveMotorPosition
+     */
+    public double getEncoderValue() {
+        return driveEncoder.getPosition();
+    }
+
+    /****************************************************************************************** 
+    *
+    *    HELPER FUNCTIONS
+    * 
+    ******************************************************************************************/
     /**
      * normalizeAngle()
      * <p>Takes an input of degrees and brings it from (0 to 360) to (-180 to 180)
@@ -215,21 +254,21 @@ public class SwerveModule {
     }
 
     /**
-     * getEncoderValue()
-     * <p>Gets the drive motor encoder value
+     * degtoRad()
+     * <p>Converts degrees to radians.
      * 
-     * @return driveMotorPosition
+     * @param degrees
+     * @return radians
      */
-    public double getEncoderValue() {
-        return driveEncoder.getPosition();
+    private double degToRad(double degrees) {
+        return Units.degreesToRadians(degrees);
     }
 
-    /**
-     * 
-     * TEST METHODS
-     * 
-     */
-
+    /****************************************************************************************** 
+    *
+    *    TEST FUNCTIONS
+    * 
+    ******************************************************************************************/
     /**
      * Drives a certain wheel at a certain power
      * @param power

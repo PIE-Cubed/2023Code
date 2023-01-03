@@ -4,26 +4,27 @@
 
 package frc.robot.subsystems;
 
-import frc.robot.Robot;
-
 import frc.robot.EaseOfUse;
+import frc.robot.CustomTables;
 
 import java.util.stream.DoubleStream;
 
 import edu.wpi.first.wpilibj.SPI;
 import com.kauailabs.navx.frc.AHRS;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.Vector;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.numbers.N3;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.geometry.*;
+
+import edu.wpi.first.math.kinematics.*;
+
+import edu.wpi.first.math.controller.PIDController;
+
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -32,12 +33,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  */
 public class Drive extends SubsystemBase {
     // Variables
-    private boolean rotateFirstTime = true;
-    private int     count           = 0;
-
-    // Auto variables
-    private long    timeOut;
-    private static final int ON_ANGLE_COUNT = 10;
+    private Pose3d  prevPose;
+    private double  prevTime;
 
     // Drive Motor ID
     private final int FL_DRIVE = 10;
@@ -97,9 +94,19 @@ public class Drive extends SubsystemBase {
     private final double rotateToleranceDegrees = 2.0f;
     private PIDController rotateController;
 
+    // Camera position relative to the center of the robot
+    private static final double CAMERA_X_OFFSET = Units.feetToMeters(0);
+    private static final double CAMERA_Y_OFFSET = Units.feetToMeters(0);
+    private static final double CAMERA_Z_OFFSET = Units.feetToMeters(0);
+    public static final Transform3d CAMERA_OFFSET = new Transform3d(
+        new Translation3d(CAMERA_X_OFFSET, CAMERA_Y_OFFSET, CAMERA_Z_OFFSET),
+        new Rotation3d()
+    );
+
     // Object Creation
-    public static AHRS ahrs;
+    private AHRS ahrs;
     private SwerveDriveOdometry odometry;
+    private SwerveDrivePoseEstimator poseEstimator;
 
     /**
      * The constructor for the Drive class
@@ -130,8 +137,27 @@ public class Drive extends SubsystemBase {
         // Zeros the NavX
         ahrs.zeroYaw();
 
-        // Odometry class for tracking robot pose
-        odometry = new SwerveDriveOdometry(DriveKinematics, EaseOfUse.generateRot2d( getHeading() ));
+        // Odometry for tracking robot pose independant of vision sensors
+        odometry = new SwerveDriveOdometry(
+            DriveKinematics,
+            EaseOfUse.generateRot2d( getHeading() ),
+            getModulePositons(),
+            new Pose2d()
+        );
+
+        // Create the standard deviations for how much the incoming data is trusted. Increase the values to trust the data less
+        Vector<N3> stateStdDevs  = VecBuilder.fill(0, 0, 0); // x, y, and theta
+        Vector<N3> visionStdDevs = VecBuilder.fill(0, 0, 0); // x, y, and theta
+
+        // PoseEstimation for tracking robot pose with the help of vision sensors
+        poseEstimator = new SwerveDrivePoseEstimator(
+            DriveKinematics,
+            EaseOfUse.generateRot2d( getHeading() ),
+            getModulePositons(),
+            new Pose2d(),
+            stateStdDevs,
+            visionStdDevs
+        );
 
         // PID Controllers
         rotateController = new PIDController(kP, kI, kD);
@@ -141,17 +167,8 @@ public class Drive extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Updates odometry periodically
-        updateOdometry();
-    }
-
-    /**
-     * Resets the odometry to the specified pose.
-     *
-     * @param pose The pose to which to set the odometry.
-     */
-    public void resetOdometry(Pose2d pose) {
-        odometry.resetPosition(pose, EaseOfUse.generateRot2d( getHeading() ));
+        // Updates all pose predictors
+        updateAllPoseTrackers();
     }
 
     /**
@@ -182,33 +199,12 @@ public class Drive extends SubsystemBase {
     public void setModuleStates(SwerveModuleState[] desiredStates) {
         // Limits the wheel speeds
         SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, MAX_TELEOP_SPEED);
-    
+
         //  Sets the desired states
         frontLeftWheel .setDesiredState(desiredStates[0]);
         frontRightWheel.setDesiredState(desiredStates[1]);
         rearLeftWheel  .setDesiredState(desiredStates[2]);
         rearRightWheel .setDesiredState(desiredStates[3]);
-    }
-
-    /**
-     * Reset the NavX reading.
-     */
-    public void zeroHeading() {
-        ahrs.reset();
-    }
-    
-    /**
-     * updateOdometry()
-     * <p>Updates the odometry
-     */
-    public void updateOdometry() {
-        odometry.update(
-            EaseOfUse.generateRot2d(getHeading()),
-            frontLeftWheel.getState(),
-            frontRightWheel.getState(),
-            rearLeftWheel.getState(),
-            rearRightWheel.getState()
-        );
     }
 
     /**
@@ -232,56 +228,94 @@ public class Drive extends SubsystemBase {
         rearRightWheel .setDesiredState(swerveModuleStates[3]);
     }
 
+    /****************************************************************************************** 
+    *
+    *    UPDATER FUNCTIONS
+    * 
+    ******************************************************************************************/
     /**
-     * autoRotate()
-     * <p>Rotates robot to inputted angle
-     * 
-     * @param degrees
-     * @return
+     * updateAllPoseTrackers()
+     * <p>Updates all pose trackers
      */
-    public int autoRotate(double degrees) {
-        double rotateError;
-        long currentMs = System.currentTimeMillis();
+    public void updateAllPoseTrackers() {
+        updateOdometry();
+        updatePoseEstimator();
+    }
 
-        if (rotateFirstTime == true) {
-            rotateFirstTime = false;
-            count = 0;
-            timeOut = currentMs + 2500; // Makes the time out 2.5 seconds
+    /**
+     * updateOdometry()
+     * <p>Updates the odometry
+     */
+    private void updateOdometry() {
+        // Compiles all the module positions
+        SwerveModulePosition[] allModulePosition = getModulePositons();
+
+        // Updates odometry
+        odometry.update(
+            EaseOfUse.generateRot2d( getHeading() ),
+            allModulePosition);
+    }
+
+    /**
+     * updatePoseEstimator()
+     * <p>Updates the poseEstimator
+     */
+    private void updatePoseEstimator() {
+        // Compiles all the module positions
+        SwerveModulePosition[] allModulePosition = getModulePositons();
+
+        // Updates the pose estimator
+        poseEstimator.update(
+            EaseOfUse.generateRot2d( getHeading() ),
+            allModulePosition);
+
+        // Gets current values
+        Pose3d detPose = CustomTables.getBestResult();
+        double detTime = CustomTables.getDetectionTime();
+
+        // Adds the vision measurement if it hasn't been calculated yet
+        if ((prevTime != detTime) && (prevPose != detPose)) {
+            // Sets the prev variables
+            prevTime = detTime;
+            prevPose = detPose;
+
+            // Adds the vision measurement
+            poseEstimator.addVisionMeasurement(
+                detPose.toPose2d(),
+                detTime);
         }
+    }
 
-        if (currentMs > timeOut) {
-			count = 0;
-            rotateFirstTime = true;
-            
-			System.out.println("Auto rotate timed out");
-            stopWheels();
-            return Robot.DONE;
-		}
+    /****************************************************************************************** 
+    *
+    *    RESETER FUNCTIONS
+    * 
+    ******************************************************************************************/
+    /**
+     * Resets both pose estimators to a specific pose
+     * @param pose The pose to which to set the estimators.
+     */
+    public void resetPoseTrackers(Pose2d pose) {
+        resetOdometry(pose);
+        resetPoseEstimator(pose);
+    }
 
-		// Rotate
-        rotateError = rotateController.calculate(getHeading(), degrees);
-        rotateError = MathUtil.clamp(rotateError, -0.5, 0.5);
-		teleopRotate(rotateError);
+    /**
+     * Resets the odometry to the specified pose.
+     * 
+     * @param pose The pose to which to set the odometry.
+     */
+    private void resetOdometry(Pose2d pose) {
+        odometry.resetPosition(EaseOfUse.generateRot2d( getHeading() ), getModulePositons(), pose);
+    }
 
-		// CHECK: Routine Complete
-		if (rotateController.atSetpoint() == true) {
-            count++;            
-
-			if (count == ON_ANGLE_COUNT) {
-				count = 0;
-                rotateFirstTime = true;
-                rotateController.reset();
-                stopWheels();                                
-                return Robot.DONE;
-            }
-            else {
-				return Robot.CONT;
-			}
-		}
-		else {    
-			count = 0;
-            return Robot.CONT;
-		}
+    /**
+     * Resets the estimator to the specified pose.
+     * 
+     * @param pose The pose to which to set the estimator.
+     */
+    private void resetPoseEstimator(Pose2d pose) {
+        poseEstimator.resetPosition(EaseOfUse.generateRot2d( getHeading() ), getModulePositons(), pose);
     }
 
     /****************************************************************************************** 
@@ -290,12 +324,37 @@ public class Drive extends SubsystemBase {
     * 
     ******************************************************************************************/
     /**
-     * Returns the currently-estimated pose of the robot.
-     *
-     * @return The pose.
+     * Returns all the positions of each SwerveModule.
+     * 
+     * @return allPositions
      */
-    public Pose2d getPose() {
+    public SwerveModulePosition[] getModulePositons() {
+        SwerveModulePosition[] allPos = {
+            frontLeftWheel.getPosition(),
+            frontRightWheel.getPosition(),
+            rearLeftWheel.getPosition(),
+            rearRightWheel.getPosition()
+        };
+
+        return allPos;
+    }
+
+    /**
+     * Returns the currently estimated pose of the robot, independant of the vision systems.
+     *
+     * @return Pose2d The estimated pose.
+     */
+    public Pose2d getOdometryPose() {
         return odometry.getPoseMeters();
+    }
+
+    /**
+     * Returns the currently estimated pose of the robot, independant of the vision systems.
+     *
+     * @return Pose2d The estimated pose.
+     */
+    public Pose2d getVisionPose() {
+        return poseEstimator.getEstimatedPosition();
     }
 
     /**
