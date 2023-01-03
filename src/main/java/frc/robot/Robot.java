@@ -5,10 +5,11 @@
 package frc.robot;
 
 import frc.robot.auto.*;
+import frc.robot.commands.*;
 import frc.robot.subsystems.*;
 import frc.robot.subsystems.Shooter.ShootLocation;
 
-import edu.wpi.first.networktables.*;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -29,10 +30,6 @@ public class Robot extends TimedRobot {
     public static final int DONE =  2;
     public static final int CONT =  3;
 
-    // Networktables
-    private NetworkTable FMSInfo;
-    private NetworkTableEntry isRedAlliance;	
-
     // Object creation
     LedLights     led;
     PDH           pdh;
@@ -41,7 +38,7 @@ public class Robot extends TimedRobot {
     Shooter       shooter;
     Climber       climber;
     Controls      controls;
-    CargoTracking cargoTracking;
+    CustomTables  customTables;
 
     // Command creation
     private Command autoCommand;
@@ -62,8 +59,8 @@ public class Robot extends TimedRobot {
 
     // Auto path
     private static final String kCenterAuto = "Center";
-    private static final String kWallAuto   = "Wall";
     private static final String kHangarAuto = "Hangar";
+    private static final String kWallAuto   = "Wall";
     private String m_autoSelected;
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -88,13 +85,6 @@ public class Robot extends TimedRobot {
         controls      = new Controls();
         climber       = new Climber(led);
         shooter       = new Shooter();
-        cargoTracking = new CargoTracking(drive, led);
-
-        // Creates a Network Tables instance
-        FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
-
-        // Creates the Networktable Entry
-        isRedAlliance = FMSInfo.getEntry("IsRedAlliance"); // Boolean
     }
 
     @Override
@@ -104,9 +94,9 @@ public class Robot extends TimedRobot {
      */
     public void robotInit() {
         // Auto start location
-        m_chooser.setDefaultOption("Wall Auto", kWallAuto);
         m_chooser.addOption("Center Auto", kCenterAuto);
         m_chooser.addOption("Hangar Auto", kHangarAuto);
+        m_chooser.setDefaultOption("Wall Auto", kWallAuto);
         SmartDashboard.putData("Auto choices", m_chooser);
 
         // Auto delay
@@ -116,9 +106,6 @@ public class Robot extends TimedRobot {
         m_numBallsChooser.setDefaultOption("2 ball", kTwoBall);
         m_numBallsChooser.addOption("3 ball", kThreeBall);
         SmartDashboard.putData("Number of Balls", m_numBallsChooser);
-
-        // Passes if we are on the red alliance to the Pi for Object Tracking
-        cargoTracking.setRedAlliance( getRedAlliance() );
     }
 
     @Override
@@ -127,16 +114,26 @@ public class Robot extends TimedRobot {
      * Always runs on the robot
      */
     public void robotPeriodic() {
-        // Passes if we are on the red alliance to the Pi for Object Tracking
-        cargoTracking.setRedAlliance( getRedAlliance() );
-
         // Passes our color to the lights
         led.defaultMode( getRedAlliance() );
 
         // Constantly updates the swerve odometry
-        drive.updateOdometry();
+        drive.updateAllPoseTrackers();
 
-        // Runns the CommandScheduler
+        // Constantly updates the time for the Jetson
+        CustomTables.setTimeSec();
+
+        // Constantly updates the gyro for the Jetson
+        CustomTables.setGyroYaw(drive.getHeading());
+
+        // Constantly updates the module positions for the Jetson
+        SwerveModulePosition[] allPos = drive.getModulePositons();
+        CustomTables.setFLState(allPos[0].distanceMeters, allPos[0].angle.getDegrees());
+        CustomTables.setRLState(allPos[1].distanceMeters, allPos[1].angle.getDegrees());
+        CustomTables.setFRState(allPos[2].distanceMeters, allPos[2].angle.getDegrees());
+        CustomTables.setRRState(allPos[3].distanceMeters, allPos[3].angle.getDegrees());
+
+        // Runs the CommandScheduler
         CommandScheduler.getInstance().run();
     }
 
@@ -155,9 +152,6 @@ public class Robot extends TimedRobot {
 
         delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
 
-        // Passes if we are on the red alliance to the Pi for Object Tracking
-        cargoTracking.setRedAlliance( getRedAlliance() );
-
         // Inits the ledlights for auto
         led.autoInit();
 
@@ -165,15 +159,19 @@ public class Robot extends TimedRobot {
         switch (m_autoSelected) {
             case kCenterAuto:
                 autoCommand = new Center(drive, shooter, grabber, led, delaySec);
+                drive.resetPoseTrackers(null);
                 break;
             case kHangarAuto:
                 autoCommand = new Hangar(drive, shooter, grabber, led, delaySec);
+                drive.resetPoseTrackers(null);
                 break;
             case kWallAuto:
                 autoCommand = new Wall(drive, shooter, grabber, led, delaySec);
+                drive.resetPoseTrackers(null);
                 break;
             default:
                 autoCommand = new Wall(drive, shooter, grabber, led, delaySec);
+                drive.resetPoseTrackers(null);
                 break;
         }
 
@@ -196,9 +194,6 @@ public class Robot extends TimedRobot {
      * Runs once at the start of TeleOp
      */
     public void teleopInit() {
-        // Passes if we are on the red alliance to the Pi for Object Tracking
-        cargoTracking.setRedAlliance( getRedAlliance() );
-
         // Inits the led lights
         led.teleopInit();
 
@@ -249,8 +244,9 @@ public class Robot extends TimedRobot {
      * Runs once at the start of Test
      */
     public void testInit() {
-        // Passes if we are on the red alliance to the Pi for Object Tracking
-        cargoTracking.setRedAlliance( getRedAlliance() );
+        //
+        Command chaseTag = new ChaseTag(drive, drive::getVisionPose);
+        chaseTag.schedule();
     }
 
     @Override
@@ -339,7 +335,7 @@ public class Robot extends TimedRobot {
         }
         // Raspberry Pi Targeting
         else if (driveMode == DriveMode.CARGO_TARGETING) {
-            int cargoStatus = cargoTracking.autoCargoTrack();
+            int cargoStatus = Robot.DONE;
 
             if (cargoStatus == Robot.DONE) {
                 driveMode = DriveMode.CARGO_TARGETED;
@@ -475,9 +471,7 @@ public class Robot extends TimedRobot {
      * @return isRed
      */
     private boolean getRedAlliance() {
-    // Gets and returns if we are red from the FMS
-    boolean isRed = isRedAlliance.getBoolean(false);
-        return isRed;
+        return CustomTables.getRedAlliance();
     }
 }
 
