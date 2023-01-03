@@ -49,9 +49,6 @@ public class AutoInit extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        // Resets the NavX Yaw
-        Drive.ahrs.zeroYaw();
-        
         // Sets the LedLights to Aqua
         led.autoMode();
     }

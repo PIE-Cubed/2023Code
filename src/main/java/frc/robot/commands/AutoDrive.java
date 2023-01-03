@@ -105,7 +105,7 @@ public class AutoDrive extends CommandBase {
         swerveControllerCommand =
             new SwerveControllerCommand(
                 path,
-                drive::getPose, // Functional interface to feed supplier
+                drive::getVisionPose, // Functional interface to feed supplier
                 Drive.DriveKinematics,
 
                 // Position controllers
