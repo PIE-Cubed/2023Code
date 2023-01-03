@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj.RobotBase;
  */
 public final class Main {
     /**
-     * Constructor for the Main class
+     * The constructor for the Main class
      */
     private Main() {}
 
@@ -26,4 +26,4 @@ public final class Main {
     }
 }
 
-// End of the main class
+// End of the Main class
