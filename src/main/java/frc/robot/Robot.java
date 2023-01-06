@@ -120,9 +120,6 @@ public class Robot extends TimedRobot {
         // Constantly updates the swerve odometry
         drive.updateAllPoseTrackers();
 
-        // Constantly updates the time for the Jetson
-        CustomTables.setTimeSec();
-
         // Constantly updates the gyro for the Jetson
         CustomTables.setGyroYaw(drive.getHeading());
 

@@ -35,7 +35,10 @@ public class ChaseTag extends CommandBase {
 
     // Tag to chase
     private final int TAG_ID = 0;
-    private Pose3d lastResult;
+
+    // Variables
+    private double prevTime;
+    private Pose3d prevResult;
 
     // Distance from tag to robot
     private Transform3d TAG_TO_GOAL = 
@@ -76,11 +79,11 @@ public class ChaseTag extends CommandBase {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        //
+        // Gets the pose from a provider
         var robotPose = poseProvider.get();
 
-        // 
-        lastResult = null;
+        // Sets the previous result to null
+        prevResult = null;
 
         // Resets the PID controllers
         rotateController.reset(robotPose.getRotation().getRadians());
@@ -102,33 +105,36 @@ public class ChaseTag extends CommandBase {
             );
 
         // Gets all results
-        Pose3d[] results = CustomTables.getLatestResults();
+        int tagNum     = CustomTables.getBestResultId();
+        Pose3d result  = CustomTables.getBestResult();
+        double detTime = CustomTables.getDetectionTime();
 
-        //
-        if (results[TAG_ID] != lastResult) {
-            //
-            Pose3d result = results[TAG_ID];
+        // Checks if the result is the tag we want is detected
+        if (tagNum == TAG_ID) {
+            // Checks if the result and time have changed
+            if ((result != prevResult) && (detTime != prevTime)) {
+                // Sets the previous values
+                prevTime   = detTime;
+                prevResult = result;
 
-            // Sets the last result
-            lastResult = result;
+                // Gets the camera pose
+                Pose3d cameraPose = robotPose.transformBy(Drive.CAMERA_OFFSET);
 
-            // 
-            Pose3d cameraPose = robotPose.transformBy(Drive.CAMERA_OFFSET);
+                // Gets the transform from the camera to the target
+                Transform3d camToTarget = new Transform3d(result.getTranslation(), result.getRotation());
+                Pose3d targetPose = cameraPose.transformBy(camToTarget);
 
-            //
-            Transform3d camToTarget = new Transform3d(result.getTranslation(), result.getRotation());
-            Pose3d targetPose = cameraPose.transformBy(camToTarget);
+                // Gets the pose of the point we need to be at
+                Pose2d goalPose = targetPose.transformBy(TAG_TO_GOAL).toPose2d();
 
-            //
-            Pose2d goalPose = targetPose.transformBy(TAG_TO_GOAL).toPose2d();
-
-            //
-            xController.setGoal(goalPose.getX());
-            yController.setGoal(goalPose.getY());
-            rotateController.setGoal(goalPose.getRotation().getRadians());
+                // Tells the PID controllers to calulate powers and get there
+                xController.setGoal(goalPose.getX());
+                yController.setGoal(goalPose.getY());
+                rotateController.setGoal(goalPose.getRotation().getRadians());
+            }
         }
-        
-        if (lastResult == null) {
+
+        if (prevResult == null) {
             // Stops the drive
             drive.stopWheels();
         }
