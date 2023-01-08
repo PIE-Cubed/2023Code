@@ -4,33 +4,26 @@
 
 package frc.robot;
 
-/**
- * Imports
- */
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
- * Start of the Main class
- * <p>Do NOT add any variables or initialization to this class.
- * <p>Do NOT modify this file except to change the parameter class in startRobot().
+ * Do NOT add any static variables or initialization to this class
+ * Do not modify this file except to change the parameter to startRobot()
  */
 public final class Main {
-  /**
-   * Constructor
-   */
-  private Main() {
-    // Nothing yet...
-  }
+	/**
+	 * The constructor for the Main class
+	 */
+	private Main() {}
 
-  /**
-   * Main initialization function. Do not perform any initialization here.
-   *
-   * <p>If you change your main robot class, change the parameter type.
-   */
-  public static void main(String... args) {
-    RobotBase.startRobot(Robot::new);
-  }
-
+	/**
+	 * Main initialization function.
+	 *
+	 * <p>If you change your main robot class, change the parameter type.
+	 */
+	public static void main(String... args) {
+		RobotBase.startRobot(Robot::new);
+	}
 }
 
 // End of the Main class
