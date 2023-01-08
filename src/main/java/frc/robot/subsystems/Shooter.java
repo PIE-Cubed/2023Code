@@ -120,9 +120,11 @@ public class Shooter extends SubsystemBase {
 		leadShooter  .setSmartCurrentLimit(SHOOTER_CURRENT_LIMIT);
 		followShooter.setSmartCurrentLimit(SHOOTER_CURRENT_LIMIT);
 
-		// Sets the mode of the motors (if this works in the code)
+		// Sets the mode of the motors
 		leadShooter  .setIdleMode(CANSparkMax.IdleMode.kCoast);
 		followShooter.setIdleMode(CANSparkMax.IdleMode.kCoast);
+
+		// Reverses the the floowing motor
 		followShooter.follow(leadShooter, true);
 
 		// Set Shooter related motors to off to Start the Match
