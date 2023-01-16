@@ -4,7 +4,12 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.XboxController;
+
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.networktables.*;
 
@@ -27,9 +32,12 @@ public class Robot extends TimedRobot {
 
 	// Object creation
 	Controls controls;
+	XboxController xboxController;
+	DoubleSolenoid solenoid;
 
 	// Variables
 	private int status = CONT;
+	Test        test;
 
 	// Auto path
 	private static final String leftAuto = "Left";
@@ -47,6 +55,8 @@ public class Robot extends TimedRobot {
 	public Robot() {
 		// Instance creation
 		controls = new Controls();
+		xboxController = new XboxController(CONT);
+		test = new Test();
 
 		//Creates a Network Tables instance
 		FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
@@ -128,6 +138,7 @@ public class Robot extends TimedRobot {
 	 * Runs ever 20 miliseconds during TeleOp
 	 */
 	public void teleopPeriodic() {
+		wheelControl();
 	}
 
 	@Override

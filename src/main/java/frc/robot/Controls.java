@@ -105,6 +105,13 @@ public class Controls {
 	public boolean autoKill() {
 		return xboxController.getStartButtonPressed();
 	}
+
+	/**
+	 * 
+	 */
+	public boolean getSolenoidToggle() {
+		return xboxController.getAButtonPressed();
+	}
 }
 
 // End of the Controls class
