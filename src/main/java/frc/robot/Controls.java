@@ -8,8 +8,6 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 
-import edu.wpi.first.math.filter.SlewRateLimiter;
-
 /**
  * Start of the Controls class
  */
@@ -22,22 +20,12 @@ public class Controls {
 	private Joystick       joystick;
 	private XboxController xboxController;
 
-	// Rate limiters
-	private SlewRateLimiter xLimiter;
-
 	//Constructor
 	public Controls() {
 		// Instance Creation
 		joystick       = new Joystick(JOYSTICK_ID);
 		xboxController = new XboxController(XBOX_ID);
-
-		// Rate limiter
-		xLimiter = new SlewRateLimiter(0.75);
 	}
-
-	/**
-	 * JOYSTICK FUNCTIONS
-	 */
 
 	/**
 	 * DRIVE FUNCTIONS
@@ -50,8 +38,8 @@ public class Controls {
 	public double getRotatePower() {
 		double power = joystick.getZ(); 
 
-		// If we are in deadzone or strafelock is on, rotatepower is 0
-		if ((Math.abs(power) < 0.3) || (getStrafeLock() == true)) {
+		// If we are in deadzone, rotatepower is 0
+		if ((Math.abs(power) < 0.3)) {
 		power = 0;
 		}
 
@@ -69,18 +57,10 @@ public class Controls {
 	public double getDriveX() {
 		double power = joystick.getX();
 
-		// Strafe lock removes deadzone and cubes power for more precision
-		if (getStrafeLock() == true) {
-		power = Math.pow(power, 3);
-		}
-
-		// If we are in deadzone or rotatelock is on, x is 0
-		if ((Math.abs(power) < 0.05) || (getRotateLock() == true)) {
+		// If we are in deadzone, x is 0
+		if ((Math.abs(power) < 0.05)) {
 		power = 0;
 		}
-
-		// Prevents us from accelerating sideways too quickly
-		power = xLimiter.calculate(power);
 
 		return power;
 	}
@@ -92,41 +72,31 @@ public class Controls {
 	public double getDriveY() {
 		double power = joystick.getY() * -1;
 
-		// Strafe lock removes deadzone and cubes power for more precision
-		if (getStrafeLock() == true) {
-		power = Math.pow(power, 3);
-		}
-		// If we are in deadzone or rotatelock is on, y is 0
-		else if ((Math.abs(power) < 0.05) || (getRotateLock() == true)) {
+		// If we are in deadzone, y is 0
+		if ((Math.abs(power) < 0.05)) {
 		power = 0;
 		}
+
 		return power;
 	}
 
 	/**
-	 * Checks if we are in strafe lock mode
-	 * @return joystick button 5
+	 * ARM CONTROLS
 	 */
-	private boolean getStrafeLock() {
-		return joystick.getRawButton(5);
-	}
+
+
 
 	/**
-	 * Checks if we are in rotate lock mode
-	 * @return joystick button 3
+	 * WRIST CONTROLS
 	 */
-	private boolean getRotateLock() {
-		return joystick.getRawButton(3);
-	}
 
-	/*
-	public boolean toggleFieldDrive() {
-		return joystick.getRawButton(10);
-	}*/
+
 
 	/**
-	 * XBOX FUNCTIONS
+	 * CLAW CONTROLS
 	 */
+
+
 
 	/**
 	 * Checks if the start button is pressed

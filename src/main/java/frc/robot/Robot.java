@@ -26,24 +26,15 @@ public class Robot extends TimedRobot {
 	private NetworkTableEntry isRedAlliance;
 
 	// Object creation
-	Drive    drive;
 	Controls controls;
 
 	// Variables
 	private int status = CONT;
 
-	// Enumeration for manual or automatic control
-	public static enum DriveMode {
-		MANUAL,
-		APRILTAG,
-		CARGO;
-	}
-	private DriveMode driveMode = DriveMode.MANUAL;
-
 	// Auto path
-	private static final String kCenterAuto = "Center";
-	private static final String kWallAuto   = "Wall";
-	private static final String kHangarAuto = "Hangar";
+	private static final String leftAuto = "Left";
+	private static final String middleAuto   = "Middle";
+	private static final String rightAuto = "Right";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -55,7 +46,6 @@ public class Robot extends TimedRobot {
 	 */
 	public Robot() {
 		// Instance creation
-		drive    = new Drive();
 		controls = new Controls();
 
 		//Creates a Network Tables instance
@@ -72,9 +62,9 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// Auto start location
-		m_chooser.setDefaultOption("Wall Auto", kWallAuto);
-		m_chooser.addOption("Center Auto", kCenterAuto);
-		m_chooser.addOption("Hangar Auto", kHangarAuto);
+		m_chooser.setDefaultOption("Left", leftAuto);
+		m_chooser.addOption("Middle", middleAuto);
+		m_chooser.addOption("Right", rightAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
 
 		// Auto delay
@@ -103,8 +93,7 @@ public class Robot extends TimedRobot {
 		// Gets the auto delay 
 		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
 
-		// Resets the gyro
-		Drive.ahrs.zeroYaw();
+		// Reset the gyro
 	}
 
 	@Override
@@ -139,7 +128,6 @@ public class Robot extends TimedRobot {
 	 * Runs ever 20 miliseconds during TeleOp
 	 */
 	public void teleopPeriodic() {
-		wheelControl();
 	}
 
 	@Override
@@ -188,42 +176,6 @@ public class Robot extends TimedRobot {
 		double driveX               = controls.getDriveX();
 		double driveY               = controls.getDriveY();
 		double rotatePower          = controls.getRotatePower();
-
-		// Manual driving
-		if (driveMode == DriveMode.MANUAL) {
-			// Drives if we are out of dead zone
-			if ((Math.abs(driveX) > 0.05) ||
-				(Math.abs(driveY) > 0.05) || 
-				(Math.abs(rotatePower) > 0.01)) {
-				drive.teleopSwerve(driveX, driveY, rotatePower, false, true);
-			}
-			else {
-				// Robot is in dead zone, doesn't drive
-				drive.stopWheels();
-			}
-		}
-		// AprilTag targeting
-		else if (driveMode == DriveMode.APRILTAG) {
-			// Nothing yet...
-		}
-		// Cargo targeting
-		else if (driveMode == DriveMode.CARGO) {
-			// Nothing yet...
-		}
-		// Anything else
-		else {
-			// Nothing yet...
-		}
-	}
-
-	/**
-	 * Determines if we are on the red alliance
-	 * @return isRed
-	 */
-	private boolean getRedAlliance() {
-	// Gets and returns if we are red from the FMS
-	boolean isRed = isRedAlliance.getBoolean(false);
-	return isRed;
 	}
 }
 
