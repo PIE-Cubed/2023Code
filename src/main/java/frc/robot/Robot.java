@@ -168,6 +168,10 @@ public class Robot extends TimedRobot {
 	public void testInit() {
 		// Resets status
 		status = Robot.CONT;
+		test.initMotor(13, MotorType.kBrushless);
+	//	test.initEncoder();
+	//	test.initAlternateEncoder();
+		test.initAbsoluteEncoder();
 	}
 
 	@Override
@@ -177,6 +181,10 @@ public class Robot extends TimedRobot {
 	 */
 	public void testPeriodic() {
 		// Nothing yet...
+		//test.motorPeriodic();
+	//	test.encoderPeriodic();
+	//	test.alternateEncoderPeriodic();
+		test.absoluteEncoderPeriodic();
 	}
 
 	/**
