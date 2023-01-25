@@ -18,6 +18,13 @@ public class Test {
     private RelativeEncoder  encoder;
     private RelativeEncoder  alternateEncoder;
     private AbsoluteEncoder  absoluteEncoder;
+    
+    // Prevent robot from creating duplicate objects if testInit() is ran multiple times
+    private boolean pneumaticsInitialized;
+    private boolean motorInitialized;
+    private boolean encoderInitialized;
+    private boolean alternateEncoderInitialized;
+    private boolean absoluteEncoderInitialized;
 
     private enum valveState{
         OPEN,
@@ -27,31 +34,48 @@ public class Test {
     public Test() {
         // Set the solenoid state to open
         solenoidState = valveState.OPEN;
+        
+        // Set all initialization trackers to false
+        pneumaticsInitialized       = false;
+        motorInitialized            = false;
+        encoderInitialized          = false;
+        alternateEncoderInitialized = false;
+        absoluteEncoderInitialized  = false;
     }
 
     public void initPnuematics(int solenoidIDForward, int solenoidIDReverse) {   
-        SmartDashboard.putBoolean("Solenoid extended", false);     
-        solenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, solenoidIDForward, solenoidIDReverse);
+        if (!pneumaticsInitialized) {
+            SmartDashboard.putBoolean("Solenoid extended", false);     
+            solenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, solenoidIDForward, solenoidIDReverse);
+        }
     }
 
-    public void initMotor(int motorID, MotorType motorType) {        
-        SmartDashboard.putNumber("Motor power", 0);
-        motor = new CANSparkMax(motorID, motorType);
+    public void initMotor(int motorID, MotorType motorType) {    
+        if (!motorInitialized) {
+            SmartDashboard.putNumber("Motor power", 0);
+            motor = new CANSparkMax(motorID, motorType);
+        }
     }
 
     public void initEncoder() {
-        SmartDashboard.putNumber("Encoder ticks", 0);
-        encoder = motor.getEncoder();
+        if (!encoderInitialized) {
+            SmartDashboard.putNumber("Encoder ticks", 0);
+            encoder = motor.getEncoder();
+        }
     }
 
     public void initAlternateEncoder() {
-        SmartDashboard.putNumber("Alternate encoder ticks", 0);
-        alternateEncoder = motor.getAlternateEncoder(1);
+        if (!alternateEncoderInitialized) {
+            SmartDashboard.putNumber("Alternate encoder ticks", 0);
+            alternateEncoder = motor.getAlternateEncoder(1);
+        }
     }
 
     public void initAbsoluteEncoder() {
-        SmartDashboard.putNumber("Absolute encoder ticks", 0);
-        absoluteEncoder = motor.getAbsoluteEncoder(Type.kDutyCycle);
+        if (!absoluteEncoderInitialized) {
+            SmartDashboard.putNumber("Absolute encoder ticks", 0);
+            absoluteEncoder = motor.getAbsoluteEncoder(Type.kDutyCycle);
+        }
     }
 
     public void solenoidPeriodic() {
