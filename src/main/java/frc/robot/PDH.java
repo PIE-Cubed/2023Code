@@ -19,6 +19,24 @@ public class PDH {
 	private static final int BL_DRIVE_ID  = 2;
 	private static final int BR_ROTATE_ID = 0;
 	private static final int BR_DRIVE_ID  = 3;
+	
+	private static final int ITERATIONS_PER_HOUR = 50 * 3600;
+	
+	private static final int BATTERY_STORAGE = 216; // 18 Ah * 12 V - test this
+	
+	// Variables
+	private static double FL_DRIVE_AMP_HOUR = 0;
+	private static double FR_DRIVE_AMP_HOUR = 0;
+	private static double BL_DRIVE_AMP_HOUR = 0;
+	private static double BR_DRIVE_AMP_HOUR = 0;
+	private static boolean driveErrorReported = false;
+	
+	private static double FL_ROTATE_AMP_HOUR = 0;
+	private static double FR_ROTATE_AMP_HOUR = 0;
+	private static double BL_ROTATE_AMP_HOUR = 0;
+	private static double BR_ROTATE_AMP_HOUR = 0;
+	private static boolean rotateErrorReported = false;
+
 
 	// Object Creation
 	private static PowerDistribution powerDistribution;
@@ -29,48 +47,65 @@ public class PDH {
 	public PDH () {
 		// Creates an instance of PowerDistribution
 		powerDistribution = new PowerDistribution();
+		powerDistribution.clearStickyFaults();
 	}
 
 	/**
 	 * checkFaultyDriveMotors()
-	 * Checks for current spikes in the drive motors
+	 * Checks for prolonged excess power draw in the drive motors
 	 * <p>Prints the results to the RioLog
 	 */
 	public static void checkFaultyDriveMotors() {
-		double FLCurrent = powerDistribution.getCurrent(FL_DRIVE_ID);
-		double FRCurrent = powerDistribution.getCurrent(FR_DRIVE_ID);
-		double BLCurrent = powerDistribution.getCurrent(BL_DRIVE_ID);
-		double BRCurrent = powerDistribution.getCurrent(BR_DRIVE_ID);
+		double FL_DRIVE_AMP_HOUR += powerDistribution.getCurrent(FL_DRIVE_ID) / ITERATIONS_PER_HOUR;
+		double FR_DRIVE_AMP_HOUR += powerDistribution.getCurrent(FR_DRIVE_ID) / ITERATIONS_PER_HOUR;
+		double BL_DRIVE_AMP_HOUR += powerDistribution.getCurrent(BL_DRIVE_ID) / ITERATIONS_PER_HOUR;
+		double BR_DRIVE_AMP_HOUR += powerDistribution.getCurrent(BR_DRIVE_ID) / ITERATIONS_PER_HOUR;
 
-		double[] currentArray = {FLCurrent, FRCurrent, BLCurrent, BRCurrent};
-		String[] namesArray   = {"FL Drive", "FR Drive", "BL Drive", "BR Drive"};
+		double[] drawArray  = {FL_DRIVE_AMP_HOUR, FR_DRIVE_AMP_HOUR, BL_DRIVE_AMP_HOUR, BR_DRIVE_AMP_HOUR};
+		String[] namesArray = {"FL Drive", "FR Drive", "BL Drive", "BR Drive"};
 
-		for (int i = 0; i < currentArray.length; i++) {
-			if ((currentArray[i] > (currentArray[0]) * 1.5) || (currentArray[i] > (currentArray[1]) * 1.5) || (currentArray[i] > (currentArray[2]) * 1.5) ||(currentArray[i] > (currentArray[3]) * 1.5)) {
-				System.out.println(namesArray[i] + " has a high current of: " + currentArray[i]);
+		double averageDraw = (FL_DRIVE_AMP_HOUR + FR_DRIVE_AMP_HOUR + BL_DRIVE_AMP_HOUR + BR_DRIVE_AMP_HOUR) / 4;
+		
+		if (driveErrorReported == false) {
+			for (int i = 0; i < drawArray.length; i++) {
+				if ((currentArray[i] > averageDraw * 1.5) {
+					System.out.println(namesArray[i] + " has a high power draw.");
+					driveErrorReported = true;
+				}
 			}
 		}
 	}
 
 	/**
 	 * checkFaultyRotateMotors()
-	 * Checks for current spikes in the rotate motors
+	 * Checks for prolonged excess power draw in the rotate motors
 	 * <p>Prints results to the RioLog
 	 */
 	public static void checkFaultyRotateMotors() {
-		double FLCurrent = powerDistribution.getCurrent(FL_ROTATE_ID);
-		double FRCurrent = powerDistribution.getCurrent(FR_ROTATE_ID);
-		double BLCurrent = powerDistribution.getCurrent(BL_ROTATE_ID);
-		double BRCurrent = powerDistribution.getCurrent(BR_ROTATE_ID);
+		double FL_ROTATE_AMP_HOUR += powerDistribution.getCurrent(FL_ROTATE_ID) / ITERATIONS_PER_HOUR;
+		double FR_ROTATE_AMP_HOUR += powerDistribution.getCurrent(FR_ROTATE_ID) / ITERATIONS_PER_HOUR;
+		double BL_ROTATE_AMP_HOUR += powerDistribution.getCurrent(BL_ROTATE_ID) / ITERATIONS_PER_HOUR;
+		double BR_ROTATE_AMP_HOUR += powerDistribution.getCurrent(BR_ROTATE_ID) / ITERATIONS_PER_HOUR;
 
-		double[] currentArray = {FLCurrent, FRCurrent, BLCurrent, BRCurrent};
-		String[] namesArray   = {"FL Rotate", "FR Rotate", "BL Rotate", "BR Rotate"};
+		double[] drawArray  = {FL_ROTATE_AMP_HOUR, FR_ROTATE_AMP_HOUR, BL_ROTATE_AMP_HOUR, BR_ROTATE_AMP_HOUR};
+		String[] namesArray = {"FL Rotate", "FR Rotate", "BL Rotate", "BR Rotate"};
 
-		for (int i = 0; i < currentArray.length; i++) {
-			if ((currentArray[i] > (currentArray[0]) * 1.5) || (currentArray[i] > (currentArray[1]) * 1.5) || (currentArray[i] > (currentArray[2]) * 1.5) ||(currentArray[i] > (currentArray[3]) * 1.5)) {
-				System.out.println(namesArray[i] + " has a high current of: " + currentArray[i]);
+		double averageDraw = (FL_ROTATE_AMP_HOUR + FR_ROTATE_AMP_HOUR + BL_ROTATE_AMP_HOUR + BR_ROTATE_AMP_HOUR) / 4;
+		
+		if (rotateErrorReported == false) {
+			for (int i = 0; i < drawArray.length; i++) {
+				if ((currentArray[i] > averageDraw * 1.5) {
+					System.out.println(namesArray[i] + " has a high power draw.");
+					rotateErrorReported = true;
+				}
 			}
 		}
+	}
+		
+	public static void showBatteryPercent() {
+		double totalJoulesUsed    = powerDistribution.getTotalEnergy();
+		double totalWattHoursUsed = totalJoulesUsed / 3600;
+		double percentRemaining   = ((BATTERY_STORAGE - totalWattHoursUsed) / BATTERY_STORAGE) * 100;
 	}
 }
 
