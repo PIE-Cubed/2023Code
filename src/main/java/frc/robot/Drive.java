@@ -1,6 +1,8 @@
 package frc.robot;
 
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.geometry.Translation2d;
 
 public class Drive {
@@ -16,19 +18,30 @@ public class Drive {
     private final Translation2d FRONT_RIGHT_LOCATION;
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
+    private final double        MAX_TELEOP_SPEED = 1;
 
     public Drive() {
-        FRONT_LEFT_LOCATION  = new Translation2d(0, 0);
-        FRONT_RIGHT_LOCATION = new Translation2d(0, 0);
-        BACK_LEFT_LOCATION   = new Translation2d(0, 0);
-        BACK_RIGHT_LOCATION  = new Translation2d(0, 0);
+        // Values are in meters
+        FRONT_LEFT_LOCATION  = new Translation2d(-0.26035, 0.26035);
+        FRONT_RIGHT_LOCATION = new Translation2d(0.26035, 0.26035);
+        BACK_LEFT_LOCATION   = new Translation2d(-0.26035, -0.26035);
+        BACK_RIGHT_LOCATION  = new Translation2d(0.26035, -0.26035);
 
-        frontLeft  = new SwerveModule(16, 17);
-        frontRight = new SwerveModule(10, 11);
-        backLeft   = new SwerveModule(14, 15);
-        backRight  = new SwerveModule(12, 13);
+        frontLeft  = new SwerveModule(16, 17, false);
+        frontRight = new SwerveModule(10, 11, false);
+        backLeft   = new SwerveModule(14, 15, false);
+        backRight  = new SwerveModule(12, 13, false);
 
         swerveDriveKinematics = new SwerveDriveKinematics(FRONT_LEFT_LOCATION, FRONT_RIGHT_LOCATION, BACK_LEFT_LOCATION, BACK_RIGHT_LOCATION);
+    }
+
+    public void teleopDrive(double x, double y, double rotationSpeed) {
+        SwerveModuleState[] swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(x, y, rotationSpeed));
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_TELEOP_SPEED);
+        frontLeft.move(swerveModuleStates[0]);
+        frontRight.move(swerveModuleStates[1]);
+        backLeft.move(swerveModuleStates[2]);
+        backRight.move(swerveModuleStates[3]);
     }
 
 }
