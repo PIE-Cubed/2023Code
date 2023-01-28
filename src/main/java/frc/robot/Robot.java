@@ -27,6 +27,7 @@ public class Robot extends TimedRobot {
 
 	// Object creation
 	Controls controls;
+	Drive    drive;
 
 	// Variables
 	private int status = CONT;
@@ -47,6 +48,7 @@ public class Robot extends TimedRobot {
 	public Robot() {
 		// Instance creation
 		controls = new Controls();
+		drive    = new Drive();
 
 		//Creates a Network Tables instance
 		FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
@@ -128,6 +130,7 @@ public class Robot extends TimedRobot {
 	 * Runs ever 20 miliseconds during TeleOp
 	 */
 	public void teleopPeriodic() {
+		wheelControl();
 	}
 
 	@Override
@@ -157,6 +160,7 @@ public class Robot extends TimedRobot {
 	public void testInit() {
 		// Resets status
 		status = Robot.CONT;
+		drive.initTestWheelPower();
 	}
 
 	@Override
@@ -165,7 +169,8 @@ public class Robot extends TimedRobot {
 	 * Runs constantly during test
 	 */
 	public void testPeriodic() {
-		// Nothing yet...
+		drive.testEncoders();
+		drive.testWheelPower();
 	}
 
 	/**
@@ -173,9 +178,11 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Gets Joystick Values
-		double driveX               = controls.getDriveX();
-		double driveY               = controls.getDriveY();
-		double rotatePower          = controls.getRotatePower();
+		double forwardPower = controls.getForwardPower();
+		double strafePower  = controls.getStrafePower();
+		double rotatePower  = controls.getRotatePower();
+
+		drive.teleopDrive(forwardPower, strafePower, rotatePower);
 	}
 }
 
