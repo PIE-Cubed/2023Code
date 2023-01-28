@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 
@@ -30,54 +29,61 @@ public class Controls {
 	/**
 	 * DRIVE FUNCTIONS
 	 */
-
 	/**
-	 * Positive values are from clockwise rotation and negative values are from counter-clockwise
-	 * @return rotatePower
+	 * Gets the forward power
+	 * <p>Forward is positive to match chassis speed standards
+	 * <p>This measures rotatation around the Y axis, which is effectively translation on the X axis
+	 * 
+	 * @return forwardPower
 	 */
-	public double getRotatePower() {
-		double power = joystick.getZ(); 
-
-		// If we are in deadzone, rotatepower is 0
-		if ((Math.abs(power) < 0.3)) {
-		power = 0;
-		}
-
-		// Cubes the power and clamps it because the rotate is SUPER sensitive
-		power = Math.pow(power, 3.0);
-		power = MathUtil.clamp(power, -.5, .5);
-
-		return power;    
-	}
-
-	/**
-	 * Gets the drive X
-	 * @return driveX
-	 */
-	public double getDriveX() {
-		double power = joystick.getX();
-
-		// If we are in deadzone, x is 0
-		if ((Math.abs(power) < 0.05)) {
-		power = 0;
-		}
-
-		return power;
-	}
-
-	/**
-	 * Gets the drive Y
-	 * @return driveY
-	 */
-	public double getDriveY() {
+	public double getForwardPower() {
 		double power = joystick.getY() * -1;
 
 		// If we are in deadzone, y is 0
 		if ((Math.abs(power) < 0.05)) {
-		power = 0;
+			power = 0;
 		}
 
 		return power;
+	}
+
+	/**
+	 * Gets the strafe power
+	 * <p>Left is positive to match chassis speed standards
+	 * <p>This measures rotatation around the X axis, which is effectively translation on the Y axis
+	 * 
+	 * @return strafePower
+	 */
+	public double getStrafePower() {
+		double power = joystick.getX() * -1;
+
+		// If we are in deadzone, x is 0
+		if ((Math.abs(power) < 0.075)) {
+			power = 0;
+		}
+
+		return power;
+	}
+
+	/**
+	 * Gets the rotate power
+	 * <p>Counterclockwise is positive to match chassis speed standards
+	 * <p>This measures rotatation around the Z axis
+	 * 
+	 * @return rotatePower
+	 */
+	public double getRotatePower() {
+		double power = joystick.getZ() * -1; 
+
+		// If we are in deadzone, rotatepower is 0
+		if ((Math.abs(power) < 0.3)) {
+			power = 0;
+		}
+
+		// Cubes the power and clamps it because the rotate is SUPER sensitive
+		power = Math.pow(power, 3.0);
+
+		return power;    
 	}
 
 	/**
