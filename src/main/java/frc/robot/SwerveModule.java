@@ -101,6 +101,30 @@ public class SwerveModule {
         return rad;
     }
 
+
+
+    /****************************************************************************************** 
+    *
+    *    setRotateMotorPower()
+    *    Rotates a certain wheel at a certain power
+    * 
+    ******************************************************************************************/
+    public void setRotateMotorPower(double power) {
+        power = MathUtil.clamp(power, -1, 1);    
+        rotateMotor.set(power);
+    }
+
+    /****************************************************************************************** 
+    *
+    *    setDriveMotorPower()
+    *    Powers individual drive motors
+    *    Left side gets inversed pwower since it's facing the opposite way
+    * 
+    ******************************************************************************************/
+    public void setDriveMotorPower(double power) {
+        power = MathUtil.clamp(power, -1, 1);     
+        driveMotor.set(power);
+    }
     /*
      * Test functions for use with shuffleboard
      */
