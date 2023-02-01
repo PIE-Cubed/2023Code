@@ -27,6 +27,7 @@ public class Robot extends TimedRobot {
 
 	// Object creation
 	Controls controls;
+	Arm arm;
 
 	// Variables
 	private int status = CONT;
@@ -47,6 +48,7 @@ public class Robot extends TimedRobot {
 	public Robot() {
 		// Instance creation
 		controls = new Controls();
+		arm = new Arm();
 
 		//Creates a Network Tables instance
 		FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
@@ -128,6 +130,7 @@ public class Robot extends TimedRobot {
 	 * Runs ever 20 miliseconds during TeleOp
 	 */
 	public void teleopPeriodic() {
+		armControl();
 	}
 
 	@Override
@@ -176,6 +179,17 @@ public class Robot extends TimedRobot {
 		double driveX               = controls.getDriveX();
 		double driveY               = controls.getDriveY();
 		double rotatePower          = controls.getRotatePower();
+	}
+
+	private void armControl() {
+		// Add the grabber controls
+		double shoulderPower = controls.getShoulderPower();
+		double elbowPower    = controls.getElbowPower();
+
+		// Positive power moves the shoulder towards the front of the robot
+		// Positive power deploys the elbow
+		arm.shoulderPower(shoulderPower);
+		arm.elbowPower(elbowPower);
 	}
 }
 

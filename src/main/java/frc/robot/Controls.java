@@ -83,6 +83,13 @@ public class Controls {
 	/**
 	 * ARM CONTROLS
 	 */
+	public double getShoulderPower() {
+		return Math.pow(-xboxController.getLeftY(), 3);
+	}
+
+	public double getElbowPower() {
+		return Math.pow(-xboxController.getRightY(), 3);
+	}
 
 
 

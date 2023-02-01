@@ -36,8 +36,8 @@ public class Arm {
     private final double eV = 0; // Elbow ArmFeedFoward Velocity Coefficient
 
     public Arm() {
-        shoulderMotor       = new CANSparkMax(0, MotorType.kBrushless);
-        elbowMotor          = new CANSparkMax(1, MotorType.kBrushless);
+        shoulderMotor       = new CANSparkMax(5, MotorType.kBrushless);
+        elbowMotor          = new CANSparkMax(6, MotorType.kBrushless);
 
         shoulderEncoder     = shoulderMotor.getEncoder();
         elbowEncoder        = elbowMotor.getEncoder();
