@@ -6,10 +6,8 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 
-import edu.wpi.first.networktables.*;
-
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 
 /**
  * Start of the Robot class
@@ -21,21 +19,19 @@ public class Robot extends TimedRobot {
 	public static final int DONE =  2;
 	public static final int CONT =  3;
 
-	// Networktables
-	private NetworkTable FMSInfo;
-	private NetworkTableEntry isRedAlliance;
-
 	// Object creation
-	Controls controls;
-	Drive    drive;
+	PoseEstimation position;
+	CustomTables   nTables;
+	Controls       controls;
+	Drive          drive;
 
 	// Variables
 	private int status = CONT;
 
 	// Auto path
-	private static final String leftAuto = "Left";
-	private static final String middleAuto   = "Middle";
-	private static final String rightAuto = "Right";
+	private static final String leftAuto   = "Left";
+	private static final String rightAuto  = "Right";
+	private static final String middleAuto = "Middle";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -43,18 +39,14 @@ public class Robot extends TimedRobot {
 	private int delaySec = 0;
 
 	/**
-	 * Constructor
+	 * The constructor for the Drive class
 	 */
 	public Robot() {
 		// Instance creation
-		controls = new Controls();
 		drive    = new Drive();
-
-		//Creates a Network Tables instance
-		FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
-
-		//Creates the Networktable Entry
-		isRedAlliance = FMSInfo.getEntry("IsRedAlliance"); // Boolean
+		nTables  = CustomTables.getInstance();
+		controls = new Controls();
+		position = new PoseEstimation(drive);
 	}
 
 	@Override
@@ -64,9 +56,9 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// Auto start location
-		m_chooser.setDefaultOption("Left", leftAuto);
-		m_chooser.addOption("Middle", middleAuto);
+		m_chooser.addOption("Left", leftAuto);
 		m_chooser.addOption("Right", rightAuto);
+		m_chooser.setDefaultOption("Middle", middleAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
 
 		// Auto delay
@@ -108,9 +100,15 @@ public class Robot extends TimedRobot {
 
 		if (status == Robot.CONT) {
 			switch (m_autoSelected) {
+				case(leftAuto):
+					break;
+				case(rightAuto):
+					break;
+				case(middleAuto):
+					break;
 				default:
-				status = DONE;
-				break;
+					status = DONE;
+					break;
 			}
     	}
 	}
@@ -160,7 +158,7 @@ public class Robot extends TimedRobot {
 	public void testInit() {
 		// Resets status
 		status = Robot.CONT;
-		drive.initTestWheelPower();
+		drive.initTestWheelPowers();
 	}
 
 	@Override
@@ -170,7 +168,7 @@ public class Robot extends TimedRobot {
 	 */
 	public void testPeriodic() {
 		drive.testEncoders();
-		drive.testWheelPower();
+		drive.testWheelPowers();
 	}
 
 	/**
@@ -182,6 +180,7 @@ public class Robot extends TimedRobot {
 		double strafePower  = controls.getStrafePower();
 		double rotatePower  = controls.getRotatePower();
 
+		// Drives the robot
 		drive.teleopDrive(forwardPower, strafePower, rotatePower);
 	}
 }

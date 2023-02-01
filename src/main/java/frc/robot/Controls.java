@@ -7,28 +7,34 @@ package frc.robot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 
+import edu.wpi.first.math.MathUtil;
+
 /**
  * Start of the Controls class
  */
 public class Controls {
 	// CONSTANTS
-	private final int JOYSTICK_ID = 1;
 	private final int XBOX_ID     = 0;
+	private final int JOYSTICK_ID = 1;
 
 	// Controller object declaration
 	private Joystick       joystick;
 	private XboxController xboxController;
 
-	//Constructor
+	/**
+	 * The constructor for the Controls class
+	 */
 	public Controls() {
 		// Instance Creation
 		joystick       = new Joystick(JOYSTICK_ID);
 		xboxController = new XboxController(XBOX_ID);
 	}
 
-	/**
-	 * DRIVE FUNCTIONS
-	 */
+	/****************************************************************************************** 
+    *
+    *    DRIVE FUNCTIONS
+    * 
+    ******************************************************************************************/
 	/**
 	 * Gets the forward power
 	 * <p>Forward is positive to match chassis speed standards
@@ -40,9 +46,7 @@ public class Controls {
 		double power = joystick.getY() * -1;
 
 		// If we are in deadzone, y is 0
-		if ((Math.abs(power) < 0.05)) {
-			power = 0;
-		}
+		power = MathUtil.applyDeadband(power, 0.05, 1);
 
 		return power;
 	}
@@ -58,9 +62,7 @@ public class Controls {
 		double power = joystick.getX() * -1;
 
 		// If we are in deadzone, x is 0
-		if ((Math.abs(power) < 0.075)) {
-			power = 0;
-		}
+		power = MathUtil.applyDeadband(power, 0.075, 1);
 
 		return power;
 	}
@@ -76,37 +78,46 @@ public class Controls {
 		double power = joystick.getZ() * -1; 
 
 		// If we are in deadzone, rotatepower is 0
-		if ((Math.abs(power) < 0.3)) {
-			power = 0;
-		}
+		power = MathUtil.applyDeadband(power, 0.25, 1);
 
-		// Cubes the power and clamps it because the rotate is SUPER sensitive
+		// Cubes the power because the rotate is sensitive
 		power = Math.pow(power, 3.0);
 
 		return power;    
 	}
 
-	/**
-	 * ARM CONTROLS
-	 */
+	/****************************************************************************************** 
+    *
+    *    ARM FUNCTIONS
+    * 
+    ******************************************************************************************/
 
 
 
-	/**
-	 * WRIST CONTROLS
-	 */
+	/****************************************************************************************** 
+    *
+    *    WRIST FUNCTIONS
+    * 
+    ******************************************************************************************/
 
 
 
-	/**
-	 * CLAW CONTROLS
-	 */
+	/****************************************************************************************** 
+    *
+    *    CLAW FUNCTIONS
+    * 
+    ******************************************************************************************/
 
 
 
+	/****************************************************************************************** 
+    *
+    *    AUTOKILL
+    * 
+    ******************************************************************************************/
 	/**
 	 * Checks if the start button is pressed
-	 * @return start button pressed
+	 * @return startButtonPressed
 	 */
 	public boolean autoKill() {
 		return xboxController.getStartButtonPressed();

@@ -7,7 +7,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
- * Do NOT add any static variables or initialization to this class
+ * Do NOT add any static variables or initialization to this class.
  * Do not modify this file except to change the parameter to startRobot()
  */
 public final class Main {
