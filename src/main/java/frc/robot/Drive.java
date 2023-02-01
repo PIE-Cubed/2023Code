@@ -33,7 +33,10 @@ public class Drive {
     private final double        MAX_TELEOP_SPEED = 1;
 
     // Instance Variables
+    private int rotateCount = 0;
+    private double rotateTimeOut = 0;
     private boolean firstTimeAutoCrabDrive = true;
+    private boolean firstTimeAutoRotate    = true;
     private double encoderTarget;
     
     // NAVX
@@ -45,10 +48,13 @@ public class Drive {
     private static final double acdD = 0.000;
     PIDController autoCrabDriveController;
 
+    // Auto rotate controller
+    private static final double arP = 0.01; 
+    private static final double arI = 0.000;
+    private static final double arD = 0.000;
+    PIDController autoRotateController;
+
     private double targetOrientation = 0;
-
-
-    
 
     public Drive() {
         // NavX
@@ -91,6 +97,9 @@ public class Drive {
         autoCrabDriveController.enableContinuousInput(-180.0, 180.0);
         autoCrabDriveController.setTolerance(2);
 
+        autoRotateController = new PIDController(arP, arI, arD);
+        autoRotateController.enableContinuousInput(-180.0, 180.0);
+        autoRotateController.setTolerance(2);
     }
     
     /*Positive Forward Goes Forward
@@ -132,6 +141,47 @@ public class Drive {
            // rotateController.reset();
             return Robot.DONE;
         } 
+        else {
+            return Robot.CONT;
+        }
+    }
+
+    public int autoRotate(double degrees) {
+        double currentMS = System.currentTimeMillis();
+
+        // First Time
+        if (firstTimeAutoRotate) {
+            firstTimeAutoRotate = false;
+            rotateCount = 0;
+            rotateTimeOut = currentMS + 2000;
+        }
+
+        // Checking for timeout
+        if (currentMS > rotateTimeOut) {
+            stopWheels();
+            firstTimeAutoRotate = true;
+            rotateCount = 0;
+            return Robot.DONE;
+        }
+
+        // Rotating
+        double rotatePower = autoRotateController.calculate(ahrs.getYaw(), degrees);
+        teleopDrive(0, 0, rotatePower);
+    
+        // Checking if on set point
+        if (autoRotateController.atSetpoint()) {
+            rotateCount++;
+        }
+        else {
+            rotateCount = 0;
+        }
+
+        if (rotateCount > 10) {
+            stopWheels();
+            firstTimeAutoRotate = true;
+            rotateCount = 0;
+            return Robot.DONE;
+        }
         else {
             return Robot.CONT;
         }
