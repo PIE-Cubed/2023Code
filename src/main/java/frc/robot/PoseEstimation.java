@@ -138,7 +138,7 @@ public class PoseEstimation {
 
         // Updates odometry
         odometry.update(
-            new Rotation2d(drive.getHeading()),
+            new Rotation2d( drive.getHeading() ),
             allModulePosition
         );
     }
@@ -263,7 +263,7 @@ public class PoseEstimation {
     /**
      * Gets the floorPose as calulated by the SwerveDriveOdometry.
      * 
-     * @return floorPose
+     * @return The robot's floor pose
      */
     public Pose2d getOdometryPose() {
         return odometry.getPoseMeters();
@@ -272,7 +272,7 @@ public class PoseEstimation {
     /**
      * Gets the floorPose as calulated by the VisionEstimator.
      * 
-     * @return floorPose
+     * @return The robot's floor pose
      */
     public Pose2d getVisionPose() {
         return visionEstimator.getEstimatedPosition();
@@ -287,10 +287,10 @@ public class PoseEstimation {
     /**
      * Gets the position of all four SwerveModules.
      * 
-     * @return
+     * @return The position of all four wheels
      */
     private SwerveModulePosition[] getAllModulePositions() {
-        // Creates an array of zeros with a length of 4
+        // Creates a SwerveModlePosition array with a length of 4
         SwerveModulePosition[] allPositions = new SwerveModulePosition[4];
 
         // Sets all the positions acordingly

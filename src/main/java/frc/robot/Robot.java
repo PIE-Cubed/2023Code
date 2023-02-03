@@ -4,8 +4,10 @@
 
 package frc.robot;
 
-import frc.robot.auto.BasicAuto;
-import frc.robot.commands.CommandGroups.TestModules;
+import frc.robot.auto.*;
+//import frc.robot.commands.*;
+import frc.robot.commands.CommandGroups.*;
+
 import edu.wpi.first.wpilibj.TimedRobot;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -32,6 +34,7 @@ public class Robot extends TimedRobot {
 
 	// Command creation
     private Command autoCommand;
+	private Command testCommand;
 
 	// Auto path
 	private static final String leftAuto   = "Left";
@@ -42,7 +45,6 @@ public class Robot extends TimedRobot {
 
 	// Auto Delay
 	private int delaySec = 0;
-	
 
 	/**
 	 * Constructor
@@ -58,7 +60,7 @@ public class Robot extends TimedRobot {
 	@Override
 	/**
 	 * robotInit()
-	 * Runs once when the robot is started
+	 * Runs once when the robot is started.
 	 */
 	public void robotInit() {
 		// Auto start location
@@ -74,7 +76,7 @@ public class Robot extends TimedRobot {
 	@Override
 	/**
 	 * robotPeriodic()
-	 * Runs every 20 miliseconds on the robot
+	 * Runs every 20 miliseconds on the robot.
 	 */
 	public void robotPeriodic() {
 		// Updates the PoseTrackers constantly
@@ -87,7 +89,7 @@ public class Robot extends TimedRobot {
 	@Override
 	/**
 	 * autonomousInit()
-	 * Runs once when Auto starts
+	 * Runs once when the robot enters Autonomous mode.
 	 */
 	public void autonomousInit() {
 		// Choses start position
@@ -112,7 +114,7 @@ public class Robot extends TimedRobot {
 	@Override
 	/**
 	 * autonomousPeriodic()
-	 * Runs every 20 miliseconds during Autonomous
+	 * Runs every 20 miliseconds during Autonomous.
 	 */
 	public void autonomousPeriodic() {
 		// Since the commands are sequential, nothing needs to be here
@@ -121,7 +123,7 @@ public class Robot extends TimedRobot {
 	@Override
 	/**
 	 * teleopInit()
-	 * Runs once at the start of TeleOp
+	 * Runs once at the start of TeleOp.
 	 */
 	public void teleopInit() {
 		// Makes sure that the autonomous stops running when teleop starts
@@ -133,7 +135,7 @@ public class Robot extends TimedRobot {
 	@Override
 	/**
 	 * teleopPeriodic()
-	 * Runs ever 20 miliseconds during TeleOp
+	 * Runs ever 20 miliseconds during TeleOp.
 	 */
 	public void teleopPeriodic() {
 		wheelControl();
@@ -142,17 +144,18 @@ public class Robot extends TimedRobot {
 	@Override
 	/**
 	 * disabledInit()
-	 * Runs once when the robot is disabled
+	 * Runs once when the robot enteres Disabled mode.
 	 */
 	public void disabledInit() {
-		// Nothing yet...   
+		// Cancels all commands
+		CommandScheduler.getInstance().cancelAll(); 
 	}
 
 	@Override
 	/**
 	 * disabledPeriodic()
 	 * Runs every 20 miliseconds while disabled.
-	 * <p> This method should not do anything.
+	 * This method should not do anything.
 	 */
 	public void disabledPeriodic() {
 		// Nothing yet...
@@ -161,23 +164,23 @@ public class Robot extends TimedRobot {
 	@Override
 	/**
 	 * testInit()
-	 * Runs once at the start of Test
+	 * Runs once when the robot enters Test mode.
 	 */
 	public void testInit() {
 		// Inits the sliders
 		drive.initWheelPowerTests();
 
 		// Creates the test command
-		autoCommand = new TestModules(drive);
+		testCommand = new TestModules(drive);
 
 		// Runs the test command
-		autoCommand.schedule();
+		testCommand.schedule();
 	}
 
 	@Override
 	/**
 	 * testPeriodic()
-	 * Runs constantly during test
+	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
 		// drive.testEncoders();
