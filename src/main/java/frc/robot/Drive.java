@@ -1,11 +1,17 @@
 package frc.robot;
 
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.*;
 import com.kauailabs.navx.frc.AHRS;
-import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.math.controller.PIDController;
 
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.SPI;
 
 /**
  * Start of the Drive class
@@ -17,6 +23,9 @@ public class Drive {
     private SwerveModule backLeft;
     private SwerveModule backRight;
     private SwerveDriveKinematics swerveDriveKinematics;
+    private SwerveDriveOdometry   swerveDriveOdometry;
+    private Pose2d                pose;
+
 
     // Constants for Wheel Distance, Rotation, and Size 
     private final double wheelDiameterInches = 3;
@@ -30,7 +39,10 @@ public class Drive {
     private final Translation2d FRONT_RIGHT_LOCATION;
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
-    private final double        MAX_TELEOP_SPEED = 1;
+    private static final double MAX_TELEOP_SPEED   = 3; // Meters per second
+    private static final double MAX_ROTATION_SPEED = 2 * Math.PI; // Radians per second
+    private static final double MAX_WHEEL_SPEED    = 6; // Meters per second
+    private final double MAX_APRIL_TAG_ERROR       = 10;
 
     // Instance Variables
     private int rotateCount = 0;
@@ -91,7 +103,10 @@ public class Drive {
         backRight  = new SwerveModule(12, 13, false);
 
         swerveDriveKinematics = new SwerveDriveKinematics(FRONT_LEFT_LOCATION, FRONT_RIGHT_LOCATION, BACK_LEFT_LOCATION, BACK_RIGHT_LOCATION);
-        
+        swerveDriveOdometry   = new SwerveDriveOdometry(swerveDriveKinematics, ahrs.getRotation2d(), new SwerveModulePosition[]{ 
+            frontLeft.getPosition(), frontRight.getPosition(), backLeft.getPosition(), backRight.getPosition()
+         });
+
         // Used during crab drive to keep the robot at same orientation
         autoCrabDriveController = new PIDController(acdP, acdI, acdD);
         autoCrabDriveController.enableContinuousInput(-180.0, 180.0);
@@ -107,11 +122,26 @@ public class Drive {
      *Positive Rotation Speed is Counter-Clockwise*/
     public void teleopDrive(double forward, double strafe, double rotationSpeed) {
         SwerveModuleState[] swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
-        //SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_TELEOP_SPEED);
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
         frontLeft.move(swerveModuleStates[0]);
         frontRight.move(swerveModuleStates[1]);
         backLeft.move(swerveModuleStates[2]);
         backRight.move(swerveModuleStates[3]);
+    }
+
+    /*
+     * Whenever this function is used, updateOdometry still needs to be called
+     */
+    public void autoUpdateAprilTagPose(double x, double y, double rotatation, double error) {
+        if (error > MAX_APRIL_TAG_ERROR) {
+            return;
+        }
+
+        Pose2d aprilTagPose = new Pose2d(x, y, new Rotation2d(rotatation));
+
+        swerveDriveOdometry = new SwerveDriveOdometry(swerveDriveKinematics, ahrs.getRotation2d(), new SwerveModulePosition[]{ 
+            frontLeft.getPosition(), frontRight.getPosition(), backLeft.getPosition(), backRight.getPosition()
+        }, aprilTagPose);       
     }
 
     public int autoCrabDrive(double distanceFeet, double power, double targetHeading) { 
@@ -205,6 +235,26 @@ public class Drive {
                  frontRight.getDriveEncoder() + 
                  backLeft.getDriveEncoder()   + 
                  backRight.getDriveEncoder() ) / 4;
+    }
+
+    public static double getMaxSpeed() {
+        return MAX_TELEOP_SPEED;
+    }
+
+    public static double getMaxRotationSpeed() {
+        return MAX_ROTATION_SPEED;
+    }
+
+    public void updateOdometry() {
+        // Get the rotation of the robot from the gyro.
+        var gyroAngle = ahrs.getRotation2d();
+
+        // Update the pose
+        pose = swerveDriveOdometry.update(gyroAngle,
+            new SwerveModulePosition[] {
+            frontLeft.getPosition(), frontRight.getPosition(),
+            backLeft.getPosition(), backRight.getPosition()
+            });
     }
 
     

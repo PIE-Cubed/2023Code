@@ -30,60 +30,60 @@ public class Controls {
 	 * DRIVE FUNCTIONS
 	 */
 	/**
-	 * Gets the forward power
+	 * Gets the forward speed
 	 * <p>Forward is positive to match chassis speed standards
 	 * <p>This measures rotatation around the Y axis, which is effectively translation on the X axis
 	 * 
-	 * @return forwardPower
+	 * @return forwardSpeed
 	 */
-	public double getForwardPower() {
-		double power = joystick.getY() * -1;
+	public double getForwardSpeed() {
+		double speed = joystick.getY() * -1 * Drive.getMaxSpeed();
 
 		// If we are in deadzone, y is 0
-		if ((Math.abs(power) < 0.05)) {
-			power = 0;
+		if ((Math.abs(speed) < 0.05)) {
+			speed = 0;
 		}
 
-		return power;
+		return speed;
 	}
 
 	/**
-	 * Gets the strafe power
+	 * Gets the strafe speed
 	 * <p>Left is positive to match chassis speed standards
 	 * <p>This measures rotatation around the X axis, which is effectively translation on the Y axis
 	 * 
-	 * @return strafePower
+	 * @return strafeSpeed
 	 */
-	public double getStrafePower() {
-		double power = joystick.getX() * -1;
+	public double getStrafeSpeed() {
+		double speed = joystick.getX() * -1 * Drive.getMaxSpeed();
 
 		// If we are in deadzone, x is 0
-		if ((Math.abs(power) < 0.075)) {
-			power = 0;
+		if ((Math.abs(speed) < 0.075)) {
+			speed = 0;
 		}
 
-		return power;
+		return speed;
 	}
 
 	/**
-	 * Gets the rotate power
+	 * Gets the rotate speed
 	 * <p>Counterclockwise is positive to match chassis speed standards
 	 * <p>This measures rotatation around the Z axis
 	 * 
-	 * @return rotatePower
+	 * @return rotateSpeed
 	 */
-	public double getRotatePower() {
-		double power = joystick.getZ() * -1; 
+	public double getRotateSpeed() {
+		double speed = joystick.getZ() * -1 * Drive.getMaxRotationSpeed(); 
 
 		// If we are in deadzone, rotatepower is 0
-		if ((Math.abs(power) < 0.3)) {
-			power = 0;
+		if ((Math.abs(speed) < 0.3)) {
+			speed = 0;
 		}
 
-		// Cubes the power and clamps it because the rotate is SUPER sensitive
-		power = Math.pow(power, 3.0);
+		// Cubes the speed and clamps it because the rotate is SUPER sensitive
+		speed = Math.pow(speed, 3.0);
 
-		return power;    
+		return speed;    
 	}
 
 	/**

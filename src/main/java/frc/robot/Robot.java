@@ -179,11 +179,13 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Gets Joystick Values
-		double forwardPower = controls.getForwardPower();
-		double strafePower  = controls.getStrafePower();
-		double rotatePower  = controls.getRotatePower();
+		double forwardSpeed = controls.getForwardSpeed();
+		double strafeSpeed  = controls.getStrafeSpeed();
+		double rotateSpeed  = controls.getRotateSpeed();
 
-		drive.teleopDrive(forwardPower, strafePower, rotatePower);
+		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed);
+
+		drive.updateOdometry();
 	}
 }
 
