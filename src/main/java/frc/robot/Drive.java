@@ -23,7 +23,7 @@ public class Drive {
     private final double clicksPerWheelRotation = 5.5;
     private final double inchesPerWheelRotation = wheelDiameterInches * Math.PI;
     private final double clicksPerInches = clicksPerWheelRotation / inchesPerWheelRotation;
-    private final double clicksPerFoot = clicksPerInches / 12;
+    private final double clicksPerFoot = clicksPerInches * 12;
 
     // Constants
     private final Translation2d FRONT_LEFT_LOCATION;
@@ -63,21 +63,20 @@ public class Drive {
         } catch (RuntimeException ex) {
             System.out.println("Error Instantiating navX MXP: " + ex.getMessage());
         }
-    
+
         ahrs.reset();
-    
+
         while (ahrs.isConnected() == false) {
-            System.out.println("Connecting navX");
+            // System.out.println("Connecting navX");
         }
         System.out.println("navX Connected");
-    
+
         while (ahrs.isCalibrating() == true) {
             System.out.println("Calibrating navX");
         }
-        System.out.println("navx Ready");
-    
-        ahrs.zeroYaw();
+        System.out.println("navX Ready");
 
+        ahrs.zeroYaw();
         
         // Values are in meters
         FRONT_LEFT_LOCATION  = new Translation2d(0.26035, 0.26035);
@@ -115,7 +114,9 @@ public class Drive {
     }
 
     public int autoCrabDrive(double distanceFeet, double power, double targetHeading) { 
-        double encoderCurrent = getAverageEncoder(); //Average of 4 wheels
+        // double encoderCurrent = getAverageEncoder(); //Average of 4 wheels
+        double encoderCurrent = frontRight.getDriveEncoder(); //Average of 4 wheels
+
         double rotatePower;
 
 
@@ -125,12 +126,13 @@ public class Drive {
             targetOrientation = ahrs.getYaw();
             encoderTarget = encoderCurrent + (clicksPerFoot * distanceFeet);
         }
-        
+        System.out.println("Encoder target: "+ encoderTarget + " Encoder current: " + encoderCurrent);
+
         double orientationError = 0; //Temporary, need to add gyro
         double forwardPower = power * Math.sin(Math.toRadians(targetHeading));
-        double strafePower = power * Math.cos(Math.toRadians(targetHeading));
-                
-        rotatePower = autoCrabDriveController.calculate(ahrs.getYaw(), targetOrientation); 
+        double strafePower  = power * Math.cos(Math.toRadians(targetHeading));
+
+        rotatePower = 0;// autoCrabDriveController.calculate(ahrs.getYaw(), targetOrientation);
 
         teleopDrive(forwardPower, strafePower, rotatePower); 
 

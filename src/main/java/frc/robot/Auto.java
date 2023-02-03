@@ -21,7 +21,7 @@ public class Auto {
 
         switch(step) {
             case 1:
-                status = drive.autoCrabDrive(distanceFeet, .5, 0);
+                status = drive.autoCrabDrive(distanceFeet, 0.10, 0);
                 break;
             default:
                 // Finished routine

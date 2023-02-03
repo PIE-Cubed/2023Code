@@ -28,6 +28,7 @@ public class Robot extends TimedRobot {
 	// Object creation
 	Controls controls;
 	Drive    drive;
+	Auto     auto;
 
 	// Variables
 	private int status = CONT;
@@ -50,6 +51,7 @@ public class Robot extends TimedRobot {
 		// Instance creation
 		controls = new Controls();
 		drive    = new Drive();
+		auto = new Auto(drive);
 
 		//Creates a Network Tables instance
 		FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
@@ -110,8 +112,8 @@ public class Robot extends TimedRobot {
 		if (status == Robot.CONT) {
 			switch (m_autoSelected) {
 				default:
-				status = DONE;
-				break;
+					status = auto.driveAuto(2);
+					break;
 			}
     	}
 	}
