@@ -10,27 +10,39 @@ import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 
 /**
  * Start of the SwerveModule class
  */
 public class SwerveModule {
-    private CANSparkMax     driveMotor;
-    private CANSparkMax     rotateMotor;
-    private RelativeEncoder driveEncoder;
-    private RelativeEncoder rotateEncoder;
-    private AbsoluteEncoder absoluteEncoder;
-    private PIDController   rotateMotorController;
+    private CANSparkMax            driveMotor;
+    private CANSparkMax            rotateMotor;
+    private RelativeEncoder        driveEncoder;
+    private RelativeEncoder        rotateEncoder;
+    private AbsoluteEncoder        absoluteEncoder;
+    private PIDController          driveMotorController;
+    private PIDController          rotateMotorController;
+    private SimpleMotorFeedforward driveFeedForward;
 
-    private final double TICKS_PER_METER     = 1;
-    private final double TICKS_PER_RADIAN    = 1;
-    private final int    MOTOR_CURRENT_LIMIT = 80;
-    private final double ROTATE_P = 0.2;
-    private final double ROTATE_I = 0;
-    private final double ROTATE_D = 0;
+    private final int    MOTOR_CURRENT_LIMIT   = 80;
+    private final double DRIVE_P               = 0.05;
+    private final double DRIVE_I               = 0;
+    private final double DRIVE_D               = 0;
+    private final double ROTATE_P              = 0.2;
+    private final double ROTATE_I              = 0;
+    private final double ROTATE_D              = 0;
+    private final double STATIC_GAIN           = 0;
+    private final double VELOCITY_GAIN         = 0.33;
+    private final double WHEEL_RADIUS_METERS   = 0.0762;
+    private final double WHEEL_ROTATION_METERS = 2 * Math.PI * WHEEL_RADIUS_METERS;
+    private final double ROTATIONS_PER_TICK    = 1 / 5.5;
+    private final double CONVERSION_FACTOR     = WHEEL_ROTATION_METERS * ROTATIONS_PER_TICK; // Meters per tick
 
     public SwerveModule(int driveID, int rotateID, boolean invertMotor) {
         driveMotor            = new CANSparkMax(driveID, MotorType.kBrushless);
@@ -48,6 +60,14 @@ public class SwerveModule {
 
         rotateMotorController = new PIDController(ROTATE_P, ROTATE_I, ROTATE_D);
         rotateMotorController.enableContinuousInput(-Math.PI, Math.PI);
+
+        driveMotorController  = new PIDController(DRIVE_P, DRIVE_I, DRIVE_D);
+        driveMotorController.enableContinuousInput(-Math.PI, Math.PI);
+
+        driveFeedForward      = new SimpleMotorFeedforward(STATIC_GAIN, VELOCITY_GAIN);
+
+        driveEncoder.setVelocityConversionFactor(CONVERSION_FACTOR);
+        driveEncoder.setPositionConversionFactor(CONVERSION_FACTOR);
     }
 
     /**
@@ -63,15 +83,24 @@ public class SwerveModule {
         double targetAngle  = optimizedState.angle.getRadians();
         targetAngle = MathUtil.angleModulus(targetAngle);
         double rotatePower  = rotateMotorController.calculate(currentAngle, targetAngle);
+
+        double currentSpeed = driveEncoder.getVelocity();
+        double targetSpeed  = desiredState.speedMetersPerSecond;
+        double feedForward  = driveFeedForward.calculate(targetSpeed);
+        double pidError     = driveMotorController.calculate(currentSpeed, targetSpeed);
         
         // Sets motor powers
-        driveMotor.set(MathUtil.clamp(optimizedState.speedMetersPerSecond, -0.5, 0.5));
+        driveMotor.set(feedForward + pidError);
         rotateMotor.set(rotatePower);
     }
 
     /*
      * Helper functions
      */
+    public SwerveModulePosition getPosition() {
+        return new SwerveModulePosition(driveEncoder.getPosition(), new Rotation2d(rotateEncoder.getPosition()));
+    }
+    
     /**
      * 
      * @return
