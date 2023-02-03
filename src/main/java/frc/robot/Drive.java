@@ -5,6 +5,7 @@ import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.*;
+import edu.wpi.first.math.util.Units;
 
 /**
  * Start of the Drive class
@@ -94,14 +95,8 @@ public class Drive {
                 ? ChassisSpeeds.fromFieldRelativeSpeeds(forwardSpeed, strafeSpeed, rotationSpeed, new Rotation2d( getHeading() ))
                 : new ChassisSpeeds(forwardSpeed, strafeSpeed, rotationSpeed));
 
-        // Limits the max drive speed
-        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_DRIVE_SPEED);
-
         // Sets the desired module states
-        frontLeft .move(swerveModuleStates[0]);
-        frontRight.move(swerveModuleStates[1]);
-        backLeft  .move(swerveModuleStates[2]);
-        backRight .move(swerveModuleStates[3]);
+        setModuleStates(swerveModuleStates);
     }
 
     /**
@@ -113,11 +108,11 @@ public class Drive {
         // Limits the wheel speeds
         SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, MAX_DRIVE_SPEED);
 
-        //  Sets the desired states
-        frontLeft .move(desiredStates[0]);
-        frontRight.move(desiredStates[1]);
-        backLeft  .move(desiredStates[2]);
-        backRight .move(desiredStates[3]);
+        // Sets the desired states
+        frontLeft .setDesiredState(desiredStates[0]);
+        frontRight.setDesiredState(desiredStates[1]);
+        backLeft  .setDesiredState(desiredStates[2]);
+        backRight .setDesiredState(desiredStates[3]);
     }
 
 
@@ -129,7 +124,7 @@ public class Drive {
     /**
      * Gets the Front Left Module's position.
      * 
-     * @return FLPosition
+     * @return The FrontLeft Module Position
      */
     public SwerveModulePosition getFLPosition() {
         return frontLeft.getModulePosition();
@@ -138,7 +133,7 @@ public class Drive {
     /**
      * Gets the Front Right Module's position.
      * 
-     * @return FRPosition
+     * @return The FrontRight Module Position
      */
     public SwerveModulePosition getFRPosition() {
         return frontRight.getModulePosition();
@@ -147,7 +142,7 @@ public class Drive {
     /**
      * Gets the Back Left Module's position.
      * 
-     * @return BLPosition
+     * @return The BackLeft Module Position
      */
     public SwerveModulePosition getBLPosition() {
         return backLeft.getModulePosition();
@@ -156,35 +151,45 @@ public class Drive {
     /**
      * Gets the Back Right Module's position.
      * 
-     * @return BRPosition
+     * @return The BackRight Module Position
      */
     public SwerveModulePosition getBRPosition() {
         return backRight.getModulePosition();
     }
 
-    /***
+    /**
      * Returns the robot's heading.
      * <p>This value has transformed to radians and negated to keep with convention.
      * 
-     * @return headingRadians
+     * @return The robot's heading in radians
      */
     public double getHeading() {
-        return -1 * Math.PI * ahrs.getYaw();
+        return -1 * Units.degreesToRadians( ahrs.getYaw() );
     }
 
     /**
-     * Gets the maximum drive speed
+     * Returns the robot's pitch.
+     * <p>This value has transformed to radians to keep with convention.
      * 
-     * @return maxDriveSpeed
+     * @return The robot's pitch in radians
+     */
+    public double getPitch() {
+        return Units.degreesToRadians( ahrs.getPitch() );
+    }
+
+    /**
+     * Gets the maximum drive speed.
+     * 
+     * @return The robot's maximum drive speed
      */
     public static double getMaxDriveSpeed() {
         return MAX_DRIVE_SPEED;
     }
 
     /**
-     * Gets the maximum rotation speed
+     * Gets the maximum rotation speed.
      * 
-     * @return maxRotateSpeed
+     * @return The robot's maximum rotate speed
      */
     public static double getMaxRotateSpeed() {
         return MAX_ROTATE_SPEED;
@@ -217,13 +222,23 @@ public class Drive {
     }
 
     /**
+     * Zeros the motor encoders
+     */
+    public void zeroMotorEncoders() {
+        frontLeft .zeroMotorEncoders();
+        frontRight.zeroMotorEncoders();
+        backLeft  .zeroMotorEncoders();
+        backRight .zeroMotorEncoders();
+    }
+
+    /**
      * Displays the enocder values
      */
     public void testEncoders() {
-        frontLeft.displayEncoderValues();
+        frontLeft .displayEncoderValues();
         frontRight.displayEncoderValues();
-        backLeft.displayEncoderValues();
-        backRight.displayEncoderValues();
+        backLeft  .displayEncoderValues();
+        backRight .displayEncoderValues();
     }
 
     /**

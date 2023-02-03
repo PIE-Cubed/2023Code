@@ -152,13 +152,13 @@ public class PoseEstimation {
 
         // Updates the pose estimator (without vision)
         visionEstimator.update(
-            new Rotation2d(drive.getHeading()),
+            new Rotation2d( drive.getHeading() ),
             allModulePosition
         );
 
         // Gets current values
-        int id     = nTables.getBestResultID();
-        boolean tv = nTables.getTargetValid();
+        int     id     = nTables.getBestResultID();
+        boolean tv     = nTables.getTargetValid();
         Pose3d detPose = nTables.getBestResult();
         double detTime = nTables.getDetectionTime();
 

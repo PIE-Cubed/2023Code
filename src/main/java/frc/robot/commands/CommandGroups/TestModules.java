@@ -31,6 +31,11 @@ public class TestModules extends SequentialCommandGroup {
             new Delay(1.00),
             new RunCommand(
                 () ->
+                drive.zeroMotorEncoders()
+            ),
+            new Delay(1.00),
+            new RunCommand(
+                () ->
                 drive.testModuleRotation(Math.PI / 2)
             ),
             new Delay(1.00),
@@ -41,9 +46,8 @@ public class TestModules extends SequentialCommandGroup {
             new Delay(1.00),
             new RunCommand(
                 () ->
-                drive.testModuleRotation(- Math.PI / 2)
-            ),
-            new Delay(1.00)
+                drive.testModuleRotation(-Math.PI / 2)
+            )
         );
     }
 }
