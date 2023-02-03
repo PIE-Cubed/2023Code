@@ -26,17 +26,19 @@ public class SwerveModule {
     // CONSTANTS
     private final int MOTOR_CURRENT_LIMIT = 80;
 
-    // Wheel Measurements
-    private final double wheelDiameterInches = 3.00;
-    private final double wheelDiameterMeters = Units.inchesToMeters(wheelDiameterInches);
-
-    // Drive and Rotate Motor Constants
+    // Constants for drive distance conversion
+    private final double wheelDiameterInches      = 3.00;
     private final double ticksPerWheelRevolution  = 5.50;
-    private final double ticksPerModuleRevolution = 5.50;
+    private final double inchesPerWheelRevolution = wheelDiameterInches * Math.PI;
+    private final double inchesPerTick            = inchesPerWheelRevolution / ticksPerWheelRevolution;
+
+    // Constants for module distance conversion
+    private final double ticksPerModuleRevolution   = 10; //Unknown
+    private final double radiansPermoduleRevolution = 2 * Math.PI;
 
     // Distance Conversion Factors
-    private final double metersDrivenPerTick   = (wheelDiameterMeters * Math.PI) / ticksPerWheelRevolution;
-    private final double radiansRotatedPerTick = (2 * Math.PI) / ticksPerModuleRevolution;
+    private final double metersDrivenPerTick   = Units.inchesToMeters(inchesPerTick);
+    private final double radiansRotatedPerTick = radiansPermoduleRevolution / ticksPerModuleRevolution;
 
     // Create motors
     private final CANSparkMax driveMotor;
@@ -70,15 +72,21 @@ public class SwerveModule {
     private static final double ROTATE_I_MAX = 0.05;
     private static final double ROTATE_I_MIN = -1 * ROTATE_I_MAX;
 
-    // Creates motor feedforward loops (These must be tuned)
-    private final SimpleMotorFeedforward m_driveFeedforward = new SimpleMotorFeedforward(1, 3.0);
-    private final SimpleMotorFeedforward m_turnFeedforward  = new SimpleMotorFeedforward(1, 0.5);
+    // Defines motor feedforward values
+    private final double DRIVE_STATIC_GAIN    = 0;
+    private final double DRIVE_VELOCITY_GAIN  = 0.33;
+    private final double ROTATE_STATIC_GAIN   = 0;
+    private final double ROTATE_VELOCITY_GAIN = 0.33;
+
+    // Creates motor feedforward loops
+    private final SimpleMotorFeedforward driveFeedforward;
+    private final SimpleMotorFeedforward rotateFeedforward;
 
     /**
      * The constructor for the SwerveModule class
      *
      * @param driveID The CAN ID of the drive motor.
-     * @param rotateMotorId The CAN ID of the turning motor.
+     * @param rotateMotorId The CAN ID of the rotate motor.
      * @param invertMotor Wheter the rotate motor is reversed.
      */
     public SwerveModule(int driveID, int rotateID, boolean invertMotor) {
@@ -119,6 +127,10 @@ public class SwerveModule {
 
         // Set the Rotate Controller's input to be -pi to pi
         rotateMotorController.enableContinuousInput(-Math.PI, Math.PI);
+
+        // Creates the motors feedforward functions
+        driveFeedforward  = new SimpleMotorFeedforward(DRIVE_STATIC_GAIN, DRIVE_VELOCITY_GAIN);
+        rotateFeedforward = new SimpleMotorFeedforward(ROTATE_STATIC_GAIN, ROTATE_VELOCITY_GAIN);
     }
 
     /**
@@ -132,19 +144,15 @@ public class SwerveModule {
 
         // Calculate the drive output from the drive PID controller.
         double driveOutput = driveMotorController.calculate(driveEncoder.getVelocity(), state.speedMetersPerSecond);
-        double driveFeedforward = m_driveFeedforward.calculate(state.speedMetersPerSecond);
+        double driveFeedforwardPower = driveFeedforward.calculate(state.speedMetersPerSecond);
 
         // Calculate the turning motor output from the turning PID controller.
         double rotateOutput = rotateMotorController.calculate(getAdjustedAbsoluteEncoder(), state.angle.getDegrees());
-        double rotateFeedforward = m_turnFeedforward.calculate(rotateMotorController.getSetpoint().velocity);
-
-        // Removes the value from the feedForward functions
-        driveFeedforward  = 0;
-        rotateFeedforward = 0;
+        double rotateFeedforwardPower = rotateFeedforward.calculate(rotateMotorController.getSetpoint().velocity);
 
         // Calculate the turning motor output from the turning PID controller.
-        driveMotor .set(driveOutput  + driveFeedforward);
-        rotateMotor.set(rotateOutput + rotateFeedforward);
+        driveMotor .set(driveOutput  + driveFeedforwardPower);
+        rotateMotor.set(rotateOutput + rotateFeedforwardPower);
     }
 
     /****************************************************************************************** 
@@ -232,6 +240,7 @@ public class SwerveModule {
         SmartDashboard.putNumber(driveMotor.getDeviceId()  + "Drive Encoder", getDriveEncoder());
         SmartDashboard.putNumber(rotateMotor.getDeviceId() + "Rotate Encoder", getRotateEncoder());
         SmartDashboard.putNumber(rotateMotor.getDeviceId() + "Rotation Absolute Encoder", getAdjustedAbsoluteEncoder());
+        System.out.println(rotateMotor.getDeviceId() + " Rotate Encoder: " + getRotateEncoder()); // To be removed after testing
     }
 
     /**

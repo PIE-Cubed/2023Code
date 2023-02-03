@@ -138,7 +138,7 @@ public class PoseEstimation {
 
         // Updates odometry
         odometry.update(
-            generateRot2d( drive.getHeading() ),
+            new Rotation2d(drive.getHeading()),
             allModulePosition
         );
     }
@@ -152,7 +152,7 @@ public class PoseEstimation {
 
         // Updates the pose estimator (without vision)
         visionEstimator.update(
-            generateRot2d( drive.getHeading() ),
+            new Rotation2d(drive.getHeading()),
             allModulePosition
         );
 
@@ -300,16 +300,6 @@ public class PoseEstimation {
         allPositions[3] = drive.getBRPosition();
 
         return allPositions;
-    }
-
-    /**
-     * Generates a Rotation2d object from a degree value.
-     * 
-     * @param degrees
-     * @return Rotation2d()
-     */
-    private Rotation2d generateRot2d(double degrees) {
-        return new Rotation2d(Units.degreesToRadians(degrees));
     }
 }
 

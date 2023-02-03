@@ -40,10 +40,10 @@ public class Controls {
 	 * <p>Forward is positive to match chassis speed standards
 	 * <p>This measures rotatation around the Y axis, which is effectively translation on the X axis
 	 * 
-	 * @return forwardPower
+	 * @return forwardSpeed
 	 */
-	public double getForwardPower() {
-		double power = joystick.getY() * -1;
+	public double getForwardSpeed() {
+		double power = -1 * joystick.getY() * Drive.getMaxDriveSpeed();
 
 		// If we are in deadzone, y is 0
 		power = MathUtil.applyDeadband(power, 0.05, 1);
@@ -56,10 +56,10 @@ public class Controls {
 	 * <p>Left is positive to match chassis speed standards
 	 * <p>This measures rotatation around the X axis, which is effectively translation on the Y axis
 	 * 
-	 * @return strafePower
+	 * @return strafeSpeed
 	 */
-	public double getStrafePower() {
-		double power = joystick.getX() * -1;
+	public double getStrafeSpeed() {
+		double power = -1 * joystick.getX() * Drive.getMaxDriveSpeed();
 
 		// If we are in deadzone, x is 0
 		power = MathUtil.applyDeadband(power, 0.075, 1);
@@ -72,10 +72,10 @@ public class Controls {
 	 * <p>Counterclockwise is positive to match chassis speed standards
 	 * <p>This measures rotatation around the Z axis
 	 * 
-	 * @return rotatePower
+	 * @return rotateSpeed
 	 */
-	public double getRotatePower() {
-		double power = joystick.getZ() * -1; 
+	public double getRotateSpeed() {
+		double power = -1 * joystick.getZ() * Drive.getMaxRotateSpeed(); 
 
 		// If we are in deadzone, rotatepower is 0
 		power = MathUtil.applyDeadband(power, 0.25, 1);

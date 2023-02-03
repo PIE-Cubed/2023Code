@@ -4,10 +4,15 @@
 
 package frc.robot;
 
+import frc.robot.auto.BasicAuto;
+import frc.robot.commands.CommandGroups.TestModules;
 import edu.wpi.first.wpilibj.TimedRobot;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * Start of the Robot class
@@ -25,8 +30,8 @@ public class Robot extends TimedRobot {
 	Controls       controls;
 	Drive          drive;
 
-	// Variables
-	private int status = CONT;
+	// Command creation
+    private Command autoCommand;
 
 	// Auto path
 	private static final String leftAuto   = "Left";
@@ -37,9 +42,10 @@ public class Robot extends TimedRobot {
 
 	// Auto Delay
 	private int delaySec = 0;
+	
 
 	/**
-	 * The constructor for the Drive class
+	 * Constructor
 	 */
 	public Robot() {
 		// Instance creation
@@ -71,7 +77,11 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds on the robot
 	 */
 	public void robotPeriodic() {
-		// Nothing yet...
+		// Updates the PoseTrackers constantly
+		position.updatePoseTrackers();
+
+		// Runs the CommandScheduler
+		CommandScheduler.getInstance().run();
 	}
 
 	@Override
@@ -87,7 +97,16 @@ public class Robot extends TimedRobot {
 		// Gets the auto delay 
 		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
 
-		// Reset the gyro
+		// Selects an auto command to run
+		switch (m_autoSelected) {
+			default:
+				position.resetPoseTrackers(null);
+				autoCommand = new BasicAuto(drive, position, delaySec);
+				break;
+		}
+
+		// Schedules autoCommand to run
+        autoCommand.schedule();
 	}
 
 	@Override
@@ -96,21 +115,7 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Autonomous
 	 */
 	public void autonomousPeriodic() {
-		long autoDelayMSec = delaySec * 1000;
-
-		if (status == Robot.CONT) {
-			switch (m_autoSelected) {
-				case(leftAuto):
-					break;
-				case(rightAuto):
-					break;
-				case(middleAuto):
-					break;
-				default:
-					status = DONE;
-					break;
-			}
-    	}
+		// Since the commands are sequential, nothing needs to be here
 	}
 
 	@Override
@@ -119,7 +124,10 @@ public class Robot extends TimedRobot {
 	 * Runs once at the start of TeleOp
 	 */
 	public void teleopInit() {
-		// Nothing yet...
+		// Makes sure that the autonomous stops running when teleop starts
+        if (autoCommand != null) {
+            autoCommand.cancel();
+        }
 	}
 
 	@Override
@@ -156,9 +164,14 @@ public class Robot extends TimedRobot {
 	 * Runs once at the start of Test
 	 */
 	public void testInit() {
-		// Resets status
-		status = Robot.CONT;
-		drive.initTestWheelPowers();
+		// Inits the sliders
+		drive.initWheelPowerTests();
+
+		// Creates the test command
+		autoCommand = new TestModules(drive);
+
+		// Runs the test command
+		autoCommand.schedule();
 	}
 
 	@Override
@@ -167,8 +180,8 @@ public class Robot extends TimedRobot {
 	 * Runs constantly during test
 	 */
 	public void testPeriodic() {
-		drive.testEncoders();
-		drive.testWheelPowers();
+		// drive.testEncoders();
+		// drive.testWheelPowers();
 	}
 
 	/**
@@ -176,12 +189,11 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Gets Joystick Values
-		double forwardPower = controls.getForwardPower();
-		double strafePower  = controls.getStrafePower();
-		double rotatePower  = controls.getRotatePower();
+		double forwardSpeed = controls.getForwardSpeed();
+		double strafeSpeed  = controls.getStrafeSpeed();
+		double rotateSpeed  = controls.getRotateSpeed();
 
-		// Drives the robot
-		drive.teleopDrive(forwardPower, strafePower, rotatePower);
+		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, false);
 	}
 }
 
