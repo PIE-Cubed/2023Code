@@ -74,6 +74,7 @@ public class SwerveModule {
      * 
      * @param desiredState
      */
+    //  TJM maybe add boolean for optimization control?
     public void move(SwerveModuleState desiredState) {
         // Optimizes the wheel movements
         SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, new Rotation2d(getAdjustedAbsoluteEncoder()));
@@ -84,6 +85,9 @@ public class SwerveModule {
         targetAngle = MathUtil.angleModulus(targetAngle);
         double rotatePower  = rotateMotorController.calculate(currentAngle, targetAngle);
 
+        //  TJM  getVelocity() gives you rotations per minute
+        //  the targetSpeed if desaturated should give you a value -1 to 1 (-6 to 6 right now)
+        //  So not clear if this is working properly
         double currentSpeed = driveEncoder.getVelocity();
         double targetSpeed  = desiredState.speedMetersPerSecond;
         double feedForward  = driveFeedForward.calculate(targetSpeed);
@@ -122,7 +126,9 @@ public class SwerveModule {
      * 
      * @return adjustedRadian
      */
+    // TJM Maybe getWheelRotationRadians()  ?
     public double getAdjustedAbsoluteEncoder() {
+        // TJM what is negative sign doing here?
         double rad = -2 * Math.PI * absoluteEncoder.getPosition();
 
         rad = MathUtil.angleModulus(rad);
