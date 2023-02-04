@@ -39,17 +39,18 @@ public class Drive {
     private final Translation2d FRONT_RIGHT_LOCATION;
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
-    private static final double MAX_TELEOP_SPEED   = 3; // Meters per second
-    private static final double MAX_ROTATION_SPEED = 2 * Math.PI; // Radians per second
+    private static final double MAX_TELEOP_SPEED   = 6; // Meters per second - velocity is generally 6x the power
+    private static final double MAX_ROTATION_SPEED = Math.PI; // Radians per second
     private static final double MAX_WHEEL_SPEED    = 6; // Meters per second
     private final double MAX_APRIL_TAG_ERROR       = 10;
 
     // Instance Variables
-    private int rotateCount = 0;
-    private double rotateTimeOut = 0;
+    private int     rotateCount            = 0;
+    private double  rotateTimeOut          = 0;
+    private int     printCount             = 0;
     private boolean firstTimeAutoCrabDrive = true;
     private boolean firstTimeAutoRotate    = true;
-    private double encoderTarget;
+    private double  encoderTarget;
     
     // NAVX
     public static AHRS ahrs;
@@ -259,6 +260,18 @@ public class Drive {
             });
     }
 
+    public double getX() {
+        return pose.getX();
+    }
+
+    public double getY() {
+        return pose.getY();
+    }
+
+    public double getZ() {
+        return pose.getRotation().getRadians();
+    }
+
     
 
     /***********************************************************************************************
@@ -283,6 +296,19 @@ public class Drive {
     
     public void testWheelPower() {
         backLeft.updateMotorPeriodic();
+    }
+
+    public void printPowerandVelocity() {
+        //frontLeft.displayPowerAndVelocity();
+        //frontRight.displayPowerAndVelocity();
+        //backLeft.displayPowerAndVelocity();
+        //backRight.displayPowerAndVelocity();
+    }
+
+    public void testPose() {
+        if (printCount % 50 == 0) {
+            System.out.println("X=" + getX() + " Y=" + getY() + " Z=" + getZ());
+        }
     }
 }
 

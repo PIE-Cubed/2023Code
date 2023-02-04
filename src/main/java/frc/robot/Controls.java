@@ -40,7 +40,7 @@ public class Controls {
 		double speed = joystick.getY() * -1 * Drive.getMaxSpeed();
 
 		// If we are in deadzone, y is 0
-		if ((Math.abs(speed) < 0.05)) {
+		if ((Math.abs(speed) < 0.3)) {
 			speed = 0;
 		}
 
@@ -58,7 +58,7 @@ public class Controls {
 		double speed = joystick.getX() * -1 * Drive.getMaxSpeed();
 
 		// If we are in deadzone, x is 0
-		if ((Math.abs(speed) < 0.075)) {
+		if ((Math.abs(speed) < 0.3)) {
 			speed = 0;
 		}
 
@@ -76,7 +76,7 @@ public class Controls {
 		double speed = joystick.getZ() * -1 * Drive.getMaxRotationSpeed(); 
 
 		// If we are in deadzone, rotatepower is 0
-		if ((Math.abs(speed) < 0.3)) {
+		if ((Math.abs(speed) < 0.5)) {
 			speed = 0;
 		}
 

@@ -21,6 +21,7 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
  * Start of the SwerveModule class
  */
 public class SwerveModule {
+    // Object Creation
     private CANSparkMax            driveMotor;
     private CANSparkMax            rotateMotor;
     private RelativeEncoder        driveEncoder;
@@ -30,20 +31,33 @@ public class SwerveModule {
     private PIDController          rotateMotorController;
     private SimpleMotorFeedforward driveFeedForward;
 
+    // Variables
+    private double drivePIDPrevious = 0;
+    private double prevPower        = 0;
+
+    // Constants
     private final int    MOTOR_CURRENT_LIMIT   = 80;
-    private final double DRIVE_P               = 0.05;
+    
+    // Controller Parameters
+    private final double DRIVE_P               = 0.01;
     private final double DRIVE_I               = 0;
     private final double DRIVE_D               = 0;
+
     private final double ROTATE_P              = 0.2;
     private final double ROTATE_I              = 0;
     private final double ROTATE_D              = 0;
+
     private final double STATIC_GAIN           = 0;
-    private final double VELOCITY_GAIN         = 0.33;
+    private final double VELOCITY_GAIN         = 0.12;
+
+    // Conversion Factors
     private final double WHEEL_RADIUS_METERS   = 0.0762;
     private final double WHEEL_ROTATION_METERS = 2 * Math.PI * WHEEL_RADIUS_METERS;
     private final double ROTATIONS_PER_TICK    = 1 / 5.5;
-    private final double CONVERSION_FACTOR     = WHEEL_ROTATION_METERS * ROTATIONS_PER_TICK; // Meters per tick
+    private final double POS_CONVERSION_FACTOR = WHEEL_ROTATION_METERS * ROTATIONS_PER_TICK; // Meters per tick (tick --> meter)
+    private final double VEL_CONVERSION_FACTOR = POS_CONVERSION_FACTOR / 60; // m/s per tick/min (tick/min --> m/s)
 
+    // Constructor
     public SwerveModule(int driveID, int rotateID, boolean invertMotor) {
         driveMotor            = new CANSparkMax(driveID, MotorType.kBrushless);
         driveMotor.setSmartCurrentLimit(MOTOR_CURRENT_LIMIT);
@@ -66,8 +80,8 @@ public class SwerveModule {
 
         driveFeedForward      = new SimpleMotorFeedforward(STATIC_GAIN, VELOCITY_GAIN);
 
-        driveEncoder.setVelocityConversionFactor(CONVERSION_FACTOR);
-        driveEncoder.setPositionConversionFactor(CONVERSION_FACTOR);
+        driveEncoder.setPositionConversionFactor(POS_CONVERSION_FACTOR);
+        driveEncoder.setVelocityConversionFactor(VEL_CONVERSION_FACTOR);
     }
 
     /**
@@ -78,20 +92,28 @@ public class SwerveModule {
         // Optimizes the wheel movements
         SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, new Rotation2d(getAdjustedAbsoluteEncoder()));
 
-        // Calculates the rotate power
+        // Rotate motor
         double currentAngle = getAdjustedAbsoluteEncoder();
         double targetAngle  = optimizedState.angle.getRadians();
         targetAngle = MathUtil.angleModulus(targetAngle);
-        double rotatePower  = rotateMotorController.calculate(currentAngle, targetAngle);
 
+        double rotatePower  = rotateMotorController.calculate(currentAngle, targetAngle);
+        rotateMotor.set(rotatePower);
+
+        // Drive motor
         double currentSpeed = driveEncoder.getVelocity();
-        double targetSpeed  = desiredState.speedMetersPerSecond;
+        double targetSpeed  = optimizedState.speedMetersPerSecond;
+
         double feedForward  = driveFeedForward.calculate(targetSpeed);
         double pidError     = driveMotorController.calculate(currentSpeed, targetSpeed);
-        
+
+        double drivePower   = feedForward + pidError + drivePIDPrevious;
+        drivePIDPrevious    = pidError;
+
+        prevPower = feedForward + pidError;
+
         // Sets motor powers
-        driveMotor.set(feedForward + pidError);
-        rotateMotor.set(rotatePower);
+        driveMotor.set(drivePower);
     }
 
     /*
@@ -113,6 +135,14 @@ public class SwerveModule {
      * 
      * @return
      */
+    public double getDriveVelocity() {
+        return driveEncoder.getVelocity();
+    }
+
+    /**
+     * 
+     * @return
+     */
     public double getRotateEncoder() {
         return rotateEncoder.getPosition();
     }
@@ -124,7 +154,6 @@ public class SwerveModule {
      */
     public double getAdjustedAbsoluteEncoder() {
         double rad = -2 * Math.PI * absoluteEncoder.getPosition();
-
         rad = MathUtil.angleModulus(rad);
 
         return rad;
@@ -174,6 +203,10 @@ public class SwerveModule {
     public void updateMotorPeriodic() {
         driveMotor.set(SmartDashboard.getNumber("Drive Motor Power", 0));
         rotateMotor.set(SmartDashboard.getNumber("Rotate Motor Power", 0));
+    }
+
+    public void displayPowerAndVelocity() {
+        System.out.println(driveMotor.getDeviceId() + " Power " + prevPower + " Velocity " + getDriveVelocity() + " Ratio " + prevPower/getDriveVelocity());
     }
 }
 

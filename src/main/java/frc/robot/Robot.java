@@ -32,6 +32,7 @@ public class Robot extends TimedRobot {
 
 	// Variables
 	private int status = CONT;
+	private int count = 0;
 
 	// Auto path
 	private static final String leftAuto = "Left";
@@ -51,7 +52,7 @@ public class Robot extends TimedRobot {
 		// Instance creation
 		controls = new Controls();
 		drive    = new Drive();
-		auto = new Auto(drive);
+		auto     = new Auto(drive);
 
 		//Creates a Network Tables instance
 		FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
@@ -134,6 +135,10 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopPeriodic() {
 		wheelControl();
+		if (count % 50 == 0) {
+			drive.printPowerandVelocity();
+		}
+		count++;
 	}
 
 	@Override
@@ -188,6 +193,7 @@ public class Robot extends TimedRobot {
 		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed);
 
 		drive.updateOdometry();
+		drive.testPose();
 	}
 }
 
