@@ -88,6 +88,7 @@ public class SwerveModule {
      * 
      * @param desiredState
      */
+    //  TJM maybe add boolean for optimization control?
     public void move(SwerveModuleState desiredState) {
         // Optimizes the wheel movements
         SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, new Rotation2d(getAdjustedAbsoluteEncoder()));
@@ -152,7 +153,9 @@ public class SwerveModule {
      * 
      * @return adjustedRadian
      */
+    // TJM Maybe getWheelRotationRadians()  ?
     public double getAdjustedAbsoluteEncoder() {
+        // TJM what is negative sign doing here?
         double rad = -2 * Math.PI * absoluteEncoder.getPosition();
         rad = MathUtil.angleModulus(rad);
 
