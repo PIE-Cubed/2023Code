@@ -7,6 +7,9 @@ package frc.robot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
+
 /**
  * Start of the Controls class
  */
@@ -19,11 +22,21 @@ public class Controls {
 	private Joystick       joystick;
 	private XboxController xboxController;
 
+	// Rate limiters
+	private SlewRateLimiter xLimiter;
+	private SlewRateLimiter yLimiter;
+	private SlewRateLimiter rotateLimiter;
+
 	//Constructor
 	public Controls() {
 		// Instance Creation
 		joystick       = new Joystick(JOYSTICK_ID);
 		xboxController = new XboxController(XBOX_ID);
+
+		// Create the rate limiters
+		xLimiter      = new SlewRateLimiter(12); // -6 to 6 in a second
+		yLimiter      = new SlewRateLimiter(12); // -6 to 6 in a second
+		rotateLimiter = new SlewRateLimiter(2 * Math.PI); // -pi to pi in a second
 	}
 
 	/**
@@ -37,12 +50,13 @@ public class Controls {
 	 * @return forwardSpeed
 	 */
 	public double getForwardSpeed() {
-		double speed = joystick.getY() * -1 * Drive.getMaxSpeed();
+		double speed = -1 * joystick.getY() * Drive.getMaxSpeed();
 
 		// If we are in deadzone, y is 0
-		if ((Math.abs(speed) < 0.3)) {
-			speed = 0;
-		}
+		speed = MathUtil.applyDeadband(speed, 0.1, 1);
+
+		// 
+		speed = xLimiter.calculate(speed);
 
 		return speed;
 	}
@@ -55,12 +69,13 @@ public class Controls {
 	 * @return strafeSpeed
 	 */
 	public double getStrafeSpeed() {
-		double speed = joystick.getX() * -1 * Drive.getMaxSpeed();
+		double speed = -1 * joystick.getX() * Drive.getMaxSpeed();
 
 		// If we are in deadzone, x is 0
-		if ((Math.abs(speed) < 0.3)) {
-			speed = 0;
-		}
+		speed = MathUtil.applyDeadband(speed, 0.1, 1);
+
+		//
+		speed = yLimiter.calculate(speed);
 
 		return speed;
 	}
@@ -73,18 +88,17 @@ public class Controls {
 	 * @return rotateSpeed
 	 */
 	public double getRotateSpeed() {
-		double speed = joystick.getZ() * -1 * Drive.getMaxRotationSpeed(); 
+		double speed = -1 * joystick.getZ() * Drive.getMaxRotationSpeed(); 
 
-		// If we are in deadzone, rotatepower is 0
-		if ((Math.abs(speed) < 0.5)) {
-			speed = 0;
-		}
-
-		// Cubes the speed and clamps it because the rotate is SUPER sensitive
-		speed = Math.pow(speed, 3.0);
+		// If we are in deadzone, rotatespeed is 0
+		speed = MathUtil.applyDeadband(speed, 0.1, 1);
+		
+		//
+		speed = rotateLimiter.calculate(speed);
 
 		return speed;    
 	}
+
 
 	/**
 	 * ARM CONTROLS

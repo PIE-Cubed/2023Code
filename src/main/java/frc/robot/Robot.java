@@ -177,8 +177,9 @@ public class Robot extends TimedRobot {
 	 * Runs constantly during test
 	 */
 	public void testPeriodic() {
-		drive.testEncoders();
-		drive.testWheelPower();
+		//drive.testEncoders();
+		//drive.testWheelPower();
+		drive.testGyro();
 	}
 
 	/**

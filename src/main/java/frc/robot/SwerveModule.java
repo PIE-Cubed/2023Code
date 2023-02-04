@@ -12,7 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -51,8 +51,8 @@ public class SwerveModule {
     private final double VELOCITY_GAIN         = 0.12;
 
     // Conversion Factors
-    private final double WHEEL_RADIUS_METERS   = 0.0762;
-    private final double WHEEL_ROTATION_METERS = 2 * Math.PI * WHEEL_RADIUS_METERS;
+    private final double WHEEL_DIAMETER_METERS = Units.inchesToMeters(3);
+    private final double WHEEL_ROTATION_METERS = Math.PI * WHEEL_DIAMETER_METERS;
     private final double ROTATIONS_PER_TICK    = 1 / 5.5;
     private final double POS_CONVERSION_FACTOR = WHEEL_ROTATION_METERS * ROTATIONS_PER_TICK; // Meters per tick (tick --> meter)
     private final double VEL_CONVERSION_FACTOR = POS_CONVERSION_FACTOR / 60; // m/s per tick/min (tick/min --> m/s)
@@ -71,6 +71,7 @@ public class SwerveModule {
         driveEncoder          = driveMotor.getEncoder();
         rotateEncoder         = rotateMotor.getEncoder();
         absoluteEncoder       = rotateMotor.getAbsoluteEncoder(Type.kDutyCycle);
+        driveEncoder.setPosition(0);
 
         rotateMotorController = new PIDController(ROTATE_P, ROTATE_I, ROTATE_D);
         rotateMotorController.enableContinuousInput(-Math.PI, Math.PI);
@@ -121,7 +122,7 @@ public class SwerveModule {
      * Helper functions
      */
     public SwerveModulePosition getPosition() {
-        return new SwerveModulePosition(driveEncoder.getPosition(), new Rotation2d(rotateEncoder.getPosition()));
+        return new SwerveModulePosition(driveEncoder.getPosition(), new Rotation2d( getAdjustedAbsoluteEncoder() ));
     }
     
     /**

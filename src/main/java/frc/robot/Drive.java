@@ -129,19 +129,8 @@ public class Drive {
         backRight.move(swerveModuleStates[3]);
     }
 
-    /*
-     * Whenever this function is used, updateOdometry still needs to be called
-     */
-    public void autoUpdateAprilTagPose(double x, double y, double rotatation, double error) {
-        if (error > MAX_APRIL_TAG_ERROR) {
-            return;
-        }
-
-        Pose2d aprilTagPose = new Pose2d(x, y, new Rotation2d(rotatation));
-
-        swerveDriveOdometry = new SwerveDriveOdometry(swerveDriveKinematics, ahrs.getRotation2d(), new SwerveModulePosition[]{ 
-            frontLeft.getPosition(), frontRight.getPosition(), backLeft.getPosition(), backRight.getPosition()
-        }, aprilTagPose);       
+    public int autoDriveToPoints(Pose2d[] listOfPoints) {
+        return Robot.DONE;
     }
 
     public int autoCrabDrive(double distanceFeet, double power, double targetHeading) { 
@@ -159,11 +148,11 @@ public class Drive {
         }
         System.out.println("Encoder target: "+ encoderTarget + " Encoder current: " + encoderCurrent);
 
-        double orientationError = 0; //Temporary, need to add gyro
+        double orientationError = 0; // Temporary, need to add gyro
         double forwardPower = power * Math.sin(Math.toRadians(targetHeading));
         double strafePower  = power * Math.cos(Math.toRadians(targetHeading));
 
-        rotatePower = 0;// autoCrabDriveController.calculate(ahrs.getYaw(), targetOrientation);
+        rotatePower = 0; // autoCrabDriveController.calculate(ahrs.getYaw(), targetOrientation);
 
         teleopDrive(forwardPower, strafePower, rotatePower); 
 
@@ -220,7 +209,6 @@ public class Drive {
         }
     }
 
-
     public void stopWheels() {
         frontLeft.setDriveMotorPower(0.0);
         frontLeft.setRotateMotorPower(0.0);
@@ -231,7 +219,6 @@ public class Drive {
         backRight.setDriveMotorPower(0.0);
         backRight.setRotateMotorPower(0.0);
     }
-
 
     private double getAverageEncoder() {
         return ( frontLeft.getDriveEncoder()  +
@@ -253,11 +240,27 @@ public class Drive {
         var gyroAngle = ahrs.getRotation2d();
 
         // Update the pose
-        pose = swerveDriveOdometry.update(gyroAngle,
+        pose = swerveDriveOdometry.update(
+            gyroAngle,
             new SwerveModulePosition[] {
-            frontLeft.getPosition(), frontRight.getPosition(),
-            backLeft.getPosition(), backRight.getPosition()
+                frontLeft.getPosition(), frontRight.getPosition(),
+                backLeft.getPosition(), backRight.getPosition()
             });
+    }
+
+    /*
+     * Whenever this function is used, updateOdometry still needs to be called
+     */
+    public void autoUpdateAprilTagPose(double x, double y, double rotatation, double error) {
+        if (error > MAX_APRIL_TAG_ERROR) {
+            return;
+        }
+
+        Pose2d aprilTagPose = new Pose2d(x, y, new Rotation2d(rotatation));
+
+        swerveDriveOdometry = new SwerveDriveOdometry(swerveDriveKinematics, ahrs.getRotation2d(), new SwerveModulePosition[]{ 
+            frontLeft.getPosition(), frontRight.getPosition(), backLeft.getPosition(), backRight.getPosition()
+        }, aprilTagPose);       
     }
 
     public double getX() {
@@ -283,10 +286,13 @@ public class Drive {
      * 
      */
     public void testEncoders() {
-        //frontLeft.displayEncoderValues();
-        //frontRight.displayEncoderValues();
-        backLeft.displayEncoderValues();
-        //backRight.displayEncoderValues();
+        if (printCount % 50 == 0) {
+            frontLeft.displayEncoderValues();
+            //frontRight.displayEncoderValues();
+            //backLeft.displayEncoderValues();
+            //backRight.displayEncoderValues();
+        }
+        printCount++;
     }
 
     public void initTestWheelPower() {
@@ -309,6 +315,15 @@ public class Drive {
         if (printCount % 50 == 0) {
             System.out.println("X=" + getX() + " Y=" + getY() + " Z=" + getZ());
         }
+        printCount++;
+    }
+
+    public void testGyro() {
+        if (printCount % 50 == 0) {
+            System.out.println(ahrs.getRotation2d().getDegrees());
+            //System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
+        }
+        printCount++;
     }
 }
 
