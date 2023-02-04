@@ -3,6 +3,7 @@ package frc.robot;
 import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -40,7 +41,7 @@ public class Drive {
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
     private static final double MAX_TELEOP_SPEED   = 6; // Meters per second - velocity is generally 6x the power
-    private static final double MAX_ROTATION_SPEED = Math.PI; // Radians per second
+    private static final double MAX_ROTATION_SPEED = 2 * Math.PI; // Radians per second
     private static final double MAX_WHEEL_SPEED    = 6; // Meters per second
     private final double MAX_APRIL_TAG_ERROR       = 10;
 
@@ -51,10 +52,30 @@ public class Drive {
     private boolean firstTimeAutoCrabDrive = true;
     private boolean firstTimeAutoRotate    = true;
     private double  encoderTarget;
+    private int     autoPointIndex         = 0;
+    private boolean autoPointFirstTime     = true;
     
     // NAVX
     public static AHRS ahrs;
+
+    //
+    private SlewRateLimiter xLimiter;
+    private SlewRateLimiter yLimiter;
+    private SlewRateLimiter rotateLimiter;
     
+    // Auto drive to points X controller - need 2 controllers for X and Y for both setpoints
+    private static final double adp = MAX_WHEEL_SPEED * 1 / 2; // 2 meters away --> full power
+    private static final double adi = 0.2;
+    private static final double add = 0;
+    PIDController autoDriveXController;
+    PIDController autoDriveYController;
+
+    // Auto drive to points rotate controller
+    private static final double adrp = MAX_ROTATION_SPEED * (1 / (2 * Math.PI)) ; // 2*Pi radians away --> full power
+    private static final double adri = 0.2;
+    private static final double adrd = 0;
+    PIDController autoDriveRotateController;
+
     // Auto crab drive controller
     private static final double acdP = 0.005; 
     private static final double acdI = 0.000;
@@ -90,7 +111,12 @@ public class Drive {
         System.out.println("navX Ready");
 
         ahrs.zeroYaw();
-        
+
+        //
+        xLimiter = new SlewRateLimiter(12);
+        yLimiter = new SlewRateLimiter(12);
+        rotateLimiter = new SlewRateLimiter(4 * Math.PI);
+
         // Values are in meters
         FRONT_LEFT_LOCATION  = new Translation2d(0.26035, 0.26035);
         FRONT_RIGHT_LOCATION = new Translation2d(0.26035, -0.26035);
@@ -105,7 +131,16 @@ public class Drive {
         swerveDriveKinematics = new SwerveDriveKinematics(FRONT_LEFT_LOCATION, FRONT_RIGHT_LOCATION, BACK_LEFT_LOCATION, BACK_RIGHT_LOCATION);
         swerveDriveOdometry   = new SwerveDriveOdometry(swerveDriveKinematics, ahrs.getRotation2d(), new SwerveModulePosition[]{ 
             frontLeft.getPosition(), frontRight.getPosition(), backLeft.getPosition(), backRight.getPosition()
-         });
+        });
+
+        autoDriveXController = new PIDController(adp, adi, add);
+        autoDriveXController.setTolerance(0.01);
+
+        autoDriveYController = new PIDController(adp, adi, add);
+        autoDriveYController.setTolerance(0.01);
+
+        autoDriveRotateController = new PIDController(adrp, adri, adrd);
+        autoDriveRotateController.setTolerance(0.075);
 
         // Used during crab drive to keep the robot at same orientation
         autoCrabDriveController = new PIDController(acdP, acdI, acdD);
@@ -130,7 +165,40 @@ public class Drive {
     }
 
     public int autoDriveToPoints(Pose2d[] listOfPoints) {
-        return Robot.DONE;
+        if (autoPointIndex >= listOfPoints.length) {
+            autoPointIndex = 0;
+            autoPointFirstTime = true;
+            return Robot.DONE;
+        }
+
+        Pose2d targetPoint = listOfPoints[autoPointIndex];
+
+        double targetXVelocity      = autoDriveXController.calculate(getX(), targetPoint.getX());
+        double targetYVelocity      = autoDriveYController.calculate(getY(), targetPoint.getY());
+        double targetRotateVelocity = autoDriveRotateController.calculate(getZ(), targetPoint.getRotation().getRadians());
+
+        targetXVelocity = xLimiter.calculate(targetXVelocity);
+        targetYVelocity = yLimiter.calculate(targetYVelocity);
+        targetRotateVelocity = rotateLimiter.calculate(targetRotateVelocity);
+
+        if (autoPointFirstTime == true) {
+            autoPointFirstTime = false;
+            autoDriveXController.setSetpoint(targetPoint.getX());
+            autoDriveYController.setSetpoint(targetPoint.getY());
+            autoDriveRotateController.setSetpoint(targetPoint.getRotation().getRadians());
+        }
+
+        teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity);
+
+        System.out.println("At X:" + autoDriveXController.atSetpoint() + " At Y:" + autoDriveYController.atSetpoint() + " At Z:" + autoDriveRotateController.atSetpoint());
+        System.out.println("X error:" + (targetPoint.getX()-getX()) + " Y error:" + (targetPoint.getY()-getY()) + " Z error:" + (targetPoint.getRotation().getRadians()-getZ()));
+
+        if (autoDriveXController.atSetpoint() && autoDriveYController.atSetpoint() && autoDriveRotateController.atSetpoint()) {
+            autoPointIndex++;
+            autoPointFirstTime = true;
+        }
+
+        return Robot.CONT;
     }
 
     public int autoCrabDrive(double distanceFeet, double power, double targetHeading) { 
@@ -138,7 +206,6 @@ public class Drive {
         double encoderCurrent = frontRight.getDriveEncoder(); //Average of 4 wheels
 
         double rotatePower;
-
 
         // First time through initializes target values
         if (firstTimeAutoCrabDrive == true) {
@@ -237,7 +304,7 @@ public class Drive {
 
     public void updateOdometry() {
         // Get the rotation of the robot from the gyro.
-        var gyroAngle = ahrs.getRotation2d();
+        Rotation2d gyroAngle = ahrs.getRotation2d();
 
         // Update the pose
         pose = swerveDriveOdometry.update(
@@ -246,6 +313,14 @@ public class Drive {
                 frontLeft.getPosition(), frontRight.getPosition(),
                 backLeft.getPosition(), backRight.getPosition()
             });
+    }
+
+    public void resetOdometry(Pose2d pose) {
+        swerveDriveOdometry.resetPosition(new Rotation2d(0),
+            new SwerveModulePosition[] { 
+                frontLeft.getPosition(), frontRight.getPosition(), backLeft.getPosition(), backRight.getPosition()
+            },
+            pose);
     }
 
     /*

@@ -5,7 +5,7 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.*;
 
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -99,7 +99,8 @@ public class Robot extends TimedRobot {
 		// Gets the auto delay 
 		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
 
-		// Reset the gyro
+		//
+		drive.resetOdometry(new Pose2d());
 	}
 
 	@Override
@@ -108,12 +109,14 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Autonomous
 	 */
 	public void autonomousPeriodic() {
+		drive.updateOdometry();
+
 		long autoDelayMSec = delaySec * 1000;
 
 		if (status == Robot.CONT) {
 			switch (m_autoSelected) {
 				default:
-					status = auto.driveAuto(2);
+					status = auto.driveToPointsTest();
 					break;
 			}
     	}

@@ -34,9 +34,9 @@ public class Controls {
 		xboxController = new XboxController(XBOX_ID);
 
 		// Create the rate limiters
-		xLimiter      = new SlewRateLimiter(12); // -6 to 6 in a second
-		yLimiter      = new SlewRateLimiter(12); // -6 to 6 in a second
-		rotateLimiter = new SlewRateLimiter(2 * Math.PI); // -pi to pi in a second
+		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
+		yLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
+		rotateLimiter = new SlewRateLimiter(4 * Math.PI); // -pi to pi in half a second
 	}
 
 	/**
@@ -50,10 +50,13 @@ public class Controls {
 	 * @return forwardSpeed
 	 */
 	public double getForwardSpeed() {
-		double speed = -1 * joystick.getY() * Drive.getMaxSpeed();
+		double speed = -1 * joystick.getY();
 
 		// If we are in deadzone, y is 0
 		speed = MathUtil.applyDeadband(speed, 0.1, 1);
+
+		//
+		speed *= Drive.getMaxSpeed();
 
 		// 
 		speed = xLimiter.calculate(speed);
@@ -69,10 +72,13 @@ public class Controls {
 	 * @return strafeSpeed
 	 */
 	public double getStrafeSpeed() {
-		double speed = -1 * joystick.getX() * Drive.getMaxSpeed();
+		double speed = -1 * joystick.getX();
 
 		// If we are in deadzone, x is 0
 		speed = MathUtil.applyDeadband(speed, 0.1, 1);
+
+		//
+		speed *= Drive.getMaxSpeed();
 
 		//
 		speed = yLimiter.calculate(speed);
@@ -88,11 +94,14 @@ public class Controls {
 	 * @return rotateSpeed
 	 */
 	public double getRotateSpeed() {
-		double speed = -1 * joystick.getZ() * Drive.getMaxRotationSpeed(); 
+		double speed = -1 * joystick.getZ(); 
 
 		// If we are in deadzone, rotatespeed is 0
-		speed = MathUtil.applyDeadband(speed, 0.1, 1);
-		
+		speed = MathUtil.applyDeadband(speed, 0.15, 1);
+
+		//
+		speed *= Drive.getMaxRotationSpeed();
+
 		//
 		speed = rotateLimiter.calculate(speed);
 
