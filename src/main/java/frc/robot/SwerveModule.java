@@ -50,16 +50,16 @@ public class SwerveModule {
     private final AbsoluteEncoder absoluteEncoder;
 
     // Drive PID controller
-    private final double DRIVE_P = 0.05;
+    private final double DRIVE_P = 0.01;
     private final double DRIVE_I = 0.00;
     private final double DRIVE_D = 0.00;
     private PIDController driveMotorController;
 
     // Rotate PID Controller Variables
-    private final double ROTATE_P = 0.05;
+    private final double ROTATE_P = 0.01;
     private final double ROTATE_I = 0.00;
     private final double ROTATE_D = 0.00;
-    private ProfiledPIDController rotateMotorController;
+    private PIDController rotateMotorController;
 
     // rotateMotorController limits
     private final double MAX_MODULE_ROTATE_SPEED        = 2 * Math.PI; // radians per second
@@ -107,23 +107,19 @@ public class SwerveModule {
         absoluteEncoder       = rotateMotor.getAbsoluteEncoder(Type.kDutyCycle);
 
         // Creates the rotate PID Controller
-        rotateMotorController = new ProfiledPIDController(ROTATE_P, ROTATE_I, ROTATE_D, ROTATE_CONSTRAINT);
+        rotateMotorController = new PIDController(ROTATE_P, ROTATE_I, ROTATE_D);
         rotateMotorController.enableContinuousInput(-Math.PI, Math.PI);
 
         // Creates the drive PID Controller
         driveMotorController  = new PIDController(DRIVE_P, DRIVE_I, DRIVE_D);
 
         // Sets the motor conversion factors
-        driveEncoder   .setPositionConversionFactor(metersDrivenPerTick);        // Converts to meters from revolutions
-        driveEncoder   .setVelocityConversionFactor(metersDrivenPerTick / 60);   // Converts to meters/second from revolutions/minute
-        rotateEncoder  .setPositionConversionFactor(radiansRotatedPerTick);      // Converts to radians from revolutions
-        rotateEncoder  .setVelocityConversionFactor(radiansRotatedPerTick / 60); // Converts to radians/second from revolutions/minute
-        absoluteEncoder.setPositionConversionFactor(-2 * Math.PI);               // Converts to radians from revolutions
-        absoluteEncoder.setVelocityConversionFactor(-2 * Math.PI);               // Converts to radians/second from revolutions/second
-
-        // Temporarily removes the rotateEncoder's conversion factors for testing
-        rotateEncoder  .setPositionConversionFactor(1);
-        rotateEncoder  .setVelocityConversionFactor(1 / 60); // Converts to revolutions/second from revolutions/minute
+        driveEncoder   .setPositionConversionFactor(1);        // Converts to meters from revolutions
+        driveEncoder   .setVelocityConversionFactor(1);   // Converts to meters/second from revolutions/minute
+        rotateEncoder  .setPositionConversionFactor(1);      // Converts to radians from revolutions
+        rotateEncoder  .setVelocityConversionFactor(1); // Converts to radians/second from revolutions/minute
+        absoluteEncoder.setPositionConversionFactor(1);               // Converts to radians from revolutions
+        absoluteEncoder.setVelocityConversionFactor(1);               // Converts to radians/second from revolutions/second
 
         // Inegrator Ranges
         driveMotorController.setIntegratorRange(DRIVE_I_MIN, DRIVE_I_MAX);
@@ -143,20 +139,23 @@ public class SwerveModule {
      * @param desiredState Desired state with speed and angle.
      */
     public void setDesiredState(SwerveModuleState desiredState) {
-        // Optimize the reference state to avoid spinning further than 90 degrees
-        SwerveModuleState state = SwerveModuleState.optimize(desiredState, new Rotation2d( getAbsoluteEncoderPosition() ));
+        // Optimizes the wheel movements
+        SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, new Rotation2d(getAbsoluteEncoderPosition()));
 
-        // Calculate the drive output from the drive PID controller.
-        double driveOutput = driveMotorController.calculate(getDriveVelocity(), state.speedMetersPerSecond);
-        double driveFeedforwardPower = driveFeedforward.calculate(state.speedMetersPerSecond);
+        // Calculates the rotate power
+        double currentAngle = getAbsoluteEncoderPosition();
+        double targetAngle  = optimizedState.angle.getRadians();
+        targetAngle = MathUtil.angleModulus(targetAngle);
+        double rotatePower  = rotateMotorController.calculate(currentAngle, targetAngle);
 
-        // Calculate the turning motor output from the turning PID controller.
-        double rotateOutput = rotateMotorController.calculate(getAbsoluteEncoderPosition(), state.angle.getRadians());
-        double rotateFeedforwardPower = rotateFeedforward.calculate(rotateMotorController.getSetpoint().velocity);
+        double currentSpeed = driveEncoder.getVelocity();
+        double targetSpeed  = optimizedState.speedMetersPerSecond;
+        double feedForward  = driveFeedforward.calculate(targetSpeed);
+        double pidError     = driveMotorController.calculate(currentSpeed, targetSpeed);
 
-        // Calculate the turning motor output from the turning PID controller.
-        driveMotor .set(driveOutput  + driveFeedforwardPower);
-        rotateMotor.set(rotateOutput + rotateFeedforwardPower);
+        // Sets motor powers
+        driveMotor.set(feedForward + pidError);
+        rotateMotor.set(rotatePower);
     }
 
     /****************************************************************************************** 
@@ -230,12 +229,16 @@ public class SwerveModule {
     * 
     ******************************************************************************************/
     /**
-     * Changes the encoder's range from 0 to 2pi into -pi to pi.
+     * Changes the encoder's range to -pi to pi
      * 
-     * @return The value converted into -pi to pi
+     * @return adjustedRadian
      */
-    private double getAbsoluteEncoderPosition() {
-        return MathUtil.angleModulus(absoluteEncoder.getPosition());
+    public double getAbsoluteEncoderPosition() {
+        double rad = -2 * Math.PI * absoluteEncoder.getPosition();
+
+        rad = MathUtil.angleModulus(rad);
+
+        return rad;
     }
 
     /****************************************************************************************** 
@@ -273,7 +276,7 @@ public class SwerveModule {
      */
     public void zeroMotorEncoders() {
         driveEncoder .setPosition(0.00);
-        rotateEncoder.setPosition(0.00);
+        //rotateEncoder.setPosition(0.00);
     }
 
     /**

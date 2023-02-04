@@ -36,54 +36,69 @@ public class Controls {
     * 
     ******************************************************************************************/
 	/**
-	 * Gets the forward power
+	 * Gets the forward speed
 	 * <p>Forward is positive to match chassis speed standards
 	 * <p>This measures rotatation around the Y axis, which is effectively translation on the X axis
 	 * 
 	 * @return forwardSpeed
 	 */
 	public double getForwardSpeed() {
-		double power = -1 * joystick.getY() * Drive.getMaxDriveSpeed();
+		double speed = -1 * joystick.getY();
 
 		// If we are in deadzone, y is 0
-		power = MathUtil.applyDeadband(power, 0.05, 1);
+		speed = MathUtil.applyDeadband(speed, 0.1, 1);
 
-		return power;
+		//
+		speed *= Drive.getMaxDriveSpeed();
+
+		// 
+		speed = xLimiter.calculate(speed);
+
+		return speed;
 	}
 
 	/**
-	 * Gets the strafe power
+	 * Gets the strafe speed
 	 * <p>Left is positive to match chassis speed standards
 	 * <p>This measures rotatation around the X axis, which is effectively translation on the Y axis
 	 * 
 	 * @return strafeSpeed
 	 */
 	public double getStrafeSpeed() {
-		double power = -1 * joystick.getX() * Drive.getMaxDriveSpeed();
+		double speed = -1 * joystick.getX();
 
 		// If we are in deadzone, x is 0
-		power = MathUtil.applyDeadband(power, 0.075, 1);
+		speed = MathUtil.applyDeadband(speed, 0.1, 1);
 
-		return power;
+		//
+		speed *= Drive.getMaxDriveSpeed();
+
+		//
+		speed = yLimiter.calculate(speed);
+
+		return speed;
 	}
 
 	/**
-	 * Gets the rotate power
+	 * Gets the rotate speed
 	 * <p>Counterclockwise is positive to match chassis speed standards
 	 * <p>This measures rotatation around the Z axis
 	 * 
 	 * @return rotateSpeed
 	 */
 	public double getRotateSpeed() {
-		double power = -1 * joystick.getZ() * Drive.getMaxRotateSpeed(); 
+		double speed = -1 * joystick.getZ(); 
 
-		// If we are in deadzone, rotatepower is 0
-		power = MathUtil.applyDeadband(power, 0.25, 1);
+		// If we are in deadzone, rotatespeed is 0
+		speed = MathUtil.applyDeadband(speed, 0.15, 1);
 
-		// Cubes the power because the rotate is sensitive
-		power = Math.pow(power, 3.0);
+		//
+		speed *= Drive.getMaxRotateSpeed();
 
-		return power;    
+		//
+		speed = rotateLimiter.calculate(speed);
+
+		return speed;    
 	}
 
 	/****************************************************************************************** 

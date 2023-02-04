@@ -108,11 +108,11 @@ public class PoseEstimation {
         boolean color = nTables.getRedAlliance();
         if (color == false) {
             // We are on the Red Alliance
-            field.setOrigin(OriginPosition.kRedAllianceWallRightSide);
+            //field.setOrigin(OriginPosition.kRedAllianceWallRightSide);
         }
         else {
             // We are on the Blue Alliance
-            field.setOrigin(OriginPosition.kBlueAllianceWallRightSide);
+            //field.setOrigin(OriginPosition.kBlueAllianceWallRightSide);
         }
     }
 
