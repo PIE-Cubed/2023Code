@@ -29,38 +29,43 @@ public class AutoDrive extends CommandBase {
     private List<Pose2d> points;
 
     // CONSTANTS
-    public final double MAX_AUTO_SPEED                = 3; // Meters per second
-    public final double MAX_AUTO_ACCELERATION         = 3; // Meters per second per second
+    public final double MAX_AUTO_SPEED                = 1; // Meters per second
+    public final double MAX_AUTO_ACCELERATION         = 1; // Meters per second per second
     public final double MAX_AUTO_ANGULAR_SPEED        = Math.PI; // Radians per second
     public final double MAX_AUTO_ANGULAR_ACCELERATION = Math.PI; // Radians per second per second
 
-    // thetaController variables
-    private final double thetaP = 0;
-    private final double thetaI = 0;
-    private final double thetaD = 0;
-
-    // thetaController constraint
-    public final TrapezoidProfile.Constraints thetaControllerConstraints =
-        new TrapezoidProfile.Constraints(MAX_AUTO_ANGULAR_SPEED, MAX_AUTO_ANGULAR_ACCELERATION);
-
-    // Create thetaController
-    private ProfiledPIDController thetaController = new ProfiledPIDController(thetaP, thetaI, thetaD, thetaControllerConstraints);
-
     // xPosController variables
-    private final double xP = 0.50;
-    private final double xI = 0.00;
+    private final double xP = Drive.MAX_DRIVE_SPEED / 2;
+    private final double xI = 0.05;
     private final double xD = 0.00;
-
-    // Create xPosController
-    private PIDController xPosController = new PIDController(xP, xI, xD);
+    private PIDController xPosController;
 
     // yPosController variables
-    private final double yP = 0.50;
-    private final double yI = 0.00;
+    private final double yP = Drive.MAX_DRIVE_SPEED * (1 / 2);
+    private final double yI = 0.05;
     private final double yD = 0.00;
+    private PIDController yPosController;
 
-    // Create xPosController
-    private PIDController yPosController = new PIDController(yP, yI, yD);
+    // thetaController variables
+    private final double thetaP = Drive.MAX_ROTATE_SPEED * (1 / (2 * Math.PI));
+    private final double thetaI = 0.05;
+    private final double thetaD = 0;
+    private ProfiledPIDController thetaController;
+
+    // thetaController constraints
+    private final TrapezoidProfile.Constraints thetaControllerConstraints =
+        new TrapezoidProfile.Constraints(
+            MAX_AUTO_ANGULAR_SPEED,
+            MAX_AUTO_ANGULAR_ACCELERATION
+        );
+
+    // Integator ranges
+    private final double X_I_MAX = 0.1;
+    private final double X_I_MIN = -1 * X_I_MAX;
+    private final double Y_I_MAX = 0.1;
+    private final double Y_I_MIN = -1 * Y_I_MAX;
+    private final double ROTATE_I_MAX = 0.1;
+    private final double ROTATE_I_MIN = -1 * ROTATE_I_MAX;
 
     // Object creation
     private PoseEstimation position;
@@ -86,6 +91,9 @@ public class AutoDrive extends CommandBase {
 
         // Instance creation
         timer = new Timer();
+
+        // Create the PID Controllers
+        createPIDControllers();
     }
 
     /**
@@ -99,10 +107,13 @@ public class AutoDrive extends CommandBase {
         // Localizes variables
         this.drive    = drive;
         this.position = position;
-        this.points   = poselistFromCoordinates(coorArray);
+        this.points   = pointsFromCoordinates(coorArray);
 
         // Instance creation
         timer = new Timer();
+
+        // Create the PID Controllers
+        createPIDControllers();
     }
 
     // Called when the command is initially scheduled.
@@ -112,14 +123,14 @@ public class AutoDrive extends CommandBase {
         TrajectoryConfig config =
             new TrajectoryConfig(
                 MAX_AUTO_SPEED,
-                MAX_AUTO_ACCELERATION)
-                // Add kinematics to ensure max speed is actually obeyed
-                .setKinematics(drive.swerveDriveKinematics);
+                MAX_AUTO_ACCELERATION
+            ).setKinematics(drive.swerveDriveKinematics); // Add kinematics to ensure max speed is actually obeyed
 
         // A trajectory to follow. Units are converted as needed.
         path = TrajectoryGenerator.generateTrajectory(
             points,
-            config);
+            config
+        );
         
         // Creates a SwerveControllerCommand
         swerveControllerCommand =
@@ -139,7 +150,10 @@ public class AutoDrive extends CommandBase {
     @Override
     public void execute() {
         // Runs the swerve command and then idles
-        swerveControllerCommand.andThen(() -> drive.teleopDrive(0, 0, 0, false));
+        swerveControllerCommand.andThen(
+            () ->
+            drive.teleopDrive(0, 0, 0, false)
+        );
     }
 
     // Returns true when the command should end.
@@ -160,12 +174,27 @@ public class AutoDrive extends CommandBase {
     }
 
     /**
+     * Creates the PID Controllers for this class.
+     */
+    private void createPIDControllers() {
+        // Create the PID Controllers
+        xPosController  = new PIDController(xP, xI, xD);
+        yPosController  = new PIDController(yP, yI, yD);
+        thetaController = new ProfiledPIDController(thetaP, thetaI, thetaD, thetaControllerConstraints);
+
+        // Limit the Integrator Ranges
+        xPosController.setIntegratorRange (X_I_MIN, Y_I_MAX);
+        yPosController.setIntegratorRange (Y_I_MIN, Y_I_MAX);
+        thetaController.setIntegratorRange(ROTATE_I_MIN, ROTATE_I_MAX);
+    }
+
+    /**
      * Generates a list of Pose2d points from a 2d array of double values.
      * 
      * @param listOfPoints
      * @return A list of Pose2d points
      */
-    private List<Pose2d> poselistFromCoordinates(double[][] listOfPoints) {
+    private List<Pose2d> pointsFromCoordinates(double[][] listOfPoints) {
         // Creates an empty list
         List<Pose2d> list = Collections.emptyList();
 

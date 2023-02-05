@@ -16,9 +16,9 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.math.controller.*;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 /**
  * Start of the SwerveModule class
  */
@@ -31,11 +31,11 @@ public class SwerveModule {
     private final double METERS_PER_ROTATION         = Math.PI * WHEEL_DIAMETER_METERS;
     private final double ROTATIONS_PER_TICK          = 1 / 5.5;
     private final double DRIVE_POS_CONVERSION_FACTOR = METERS_PER_ROTATION * ROTATIONS_PER_TICK; // Meters per tick
-    private final double DRIVE_VEL_CONVERSION_FACTOR = DRIVE_POS_CONVERSION_FACTOR / 60; // m/s per tick/min (tick/min --> m/s)
+    private final double DRIVE_VEL_CONVERSION_FACTOR = DRIVE_POS_CONVERSION_FACTOR / 60;         // Meters per second
 
     // Absolute Encoder Conversion Factors
-    private final double MODULE_POS_CONVERSION_FACTOR = -1 * 2 * Math.PI;             // Meters per tick (tick --> meter)
-    private final double MODULE_VEL_CONVERSION_FACTOR = MODULE_POS_CONVERSION_FACTOR; // m/s per tick/min (tick/min --> m/s)
+    private final double MODULE_POS_CONVERSION_FACTOR = -1 * 2 * Math.PI;             // Radians per tick
+    private final double MODULE_VEL_CONVERSION_FACTOR = MODULE_POS_CONVERSION_FACTOR; // Radians per second
 
     // Create motors
     private final CANSparkMax driveMotor;
@@ -56,12 +56,7 @@ public class SwerveModule {
     private final double ROTATE_P = 0.20;
     private final double ROTATE_I = 0.01;
     private final double ROTATE_D = 0.00;
-    private ProfiledPIDController rotateMotorController;
-
-    // rotateMotorController limits
-    private final double MAX_MODULE_ROTATE_SPEED        = 2 * Math.PI; // radians per second
-    private final double MAX_MODULE_ROTATE_ACCELERATION = 1 * Math.PI; // radians per second per second
-    private final Constraints ROTATE_CONSTRAINT = new Constraints(MAX_MODULE_ROTATE_SPEED, MAX_MODULE_ROTATE_ACCELERATION);
+    private PIDController rotateMotorController;
 
     // Integrator Range
     private static final double DRIVE_I_MAX  = 0.10;
@@ -108,7 +103,7 @@ public class SwerveModule {
         driveMotorController  = new PIDController(DRIVE_P, DRIVE_I, DRIVE_D);
 
         // Creates the rotate PID Controller
-        rotateMotorController = new ProfiledPIDController(ROTATE_P, ROTATE_I, ROTATE_D, ROTATE_CONSTRAINT);
+        rotateMotorController = new PIDController(ROTATE_P, ROTATE_I, ROTATE_D);
         rotateMotorController.enableContinuousInput(-Math.PI, Math.PI);
 
         // Sets the motor conversion factors

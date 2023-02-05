@@ -88,7 +88,7 @@ public class PoseEstimation {
 
         // Tries to load the field from a json
         try {
-            field = new AprilTagFieldLayout("src/2023-chargedup.json");
+            field = new AprilTagFieldLayout("src/main/java/frc/robot/2023-chargedup.json");
         } catch (IOException ex) {
             System.out.println("Unable to open trajectory: " + ex.getStackTrace());
         }

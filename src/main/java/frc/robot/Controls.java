@@ -36,9 +36,9 @@ public class Controls {
 		xboxController = new XboxController(XBOX_ID);
 
 		// Rate limiter declaration
-		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
-		yLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
-		rotateLimiter = new SlewRateLimiter(4 * Math.PI); // -pi to pi in half a second
+		xLimiter      = new SlewRateLimiter(3);
+		yLimiter      = new SlewRateLimiter(3);
+		rotateLimiter = new SlewRateLimiter(3);
 	}
 
 	/****************************************************************************************** 
@@ -61,7 +61,7 @@ public class Controls {
 		power = MathUtil.applyDeadband(power, 0.1, 1);
 
 		// Turns the power into a speed
-		speed = power * Drive.getMaxDriveSpeed();
+		speed = power * Drive.MAX_DRIVE_SPEED;
 
 		// Limits the acceleration when under driver control
 		speed = xLimiter.calculate(speed);
@@ -84,7 +84,7 @@ public class Controls {
 		power = MathUtil.applyDeadband(power, 0.1, 1);
 
 		// Turns the power into a speed
-		speed = power * Drive.getMaxDriveSpeed();
+		speed = power * Drive.MAX_DRIVE_SPEED;
 
 		// Limits the acceleration when under driver control
 		speed = yLimiter.calculate(speed);
@@ -107,7 +107,7 @@ public class Controls {
 		power = MathUtil.applyDeadband(power, 0.15, 1);
 
 		// Turns the power into a speed
-		speed = power * Drive.getMaxRotateSpeed();
+		speed = power * Drive.MAX_ROTATE_SPEED;
 
 		// Limits the acceleration when under driver control
 		speed = rotateLimiter.calculate(speed);

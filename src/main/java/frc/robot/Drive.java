@@ -16,8 +16,8 @@ public class Drive {
     private final Translation2d FRONT_RIGHT_LOCATION;
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
-    private static final double MAX_DRIVE_SPEED   = 3; // Meters per second
-    private static final double MAX_ROTATE_SPEED  = 2 * Math.PI; // Radians per second
+    public  static final double MAX_DRIVE_SPEED  = 5;           // Meters per second
+    public  static final double MAX_ROTATE_SPEED = 1 * Math.PI; // Radians per second
 
     // Object Creation
     private SwerveModule frontLeft;
@@ -175,24 +175,6 @@ public class Drive {
      */
     public double getPitch() {
         return Units.degreesToRadians( ahrs.getPitch() );
-    }
-
-    /**
-     * Gets the maximum drive speed.
-     * 
-     * @return The robot's maximum drive speed
-     */
-    public static double getMaxDriveSpeed() {
-        return MAX_DRIVE_SPEED;
-    }
-
-    /**
-     * Gets the maximum rotation speed.
-     * 
-     * @return The robot's maximum rotate speed
-     */
-    public static double getMaxRotateSpeed() {
-        return MAX_ROTATE_SPEED;
     }
 
 
