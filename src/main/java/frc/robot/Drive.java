@@ -41,10 +41,12 @@ public class Drive {
     private final Translation2d FRONT_RIGHT_LOCATION;
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
-    private static final double MAX_TELEOP_SPEED   = 6; // Meters per second - velocity is generally 6x the power
-    private static final double MAX_ROTATION_SPEED = 2 * Math.PI; // Radians per second
-    private static final double MAX_WHEEL_SPEED    = 6; // Meters per second
-    private final double MAX_APRIL_TAG_ERROR       = 10;
+    private static final double MAX_TELEOP_SPEED     = 6; // Meters per second - velocity is generally 6x the power
+    private static final double MAX_ROTATION_SPEED   = 2 * Math.PI; // Radians per second
+    private static final double MAX_WHEEL_SPEED      = 6; // Meters per second
+    private final double MAX_APRIL_TAG_ERROR         = 10;
+    private final double AUTO_DRIVE_TOLERANCE        = 0.01;
+    private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.075;
 
     // Instance Variables
     private int     rotateCount            = 0;
@@ -135,13 +137,13 @@ public class Drive {
         });
 
         autoDriveXController = new PIDController(adp, adi, add);
-        autoDriveXController.setTolerance(0.01);
+        autoDriveXController.setTolerance(AUTO_DRIVE_TOLERANCE);
 
         autoDriveYController = new PIDController(adp, adi, add);
-        autoDriveYController.setTolerance(0.01);
+        autoDriveYController.setTolerance(AUTO_DRIVE_TOLERANCE);
 
         autoDriveRotateController = new PIDController(adrp, adri, adrd);
-        autoDriveRotateController.setTolerance(0.075);
+        autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
 
         // Used during crab drive to keep the robot at same orientation
         autoCrabDriveController = new PIDController(acdP, acdI, acdD);
@@ -201,10 +203,28 @@ public class Drive {
             autoDriveXController.setSetpoint(targetPoint.getX());
             autoDriveYController.setSetpoint(targetPoint.getY());
             autoDriveRotateController.setSetpoint(targetPoint.getRotation().getRadians());
+
+            // For each point except the last
+            if (autoPointIndex < listOfPoints.length - 1) {
+                autoDriveXController.setTolerance(2 * AUTO_DRIVE_TOLERANCE);
+                autoDriveYController.setTolerance(2 * AUTO_DRIVE_TOLERANCE);
+                autoDriveRotateController.setTolerance(2 * AUTO_DRIVE_ROTATE_TOLERANCE);
+            }
+            else {
+                autoDriveXController.setTolerance(AUTO_DRIVE_TOLERANCE);
+                autoDriveYController.setTolerance(AUTO_DRIVE_TOLERANCE);
+                autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
+            }
         }
 
-        // Actual movement
-        teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity);
+        // Actual movement -  only if wheels are rotated
+        if (allWheelsRotated()) {
+            teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity);
+        }
+        else {
+            // Wheels will try to rotate to same angle, while drive motors cannot move
+            teleopDrive(targetXVelocity/100, targetYVelocity/100, targetRotateVelocity/100);
+        }
 
         // If X, Y, and Rotation are at target, moves on to next point
         if (autoDriveXController.atSetpoint() && autoDriveYController.atSetpoint() && autoDriveRotateController.atSetpoint()) {
@@ -361,6 +381,12 @@ public class Drive {
 
     public double getZ() {
         return pose.getRotation().getRadians();
+    }
+
+    // Checks if all rotate motors are at setpoint
+    private boolean allWheelsRotated() {
+        return (frontLeft.rotateControllerAtSetpoint() && frontRight.rotateControllerAtSetpoint() &&
+             backLeft.rotateControllerAtSetpoint() && backRight.rotateControllerAtSetpoint());
     }
    
 

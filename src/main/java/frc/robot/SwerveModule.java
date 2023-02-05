@@ -75,6 +75,8 @@ public class SwerveModule {
 
         rotateMotorController = new PIDController(ROTATE_P, ROTATE_I, ROTATE_D);
         rotateMotorController.enableContinuousInput(-Math.PI, Math.PI);
+        // Tolerance only used by autoDriveToPoints - wide tolerance to not delay auto
+        rotateMotorController.setTolerance(0.15); 
 
         driveMotorController  = new PIDController(DRIVE_P, DRIVE_I, DRIVE_D);
         driveMotorController.enableContinuousInput(-Math.PI, Math.PI);
@@ -98,6 +100,7 @@ public class SwerveModule {
         double currentAngle = getAdjustedAbsoluteEncoder();
         double targetAngle  = optimizedState.angle.getRadians();
         targetAngle = MathUtil.angleModulus(targetAngle);
+        rotateMotorController.setSetpoint(targetAngle);
 
         double rotatePower  = rotateMotorController.calculate(currentAngle, targetAngle);
         rotateMotor.set(rotatePower);
@@ -160,6 +163,10 @@ public class SwerveModule {
         return rotateEncoder.getPosition();
     }
 
+    public boolean rotateControllerAtSetpoint() {
+        return rotateMotorController.atSetpoint();
+    }
+
     /**
      * Changes the encoder's range to -pi to pi
      * 
@@ -167,7 +174,6 @@ public class SwerveModule {
      */
     // TJM Maybe getWheelRotationRadians()  ?
     public double getAdjustedAbsoluteEncoder() {
-        // TJM what is negative sign doing here?
         double rad = -2 * Math.PI * absoluteEncoder.getPosition();
         rad = MathUtil.angleModulus(rad);
 
