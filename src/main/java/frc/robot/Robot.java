@@ -138,10 +138,6 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopPeriodic() {
 		wheelControl();
-		if (count % 50 == 0) {
-			drive.printPowerandVelocity();
-		}
-		count++;
 	}
 
 	@Override
@@ -171,7 +167,7 @@ public class Robot extends TimedRobot {
 	public void testInit() {
 		// Resets status
 		status = Robot.CONT;
-		drive.initTestWheelPower();
+		drive.initTestDrivePower();
 	}
 
 	@Override
@@ -182,7 +178,7 @@ public class Robot extends TimedRobot {
 	public void testPeriodic() {
 		//drive.testEncoders();
 		//drive.testWheelPower();
-		drive.testGyro();
+		drive.periodicTestDrivePower();
 	}
 
 	/**

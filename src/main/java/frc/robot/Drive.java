@@ -13,6 +13,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * Start of the Drive class
@@ -28,7 +29,7 @@ public class Drive {
     private Pose2d                pose;
 
 
-    // Constants for Wheel Distance, Rotation, and Size 
+    // CAB- these constants should be replaced with existing constants for meters
     private final double wheelDiameterInches = 3;
     private final double clicksPerWheelRotation = 5.5;
     private final double inchesPerWheelRotation = wheelDiameterInches * Math.PI;
@@ -58,7 +59,7 @@ public class Drive {
     // NAVX
     public static AHRS ahrs;
 
-    //
+    // Rate limiters for auto drive
     private SlewRateLimiter xLimiter;
     private SlewRateLimiter yLimiter;
     private SlewRateLimiter rotateLimiter;
@@ -112,7 +113,7 @@ public class Drive {
 
         ahrs.zeroYaw();
 
-        //
+        // Initializing rate limiters
         xLimiter = new SlewRateLimiter(12);
         yLimiter = new SlewRateLimiter(12);
         rotateLimiter = new SlewRateLimiter(4 * Math.PI);
@@ -164,13 +165,26 @@ public class Drive {
         backRight.move(swerveModuleStates[3]);
     }
 
+    // Directly feeds joystick values into motors for testing
+    public void testDrive(double forward, double strafe, double rotationSpeed) {
+        SwerveModuleState[] swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, 1);
+        frontLeft.directMove(swerveModuleStates[0]);
+        frontRight.directMove(swerveModuleStates[1]);
+        backLeft.directMove(swerveModuleStates[2]);
+        backRight.directMove(swerveModuleStates[3]);
+    }
+
+    // Autonomous function to drive to inputted list of points
     public int autoDriveToPoints(Pose2d[] listOfPoints) {
+        // Function ends once we pass the last point
         if (autoPointIndex >= listOfPoints.length) {
             autoPointIndex = 0;
             autoPointFirstTime = true;
             return Robot.DONE;
         }
 
+        // Calculating targetVelocity based on distance to targetPoint
         Pose2d targetPoint = listOfPoints[autoPointIndex];
 
         double targetXVelocity      = autoDriveXController.calculate(getX(), targetPoint.getX());
@@ -181,6 +195,7 @@ public class Drive {
         targetYVelocity = yLimiter.calculate(targetYVelocity);
         targetRotateVelocity = rotateLimiter.calculate(targetRotateVelocity);
 
+        // This runs once for each point in the list
         if (autoPointFirstTime == true) {
             autoPointFirstTime = false;
             autoDriveXController.setSetpoint(targetPoint.getX());
@@ -188,11 +203,10 @@ public class Drive {
             autoDriveRotateController.setSetpoint(targetPoint.getRotation().getRadians());
         }
 
+        // Actual movement
         teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity);
 
-        System.out.println("At X:" + autoDriveXController.atSetpoint() + " At Y:" + autoDriveYController.atSetpoint() + " At Z:" + autoDriveRotateController.atSetpoint());
-        System.out.println("X error:" + (targetPoint.getX()-getX()) + " Y error:" + (targetPoint.getY()-getY()) + " Z error:" + (targetPoint.getRotation().getRadians()-getZ()));
-
+        // If X, Y, and Rotation are at target, moves on to next point
         if (autoDriveXController.atSetpoint() && autoDriveYController.atSetpoint() && autoDriveRotateController.atSetpoint()) {
             autoPointIndex++;
             autoPointFirstTime = true;
@@ -302,6 +316,8 @@ public class Drive {
         return MAX_ROTATION_SPEED;
     }
 
+    // Updates pose based on encoder measurements
+    // Runs periodically in Autonomous and Teleop
     public void updateOdometry() {
         // Get the rotation of the robot from the gyro.
         Rotation2d gyroAngle = ahrs.getRotation2d();
@@ -315,6 +331,8 @@ public class Drive {
             });
     }
 
+    // Forces our pose to update to a new location
+    // Ran at start of auto and whenever a valid AprilTag reading is received
     public void resetOdometry(Pose2d pose) {
         swerveDriveOdometry.resetPosition(new Rotation2d(0),
             new SwerveModulePosition[] { 
@@ -323,19 +341,14 @@ public class Drive {
             pose);
     }
 
-    /*
-     * Whenever this function is used, updateOdometry still needs to be called
-     */
+    // Updates pose to AprilTag reading
     public void autoUpdateAprilTagPose(double x, double y, double rotatation, double error) {
         if (error > MAX_APRIL_TAG_ERROR) {
             return;
         }
 
         Pose2d aprilTagPose = new Pose2d(x, y, new Rotation2d(rotatation));
-
-        swerveDriveOdometry = new SwerveDriveOdometry(swerveDriveKinematics, ahrs.getRotation2d(), new SwerveModulePosition[]{ 
-            frontLeft.getPosition(), frontRight.getPosition(), backLeft.getPosition(), backRight.getPosition()
-        }, aprilTagPose);       
+        resetOdometry(aprilTagPose);
     }
 
     public double getX() {
@@ -349,17 +362,13 @@ public class Drive {
     public double getZ() {
         return pose.getRotation().getRadians();
     }
-
-    
+   
 
     /***********************************************************************************************
      *
      *      TEST CODE
      *
      ***********************************************************************************************/
-    /**
-     * 
-     */
     public void testEncoders() {
         if (printCount % 50 == 0) {
             frontLeft.displayEncoderValues();
@@ -397,6 +406,20 @@ public class Drive {
         if (printCount % 50 == 0) {
             System.out.println(ahrs.getRotation2d().getDegrees());
             //System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
+        }
+        printCount++;
+    }
+
+    public void initTestDrivePower() {
+        SmartDashboard.putNumber("Drive Power", 0);
+    }
+
+    public void periodicTestDrivePower() {
+        double drivePower = SmartDashboard.getNumber("Drive Power", 0);
+        testDrive(drivePower, 0, 0);
+
+        if (printCount % 25 == 0) {
+            System.out.println("Drive Speed: " + String.format(".3f", frontLeft.getDriveVelocity()));
         }
         printCount++;
     }

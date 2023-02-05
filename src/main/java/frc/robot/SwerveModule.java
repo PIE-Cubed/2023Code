@@ -113,9 +113,20 @@ public class SwerveModule {
         drivePIDPrevious    = pidError;
 
         prevPower = feedForward + pidError;
-
-        // Sets motor powers
         driveMotor.set(drivePower);
+    }
+
+    public void directMove(SwerveModuleState desiredState) {
+        // Rotate motor
+        double currentAngle = getAdjustedAbsoluteEncoder();
+        double targetAngle  = desiredState.angle.getRadians();
+        targetAngle = MathUtil.angleModulus(targetAngle);
+
+        double rotatePower  = rotateMotorController.calculate(currentAngle, targetAngle);
+        rotateMotor.set(rotatePower);
+
+        // Drive motor
+        driveMotor.set(desiredState.speedMetersPerSecond);
     }
 
     /*
