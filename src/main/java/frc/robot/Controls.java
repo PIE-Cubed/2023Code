@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 
 /**
  * Start of the Controls class
@@ -21,6 +22,11 @@ public class Controls {
 	private Joystick       joystick;
 	private XboxController xboxController;
 
+	// Rate limiter declaration
+	private SlewRateLimiter xLimiter;
+	private SlewRateLimiter yLimiter;
+	private SlewRateLimiter rotateLimiter;
+
 	/**
 	 * The constructor for the Controls class
 	 */
@@ -28,6 +34,11 @@ public class Controls {
 		// Instance Creation
 		joystick       = new Joystick(JOYSTICK_ID);
 		xboxController = new XboxController(XBOX_ID);
+
+		// Rate limiter declaration
+		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
+		yLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
+		rotateLimiter = new SlewRateLimiter(4 * Math.PI); // -pi to pi in half a second
 	}
 
 	/****************************************************************************************** 
@@ -43,15 +54,16 @@ public class Controls {
 	 * @return forwardSpeed
 	 */
 	public double getForwardSpeed() {
-		double speed = -1 * joystick.getY();
+		double speed;
+		double power = -1 * joystick.getY();
 
 		// If we are in deadzone, y is 0
-		speed = MathUtil.applyDeadband(speed, 0.1, 1);
+		power = MathUtil.applyDeadband(power, 0.1, 1);
 
-		//
-		speed *= Drive.getMaxDriveSpeed();
+		// Turns the power into a speed
+		speed = power * Drive.getMaxDriveSpeed();
 
-		// 
+		// Limits the acceleration when under driver control
 		speed = xLimiter.calculate(speed);
 
 		return speed;
@@ -65,15 +77,16 @@ public class Controls {
 	 * @return strafeSpeed
 	 */
 	public double getStrafeSpeed() {
-		double speed = -1 * joystick.getX();
+		double speed;
+		double power = -1 * joystick.getX();
 
 		// If we are in deadzone, x is 0
-		speed = MathUtil.applyDeadband(speed, 0.1, 1);
+		power = MathUtil.applyDeadband(power, 0.1, 1);
 
-		//
-		speed *= Drive.getMaxDriveSpeed();
+		// Turns the power into a speed
+		speed = power * Drive.getMaxDriveSpeed();
 
-		//
+		// Limits the acceleration when under driver control
 		speed = yLimiter.calculate(speed);
 
 		return speed;
@@ -87,15 +100,16 @@ public class Controls {
 	 * @return rotateSpeed
 	 */
 	public double getRotateSpeed() {
-		double speed = -1 * joystick.getZ(); 
+		double speed;
+		double power = -1 * joystick.getZ(); 
 
 		// If we are in deadzone, rotatespeed is 0
-		speed = MathUtil.applyDeadband(speed, 0.15, 1);
+		power = MathUtil.applyDeadband(power, 0.15, 1);
 
-		//
-		speed *= Drive.getMaxRotateSpeed();
+		// Turns the power into a speed
+		speed = power * Drive.getMaxRotateSpeed();
 
-		//
+		// Limits the acceleration when under driver control
 		speed = rotateLimiter.calculate(speed);
 
 		return speed;    

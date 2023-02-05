@@ -62,22 +62,14 @@ public class PoseEstimation {
         this.nTables = CustomTables.getInstance();
  
         // Default module positions
-        SwerveModulePosition[] moduleStartPosition = {
-            new SwerveModulePosition(),
-            new SwerveModulePosition(),
-            new SwerveModulePosition(),
-            new SwerveModulePosition()
-        };
+        SwerveModulePosition[] moduleStartPosition = new SwerveModulePosition[4];
 
         // Creates the odometry tracker
         odometry = new SwerveDriveOdometry(
             drive.swerveDriveKinematics,
             new Rotation2d(0),
             moduleStartPosition,
-            new Pose2d(
-                new Translation2d(),
-                new Rotation2d()
-            )
+            new Pose2d()
         );
 
         // Defines the vision pose estimator's trust values (higher means less trusted)
@@ -89,10 +81,7 @@ public class PoseEstimation {
             drive.swerveDriveKinematics,
             new Rotation2d(),
             moduleStartPosition,
-            new Pose2d(
-                new Translation2d(),
-                new Rotation2d()
-            ),
+            new Pose2d(),
             odometryTrust,
             visionTrust
         );
@@ -108,11 +97,11 @@ public class PoseEstimation {
         boolean color = nTables.getRedAlliance();
         if (color == false) {
             // We are on the Red Alliance
-            //field.setOrigin(OriginPosition.kRedAllianceWallRightSide);
+            field.setOrigin(OriginPosition.kRedAllianceWallRightSide);
         }
         else {
             // We are on the Blue Alliance
-            //field.setOrigin(OriginPosition.kBlueAllianceWallRightSide);
+            field.setOrigin(OriginPosition.kBlueAllianceWallRightSide);
         }
     }
 
@@ -290,14 +279,13 @@ public class PoseEstimation {
      * @return The position of all four wheels
      */
     private SwerveModulePosition[] getAllModulePositions() {
-        // Creates a SwerveModlePosition array with a length of 4
-        SwerveModulePosition[] allPositions = new SwerveModulePosition[4];
-
-        // Sets all the positions acordingly
-        allPositions[0] = drive.getFLPosition();
-        allPositions[1] = drive.getFRPosition();
-        allPositions[2] = drive.getBLPosition();
-        allPositions[3] = drive.getBRPosition();
+        // Creates a SwerveModlePosition array with all the wheels in it
+        SwerveModulePosition[] allPositions = {
+            drive.getFLPosition(),
+            drive.getFRPosition(),
+            drive.getBLPosition(),
+            drive.getBRPosition()
+        };
 
         return allPositions;
     }

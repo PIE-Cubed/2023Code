@@ -7,10 +7,6 @@ package frc.robot.auto;
 import frc.robot.*;
 import frc.robot.commands.*;
 
-import java.util.List;
-
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 
 /**
@@ -21,30 +17,16 @@ public class BasicAuto extends SequentialCommandGroup {
      * The constructor for the BasicAuto class
      */
     public BasicAuto(Drive drive, PoseEstimation position, double delaySec) {
-        // Starting position
-        Pose2d startPos = new Pose2d(
-            0.00,
-            0.00,
-            new Rotation2d(0.00)
-        );
-
-        // The ending position
-        Pose2d endPose = new Pose2d(
-            1.00,
-            0.00,
-            new Rotation2d(0.00)
-        );
-
-        // First set of movements
-        List<Pose2d> move =
-            List.of(
-                startPos,
-                endPose
-            );
+        // Position array {x, y, rotation}
+        double[][] coorList = {
+            {0, 0, 0},
+            {1, 0, 0},
+            {2, 0, 0}
+        };
 
         //Adds commands to the group
         addCommands(
-            new AutoDrive(drive, position, move)
+            new AutoDrive(drive, position, coorList)
         );
     }
 }

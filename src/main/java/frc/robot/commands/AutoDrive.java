@@ -5,14 +5,16 @@
 package frc.robot.commands;
 
 import java.util.List;
+import java.util.Collections;
 
 import frc.robot.Drive;
 import frc.robot.PoseEstimation;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 
 import edu.wpi.first.math.trajectory.*;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 
 import edu.wpi.first.wpilibj.Timer;
 
@@ -70,15 +72,34 @@ public class AutoDrive extends CommandBase {
     private SwerveControllerCommand swerveControllerCommand;
 
     /**
-     * Constructor for the AutoDrive class
-     *
-     * @param subsystem The subsystem used by this command.
+     * Constructor for the AutoDrive class.
+     * 
+     * @param drive
+     * @param position
+     * @param drivePoints
      */
     public AutoDrive(Drive drive, PoseEstimation position, List<Pose2d> drivePoints) {
         // Localizes variables
         this.drive    = drive;
         this.position = position;
         this.points   = drivePoints;
+
+        // Instance creation
+        timer = new Timer();
+    }
+
+    /**
+     * Constructor for the AutoDrive class.
+     * 
+     * @param drive
+     * @param position
+     * @param coorArray
+     */
+    public AutoDrive(Drive drive, PoseEstimation position, double[][] coorArray) {
+        // Localizes variables
+        this.drive    = drive;
+        this.position = position;
+        this.points   = poselistFromCoordinates(coorArray);
 
         // Instance creation
         timer = new Timer();
@@ -136,6 +157,30 @@ public class AutoDrive extends CommandBase {
 
         // Prints that the command ran
         System.out.println("Moved to X" + endX + "Y" + endY);
+    }
+
+    /**
+     * Generates a list of Pose2d points from a 2d array of double values.
+     * 
+     * @param listOfPoints
+     * @return A list of Pose2d points
+     */
+    private List<Pose2d> poselistFromCoordinates(double[][] listOfPoints) {
+        // Creates an empty list
+        List<Pose2d> list = Collections.emptyList();
+
+        // Iterates through the array that was passed in
+        for (int i = 0; i < listOfPoints.length; i++) {
+            list.add(
+                new Pose2d(
+                    listOfPoints[i][0],
+                    listOfPoints[i][1],
+                    new Rotation2d( listOfPoints[i][2] )
+                )
+            );
+        }
+
+        return list;
     }
 }
 

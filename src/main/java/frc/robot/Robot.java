@@ -7,7 +7,7 @@ package frc.robot;
 import frc.robot.auto.*;
 //import frc.robot.commands.*;
 import frc.robot.commands.CommandGroups.*;
-
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.TimedRobot;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -96,13 +96,16 @@ public class Robot extends TimedRobot {
 		m_autoSelected = m_chooser.getSelected();
 		System.out.println("Auto selected: " + m_autoSelected);
 
-		// Gets the auto delay 
+		// Gets the auto delay
 		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
+
+		// Creates the path starting locations
+		Pose2d defaultStart = new Pose2d();
 
 		// Selects an auto command to run
 		switch (m_autoSelected) {
 			default:
-				position.resetPoseTrackers(null);
+				position.resetPoseTrackers(defaultStart);
 				autoCommand = new BasicAuto(drive, position, delaySec);
 				break;
 		}
