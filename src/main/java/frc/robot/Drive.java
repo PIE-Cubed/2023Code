@@ -41,9 +41,14 @@ public class Drive {
     private final Translation2d FRONT_RIGHT_LOCATION;
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
+    /*
+     * TJM
+     *  We should verify this to ensure we can acheive the max performance from the robot
+     */
     private static final double MAX_TELEOP_SPEED     = 6; // Meters per second - velocity is generally 6x the power
     private static final double MAX_ROTATION_SPEED   = 2 * Math.PI; // Radians per second
     private static final double MAX_WHEEL_SPEED      = 6; // Meters per second
+
     private final double MAX_APRIL_TAG_ERROR         = 10;
     private final double AUTO_DRIVE_TOLERANCE        = 0.01;
     private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.075;
@@ -120,12 +125,20 @@ public class Drive {
         yLimiter = new SlewRateLimiter(12);
         rotateLimiter = new SlewRateLimiter(4 * Math.PI);
 
-        // Values are in meters
+        /* The locations for the modules must be relative to the center of the robot. 
+         * Positive x values represent moving toward the front of the robot 
+         *  whereas positive y values represent moving toward the left of the robot 
+         * Values are in meters
+        */
         FRONT_LEFT_LOCATION  = new Translation2d(0.26035, 0.26035);
         FRONT_RIGHT_LOCATION = new Translation2d(0.26035, -0.26035);
         BACK_LEFT_LOCATION   = new Translation2d(-0.26035, 0.26035);
         BACK_RIGHT_LOCATION  = new Translation2d(-0.26035, -0.26035);
 
+        /*
+         * Inversion values come from applying positive power to wheel
+         * and verifying the wheel moves forward
+         */
         frontLeft  = new SwerveModule(16, 17, true);
         frontRight = new SwerveModule(10, 11, false);
         backLeft   = new SwerveModule(14, 15, true);
@@ -160,13 +173,20 @@ public class Drive {
      *Positive Rotation Speed is Counter-Clockwise*/
     public void teleopDrive(double forward, double strafe, double rotationSpeed) {
         SwerveModuleState[] swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
+
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
+
+        /* The swerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation */
         frontLeft.move(swerveModuleStates[0]);
         frontRight.move(swerveModuleStates[1]);
         backLeft.move(swerveModuleStates[2]);
         backRight.move(swerveModuleStates[3]);
     }
 
+    /*
+     * TJM
+     * How did this test go???
+     */
     // Directly feeds joystick values into motors for testing
     public void testDrive(double forward, double strafe, double rotationSpeed) {
         SwerveModuleState[] swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
