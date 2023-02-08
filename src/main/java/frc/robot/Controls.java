@@ -36,7 +36,7 @@ public class Controls {
 		// Create the rate limiters
 		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
 		yLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
-		rotateLimiter = new SlewRateLimiter(4 * Math.PI); // -pi to pi in half a second
+		rotateLimiter = new SlewRateLimiter(6 * Math.PI); 
 	}
 
 

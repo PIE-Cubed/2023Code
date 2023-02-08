@@ -9,8 +9,9 @@ public class Auto {
     private Drive drive;
 
     private static final double[][] autoCoordinates = {
-        {1, 0, 0},
-        {2, 0, 0}
+        {1, 0.0, Math.PI/2},
+        {0.0, 1.0, Math.PI}
+        //{0, 0.5, -Math.PI}
     };
 
     private Pose2d[] listOfPoints = new Pose2d[autoCoordinates.length];

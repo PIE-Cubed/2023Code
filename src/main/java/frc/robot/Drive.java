@@ -45,9 +45,9 @@ public class Drive {
      * TJM
      *  We should verify this to ensure we can acheive the max performance from the robot
      */
-    private static final double MAX_TELEOP_SPEED     = 6; // Meters per second - velocity is generally 6x the power
-    private static final double MAX_ROTATION_SPEED   = 2 * Math.PI; // Radians per second
-    private static final double MAX_WHEEL_SPEED      = 6; // Meters per second
+    private static final double MAX_TELEOP_SPEED     = 4; // Meters per second - velocity is generally 4x the power
+    private static final double MAX_ROTATION_SPEED   = 4 * Math.PI; // Radians per second
+    private static final double MAX_WHEEL_SPEED      = 4; // Meters per second
 
     private final double MAX_APRIL_TAG_ERROR         = 10;
     private final double AUTO_DRIVE_TOLERANCE        = 0.01;
@@ -157,6 +157,7 @@ public class Drive {
 
         autoDriveRotateController = new PIDController(adrp, adri, adrd);
         autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
+        autoDriveRotateController.enableContinuousInput(Math.PI, -Math.PI);
 
         // Used during crab drive to keep the robot at same orientation
         autoCrabDriveController = new PIDController(acdP, acdI, acdD);
@@ -171,8 +172,16 @@ public class Drive {
     /*Positive Forward Goes Forward
      *Positive Strafe Goes Left
      *Positive Rotation Speed is Counter-Clockwise*/
-    public void teleopDrive(double forward, double strafe, double rotationSpeed) {
-        SwerveModuleState[] swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
+    public void teleopDrive(double forward, double strafe, double rotationSpeed, boolean fieldOriented) {
+        SwerveModuleState[] swerveModuleStates; 
+
+        if (fieldOriented) {
+            swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( ahrs.getRotation2d() )));
+        }
+        else {
+            swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
+        }
+
 
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
@@ -217,12 +226,19 @@ public class Drive {
         targetYVelocity = yLimiter.calculate(targetYVelocity);
         targetRotateVelocity = rotateLimiter.calculate(targetRotateVelocity);
 
+        System.out.println("X Vel" + targetXVelocity + " Y Vel" + targetYVelocity + " Z Vel" + targetRotateVelocity);
+
         // This runs once for each point in the list
         if (autoPointFirstTime == true) {
             autoPointFirstTime = false;
+            autoDriveXController.reset();
+            autoDriveYController.reset();
+            autoDriveRotateController.reset();
             autoDriveXController.setSetpoint(targetPoint.getX());
             autoDriveYController.setSetpoint(targetPoint.getY());
             autoDriveRotateController.setSetpoint(targetPoint.getRotation().getRadians());
+
+            System.out.println("X target:" + targetPoint.getX() + " Y target:" + targetPoint.getY() + " Z target:" + targetPoint.getRotation().getRadians());
 
             // For each point except the last
             if (autoPointIndex < listOfPoints.length - 1) {
@@ -238,13 +254,16 @@ public class Drive {
         }
 
         // Actual movement -  only if wheels are rotated
+        teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);
+
+        /*/
         if (allWheelsRotated()) {
             teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity);
         }
         else {
             // Wheels will try to rotate to same angle, while drive motors cannot move
             teleopDrive(targetXVelocity/100, targetYVelocity/100, targetRotateVelocity/100);
-        }
+        }*/
 
         // If X, Y, and Rotation are at target, moves on to next point
         if (autoDriveXController.atSetpoint() && autoDriveYController.atSetpoint() && autoDriveRotateController.atSetpoint()) {
@@ -275,7 +294,7 @@ public class Drive {
 
         rotatePower = 0; // autoCrabDriveController.calculate(ahrs.getYaw(), targetOrientation);
 
-        teleopDrive(forwardPower, strafePower, rotatePower); 
+        teleopDrive(forwardPower, strafePower, rotatePower, false); 
 
         // Checks if target distance has been reached, then ends function if so
         if (encoderCurrent >= encoderTarget) {
@@ -309,7 +328,7 @@ public class Drive {
 
         // Rotating
         double rotatePower = autoRotateController.calculate(ahrs.getYaw(), degrees);
-        teleopDrive(0, 0, rotatePower);
+        teleopDrive(0, 0, rotatePower, false);
     
         // Checking if on set point
         if (autoRotateController.atSetpoint()) {
@@ -354,6 +373,10 @@ public class Drive {
 
     public static double getMaxRotationSpeed() {
         return MAX_ROTATION_SPEED;
+    }
+
+    public Rotation2d getYaw() {
+        return ahrs.getRotation2d();
     }
 
     // Updates pose based on encoder measurements
@@ -464,8 +487,8 @@ public class Drive {
         double drivePower = SmartDashboard.getNumber("Drive Power", 0);
         testDrive(drivePower, 0, 0);
 
-        if (printCount % 25 == 0) {
-            System.out.println("Drive Speed: " + String.format(".3f", frontLeft.getDriveVelocity()));
+        if (printCount % 5 == 0) {
+            System.out.println("Drive Speed: " + frontLeft.getDriveVelocity());
         }
         printCount++;
     }

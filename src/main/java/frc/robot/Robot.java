@@ -100,7 +100,7 @@ public class Robot extends TimedRobot {
 		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
 
 		//
-		drive.resetOdometry(new Pose2d());
+		drive.resetOdometry(new Pose2d(0, 0, drive.getYaw()));
 	}
 
 	@Override
@@ -190,7 +190,7 @@ public class Robot extends TimedRobot {
 		double strafeSpeed  = controls.getStrafeSpeed();
 		double rotateSpeed  = controls.getRotateSpeed();
 
-		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed);
+		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
 
 		drive.updateOdometry();
 		drive.testPose();
