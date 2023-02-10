@@ -15,11 +15,12 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
  */
 public class Controls {
 	// CONSTANTS
-	private final int JOYSTICK_ID = 1;
-	private final int XBOX_ID     = 0;
+	private final int DRIVE_ID = 1;
+	private final int XBOX_ID  = 0;
 
 	// Controller object declaration
-	private Joystick       joystick;
+	//private Joystick       joystick;
+	private XboxController driveController;
 	private XboxController xboxController;
 
 	// Rate limiters
@@ -28,10 +29,10 @@ public class Controls {
 	private SlewRateLimiter rotateLimiter;
 
 	//Constructor
-	public Controls() {
+	public Controls(boolean xboxDriveControl) {
 		// Instance Creation
-		joystick       = new Joystick(JOYSTICK_ID);
 		xboxController = new XboxController(XBOX_ID);
+		driveController = new XboxController(DRIVE_ID);
 
 		// Create the rate limiters
 		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
@@ -86,7 +87,10 @@ public class Controls {
 		/* The joystick produces a negative value when pushed forward
 		 * negate the value to produce positive values when joystick pushed forward
 		 */
-		double speed = -1 * joystick.getY();
+		double speed = 0;
+
+		speed = -1 * driveController.getLeftY();
+		// speed = -1 * joystick.getY();
 
 		// If we are in deadzone, y is 0
 		speed = MathUtil.applyDeadband(speed, 0.1, 1);
@@ -111,7 +115,12 @@ public class Controls {
 		/* The joystick produces a negative value when pushed left
 		 * negate the value to produce positive values when joystick pushed left
 		 */
-		double speed = -1 * joystick.getX();
+
+		double speed = 0;
+
+	
+		speed = -1 * driveController.getLeftX();
+		// speed = -1 * joystick.getX();
 
 		// If we are in deadzone, x is 0
 		speed = MathUtil.applyDeadband(speed, 0.1, 1);
@@ -133,8 +142,11 @@ public class Controls {
 	 * @return rotateSpeed
 	 */
 	public double getRotateSpeed() {
-		double speed = -1 * joystick.getZ(); 
+		double speed = 0;
 
+		speed = -1 * driveController.getRightX();
+		//speed = -1 * joystick.getZ();
+		
 		// If we are in deadzone, rotatespeed is 0
 		speed = MathUtil.applyDeadband(speed, 0.15, 1);
 

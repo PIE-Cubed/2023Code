@@ -35,11 +35,15 @@ public class Robot extends TimedRobot {
 	private int count = 0;
 
 	// Auto path
-	private static final String leftAuto = "Left";
-	private static final String middleAuto   = "Middle";
-	private static final String rightAuto = "Right";
+	private static final String wallAuto   = "Wall";
+	private static final String rampAuto   = "Ramp";
+	private static final String centerAuto = "Center";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
+
+	// Auto number of objects
+	private int m_objectsPlaced;
+	private final SendableChooser<Integer> m_objectChooser = new SendableChooser<>();
 
 	// Auto Delay
 	private int delaySec = 0;
@@ -50,7 +54,7 @@ public class Robot extends TimedRobot {
 	 */
 	public Robot() {
 		// Instance creation
-		controls = new Controls();
+		controls = new Controls(true);
 		drive    = new Drive();
 		auto     = new Auto(drive);
 
@@ -68,10 +72,16 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// Auto start location
-		m_chooser.setDefaultOption("Left", leftAuto);
-		m_chooser.addOption("Middle", middleAuto);
-		m_chooser.addOption("Right", rightAuto);
+		m_chooser.setDefaultOption("Wall", wallAuto);
+		m_chooser.addOption("Ramp", rampAuto);
+		m_chooser.addOption("Center", centerAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
+
+		// Auto objects placed
+		m_objectChooser.setDefaultOption("1", 1);
+		m_objectChooser.addOption("2", 2);
+		m_objectChooser.addOption("3", 3);
+		SmartDashboard.putData("Auto objects placed", m_objectChooser);
 
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
@@ -99,6 +109,9 @@ public class Robot extends TimedRobot {
 		// Gets the auto delay 
 		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
 
+		// Gets the number of objects placed in auto
+		m_objectsPlaced = m_objectChooser.getSelected();
+
 		//
 		drive.resetOdometry(new Pose2d(0, 0, drive.getYaw()));
 	}
@@ -111,12 +124,20 @@ public class Robot extends TimedRobot {
 	public void autonomousPeriodic() {
 		drive.updateOdometry();
 
-		long autoDelayMSec = delaySec * 1000;
-
 		if (status == Robot.CONT) {
 			switch (m_autoSelected) {
+				case "Wall":
+					status = auto.wallAuto(isRedAlliance.getBoolean(true), 1, delaySec);
+					break;
+				case "Ramp":
+					status = auto.rampAuto(isRedAlliance.getBoolean(true), 1, delaySec);
+					break;
+				case "Center":
+					status = auto.centerAuto(isRedAlliance.getBoolean(true), 1, delaySec);
+					break;
 				default:
-					status = auto.driveToPointsTest();
+					status = Robot.DONE;
+					//status = auto.driveToPointsTest();
 					break;
 			}
     	}
@@ -178,7 +199,8 @@ public class Robot extends TimedRobot {
 	public void testPeriodic() {
 		//drive.testEncoders();
 		//drive.testWheelPower();
-		drive.periodicTestDrivePower();
+		//drive.periodicTestDrivePower();
+		drive.balanceRamp();
 	}
 
 	/**
@@ -190,10 +212,10 @@ public class Robot extends TimedRobot {
 		double strafeSpeed  = controls.getStrafeSpeed();
 		double rotateSpeed  = controls.getRotateSpeed();
 
-		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, false);
 
 		drive.updateOdometry();
-		drive.testPose();
+		drive.testGyro();
 	}
 }
 

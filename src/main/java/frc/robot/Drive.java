@@ -2,6 +2,7 @@ package frc.robot;
 
 import com.kauailabs.navx.frc.AHRS;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -52,6 +53,7 @@ public class Drive {
     private final double MAX_APRIL_TAG_ERROR         = 10;
     private final double AUTO_DRIVE_TOLERANCE        = 0.01;
     private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.075;
+    private final double RAMP_BALANCE_TOLERANCE      = 0.01;
 
     // Instance Variables
     private int     rotateCount            = 0;
@@ -95,6 +97,12 @@ public class Drive {
     private static final double arI = 0.000;
     private static final double arD = 0.000;
     PIDController autoRotateController;
+
+    // Ramp balance controller
+    private static final double rbP = -0.2;
+    private static final double rbI = -0.00;
+    private static final double rbD = -0.3;
+    PIDController rampBalanceController;
 
     private double targetOrientation = 0;
 
@@ -158,6 +166,9 @@ public class Drive {
         autoDriveRotateController = new PIDController(adrp, adri, adrd);
         autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
         autoDriveRotateController.enableContinuousInput(Math.PI, -Math.PI);
+
+        rampBalanceController = new PIDController(rbP, rbI, rbD);
+        rampBalanceController.setTolerance(RAMP_BALANCE_TOLERANCE);
 
         // Used during crab drive to keep the robot at same orientation
         autoCrabDriveController = new PIDController(acdP, acdI, acdD);
@@ -414,6 +425,24 @@ public class Drive {
         resetOdometry(aprilTagPose);
     }
 
+    public int balanceRamp() {
+        // Calculating targetVelocity based on distance to targetPoint
+        double targetRoll = 0;
+
+        double driveVelocity = rampBalanceController.calculate(ahrs.getRoll(), targetRoll);
+        driveVelocity = MathUtil.clamp(driveVelocity, -0.9, 0.9);
+
+        // Actual movement
+        teleopDrive(driveVelocity, 0, 0, false);
+        System.out.println("Roll: " + ahrs.getRoll());
+
+        if (rampBalanceController.atSetpoint()) {
+            return Robot.DONE;
+        }
+
+        return Robot.CONT;
+    }
+
     public double getX() {
         return pose.getX();
     }
@@ -473,8 +502,8 @@ public class Drive {
 
     public void testGyro() {
         if (printCount % 50 == 0) {
-            System.out.println(ahrs.getRotation2d().getDegrees());
-            //System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
+            //System.out.println(ahrs.getRotation2d().getDegrees());
+            System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
         }
         printCount++;
     }

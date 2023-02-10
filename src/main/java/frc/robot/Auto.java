@@ -28,6 +28,18 @@ public class Auto {
         this.drive = drive;
     }
 
+    public int wallAuto(boolean redSide, int numCones, double delaySeconds) {
+        return Robot.DONE;
+    }
+
+    public int rampAuto(boolean redSide, int numCones, double delaySeconds) {
+        return Robot.DONE;
+    }
+
+    public int centerAuto(boolean redSide, int numCones, double delaySeconds) {
+        return Robot.DONE;
+    }
+
     public int driveToPointsTest() {
         int status = Robot.CONT;
     
