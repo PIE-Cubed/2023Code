@@ -117,6 +117,8 @@ public class SwerveModule {
 
         prevPower = feedForward + pidError;
         driveMotor.set(drivePower);
+
+        //System.out.println("Target Angle: " + targetAngle + " Target Speed: " + targetSpeed);
     }
 
     public void directMove(SwerveModuleState desiredState) {

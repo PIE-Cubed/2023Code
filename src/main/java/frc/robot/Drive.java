@@ -65,8 +65,8 @@ public class Drive {
     private int     autoPointIndex         = 0;
     private boolean autoPointFirstTime     = true;
     private boolean autoPointAngled        = false; // Tracks if wheels have been angled before driving
-    private boolean chargeRampFirstTime    = true;
-    private double  chargeRampInitPitch     = 0;
+    private boolean rampFirstTime          = true; // Used by all ramp-related functions b/c only 1 called at a time
+    private double  rampInitPitch          = 0;
     private double  initXVelocity          = 0;
     private double  initYVelocity          = 0;
     private double  initRotateVelocity     = 0;
@@ -80,15 +80,15 @@ public class Drive {
     private SlewRateLimiter rotateLimiter;
     
     // Auto drive to points X controller - need 2 controllers for X and Y for both setpoints
-    private static final double adp = MAX_WHEEL_SPEED * 1 / 2; // 2 meters away --> full power
-    private static final double adi = 0.2;
+    private static final double adp = MAX_WHEEL_SPEED; // 1 meter away --> full power
+    private static final double adi = 0.0;
     private static final double add = 0;
     PIDController autoDriveXController;
     PIDController autoDriveYController;
 
     // Auto drive to points rotate controller
     private static final double adrp = MAX_ROTATION_SPEED * (1 / (2 * Math.PI)) ; // 2*Pi radians away --> full power
-    private static final double adri = 0.2;
+    private static final double adri = 0.0;
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
 
@@ -193,7 +193,12 @@ public class Drive {
         SwerveModuleState[] swerveModuleStates; 
 
         if (fieldOriented) {
-            swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( ahrs.getRotation2d() )));
+            try {
+                swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( pose.getRotation() )));
+            } 
+            catch (Exception e) {
+                swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
+            }
         }
         else {
             swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
@@ -277,7 +282,6 @@ public class Drive {
                 targetYVelocity = yLimiter.calculate(targetYVelocity);
                 targetRotateVelocity = rotateLimiter.calculate(targetRotateVelocity);
 
-                //System.out.println("X Vel" + targetXVelocity + " Y Vel" + targetYVelocity + " Z Vel" + targetRotateVelocity);
 
                 // Actual movement -  only if wheels are rotated
                 teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);
@@ -413,6 +417,10 @@ public class Drive {
         return ahrs.getRotation2d();
     }
 
+    public double getPitch() {
+        return ahrs.getPitch();
+    }
+
     public void resetYaw() {
         ahrs.zeroYaw();
     }
@@ -435,7 +443,7 @@ public class Drive {
     // Forces our pose to update to a new location
     // Ran at start of auto and whenever a valid AprilTag reading is received
     public void resetOdometry(Pose2d pose) {
-        swerveDriveOdometry.resetPosition(new Rotation2d(0),
+        swerveDriveOdometry.resetPosition(getYaw(),
             new SwerveModulePosition[] { 
                 frontLeft.getPosition(), frontRight.getPosition(), backLeft.getPosition(), backRight.getPosition()
             },
@@ -453,32 +461,82 @@ public class Drive {
     }
 
     public int chargeRamp(boolean frontEndFirst) {
-        if (chargeRampFirstTime) {
-            chargeRampFirstTime = false;
-            chargeRampInitPitch = ahrs.getPitch();
+        if (rampFirstTime) {
+            rampFirstTime = false;
+            rampInitPitch = ahrs.getPitch();
         }
 
-        double targetPitchMagnitude = Math.abs(chargeRampInitPitch) + 12;
+        // Pitch should decrease by 12 if front end up, increase by 12 if back end up
+        double changeInPitch = 12;
+        if (frontEndFirst) {
+            changeInPitch *= -1;
+        }
+        double targetPitch = rampInitPitch + changeInPitch;
 
-        if (Math.abs(ahrs.getPitch()) > targetPitchMagnitude) {
-            chargeRampFirstTime = true;
-            return Robot.DONE;
+        // If frontEndFirst, decreasing pitch should pass below target
+        // If backEndFirst, increasing pitch should pass above target
+        if (frontEndFirst) {
+            if (ahrs.getPitch() < targetPitch) {
+                rampFirstTime = true;
+                return Robot.DONE;
+            }
+            else {
+                teleopDrive(3, 0, 0, false);
+                return Robot.CONT;  
+            }
         }
         else {
-            if (frontEndFirst) {
-                teleopDrive(3, 0, 0, false);
+            if (ahrs.getPitch() > targetPitch) {
+                rampFirstTime = true;
+                return Robot.DONE;
             }
             else {
                 teleopDrive(-3, 0, 0, false);
+                return Robot.CONT;  
             }
-            return Robot.CONT;  
         }
     }
 
-    public int balanceRamp() {
+    public int leaveRamp(boolean frontEndFirst) {
+        if (rampFirstTime) {
+            rampFirstTime = false;
+            rampInitPitch = ahrs.getPitch();
+        }
+
+        // Pitch should increase by 12 if front end up, decrease by 12 if back end up (opposite of going up ramp)
+        double changeInPitch = 12;
+        if (frontEndFirst == false) {
+            changeInPitch *= -1;
+        }
+        double targetPitch = rampInitPitch + changeInPitch;
+
+        // If frontEndFirst, increasing pitch should pass above target
+        // If backEndFirst, decreasing pitch should pass below target
+        if (frontEndFirst) {
+            if (ahrs.getPitch() > targetPitch) {
+                rampFirstTime = true;
+                return Robot.DONE;
+            }
+            else {
+                teleopDrive(3, 0, 0, false);
+                return Robot.CONT;  
+            }
+        }
+        else {
+            if (ahrs.getPitch() < targetPitch) {
+                rampFirstTime = true;
+                return Robot.DONE;
+            }
+            else {
+                teleopDrive(-3, 0, 0, false);
+                return Robot.CONT;  
+            }
+        }
+    }
+
+    public int balanceRamp(double targetPitch) {
         // Calculating targetVelocity based on distance to targetPoint
-        double targetPitch = 0;
-        rampBalanceController.setSetpoint(0);
+        rampBalanceController.setSetpoint(targetPitch);
 
         double driveVelocity = rampBalanceController.calculate(ahrs.getPitch(), targetPitch);
         driveVelocity = MathUtil.clamp(driveVelocity, -1.5, 1.5);
@@ -557,7 +615,7 @@ public class Drive {
     }
 
     public void testPose() {
-        if (printCount % 50 == 0) {
+        if (printCount % 2 == 0) {
             System.out.println("X=" + getX() + " Y=" + getY() + " Z=" + getZ());
         }
         printCount++;

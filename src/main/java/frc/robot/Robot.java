@@ -5,6 +5,10 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.*;
 
@@ -46,7 +50,7 @@ public class Robot extends TimedRobot {
 	private final SendableChooser<Integer> m_objectChooser = new SendableChooser<>();
 
 	// Auto Delay
-	private int delaySec = 0;
+	private long delaySec = 0;
 	
 
 	/**
@@ -104,17 +108,15 @@ public class Robot extends TimedRobot {
 	public void autonomousInit() {
 		// Choses start position
 		m_autoSelected = m_chooser.getSelected();
-		System.out.println("Auto selected: " + m_autoSelected);
 
 		// Gets the auto delay 
-		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
+		delaySec = (long)SmartDashboard.getNumber("Auto delay seconds", 0);
 
 		// Gets the number of objects placed in auto
 		m_objectsPlaced = m_objectChooser.getSelected();
 
 		//
 		drive.resetYaw();
-		drive.resetOdometry(new Pose2d(0, 0, drive.getYaw()));
 	}
 
 	@Override
@@ -123,27 +125,23 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Autonomous
 	 */
 	public void autonomousPeriodic() {
-		drive.updateOdometry();
-
 		if (status == Robot.CONT) {
-			status = auto.testRamp();
-			/*
 			switch (m_autoSelected) {
 				case "Wall":
 					status = auto.wallAuto(isRedAlliance.getBoolean(true), 1, delaySec);
 					break;
 				case "Ramp":
-					status = auto.rampAuto(isRedAlliance.getBoolean(true), 1, delaySec);
+					status = auto.rampAuto(delaySec);
 					break;
 				case "Center":
 					status = auto.centerAuto(isRedAlliance.getBoolean(true), 1, delaySec);
 					break;
 				default:
 					status = Robot.DONE;
-					//status = auto.driveToPointsTest();
 					break;
-			}*/
+			}
     	}
+		drive.updateOdometry();
 	}
 
 	@Override
