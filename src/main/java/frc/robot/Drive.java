@@ -51,9 +51,9 @@ public class Drive {
     private static final double MAX_WHEEL_SPEED      = 4; // Meters per second
 
     private final double MAX_APRIL_TAG_ERROR         = 10;
-    private final double AUTO_DRIVE_TOLERANCE        = 0.01;
-    private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.075;
-    private final double RAMP_BALANCE_TOLERANCE      = 0.01;
+    private final double AUTO_DRIVE_TOLERANCE        = 0.02; //0.01
+    private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.15; //0.075
+    private final double RAMP_BALANCE_TOLERANCE      = 2;
 
     // Instance Variables
     private int     rotateCount            = 0;
@@ -64,7 +64,13 @@ public class Drive {
     private double  encoderTarget;
     private int     autoPointIndex         = 0;
     private boolean autoPointFirstTime     = true;
-    
+    private boolean autoPointAngled        = false; // Tracks if wheels have been angled before driving
+    private boolean chargeRampFirstTime    = true;
+    private double  chargeRampInitPitch     = 0;
+    private double  initXVelocity          = 0;
+    private double  initYVelocity          = 0;
+    private double  initRotateVelocity     = 0;
+
     // NAVX
     public static AHRS ahrs;
 
@@ -99,9 +105,9 @@ public class Drive {
     PIDController autoRotateController;
 
     // Ramp balance controller
-    private static final double rbP = -0.2;
-    private static final double rbI = -0.00;
-    private static final double rbD = -0.3;
+    private static final double rbP = 0.06; //-0.04 works, but slow
+    private static final double rbI = 0.00;
+    private static final double rbD = 0.00;
     PIDController rampBalanceController;
 
     private double targetOrientation = 0;
@@ -219,25 +225,7 @@ public class Drive {
 
     // Autonomous function to drive to inputted list of points
     public int autoDriveToPoints(Pose2d[] listOfPoints) {
-        // Function ends once we pass the last point
-        if (autoPointIndex >= listOfPoints.length) {
-            autoPointIndex = 0;
-            autoPointFirstTime = true;
-            return Robot.DONE;
-        }
-
-        // Calculating targetVelocity based on distance to targetPoint
         Pose2d targetPoint = listOfPoints[autoPointIndex];
-
-        double targetXVelocity      = autoDriveXController.calculate(getX(), targetPoint.getX());
-        double targetYVelocity      = autoDriveYController.calculate(getY(), targetPoint.getY());
-        double targetRotateVelocity = autoDriveRotateController.calculate(getZ(), targetPoint.getRotation().getRadians());
-
-        targetXVelocity = xLimiter.calculate(targetXVelocity);
-        targetYVelocity = yLimiter.calculate(targetYVelocity);
-        targetRotateVelocity = rotateLimiter.calculate(targetRotateVelocity);
-
-        System.out.println("X Vel" + targetXVelocity + " Y Vel" + targetYVelocity + " Z Vel" + targetRotateVelocity);
 
         // This runs once for each point in the list
         if (autoPointFirstTime == true) {
@@ -248,6 +236,8 @@ public class Drive {
             autoDriveXController.setSetpoint(targetPoint.getX());
             autoDriveYController.setSetpoint(targetPoint.getY());
             autoDriveRotateController.setSetpoint(targetPoint.getRotation().getRadians());
+
+            autoPointAngled = false;
 
             System.out.println("X target:" + targetPoint.getX() + " Y target:" + targetPoint.getY() + " Z target:" + targetPoint.getRotation().getRadians());
 
@@ -262,24 +252,49 @@ public class Drive {
                 autoDriveYController.setTolerance(AUTO_DRIVE_TOLERANCE);
                 autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
             }
-        }
 
-        // Actual movement -  only if wheels are rotated
-        teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);
-
-        /*/
-        if (allWheelsRotated()) {
-            teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity);
-        }
+            initXVelocity      = autoDriveXController.calculate(getX(), targetPoint.getX());
+            initYVelocity      = autoDriveYController.calculate(getY(), targetPoint.getY());
+            initRotateVelocity = autoDriveRotateController.calculate(getZ(), targetPoint.getRotation().getRadians());
+        } 
+        // Runs when it's not the first time for a point
         else {
-            // Wheels will try to rotate to same angle, while drive motors cannot move
-            teleopDrive(targetXVelocity/100, targetYVelocity/100, targetRotateVelocity/100);
-        }*/
+            // Angles the wheels if they are not aligned before driving
+            if (autoPointAngled == false) {
+                int rotateStatus = rotateWheels(initXVelocity, initYVelocity, initRotateVelocity, true);
+                if (rotateStatus == Robot.DONE) {
+                    autoPointAngled = true;
+                }
+            }
+            // Drives normally once wheels are angled
+            else {
+                // Calculating targetVelocity based on distance to targetPoint
+                double targetXVelocity      = autoDriveXController.calculate(getX(), targetPoint.getX());
+                double targetYVelocity      = autoDriveYController.calculate(getY(), targetPoint.getY());
+                double targetRotateVelocity = autoDriveRotateController.calculate(getZ(), targetPoint.getRotation().getRadians());
+
+                targetXVelocity = xLimiter.calculate(targetXVelocity);
+                targetYVelocity = yLimiter.calculate(targetYVelocity);
+                targetRotateVelocity = rotateLimiter.calculate(targetRotateVelocity);
+
+                //System.out.println("X Vel" + targetXVelocity + " Y Vel" + targetYVelocity + " Z Vel" + targetRotateVelocity);
+
+                // Actual movement -  only if wheels are rotated
+                teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);
+            }
+        }
 
         // If X, Y, and Rotation are at target, moves on to next point
         if (autoDriveXController.atSetpoint() && autoDriveYController.atSetpoint() && autoDriveRotateController.atSetpoint()) {
             autoPointIndex++;
             autoPointFirstTime = true;
+        }
+
+        // Function ends once we pass the last point
+        if (autoPointIndex >= listOfPoints.length) {
+            autoPointIndex = 0;
+            autoPointFirstTime = true;
+            return Robot.DONE;
         }
 
         return Robot.CONT;
@@ -371,6 +386,14 @@ public class Drive {
         backRight.setRotateMotorPower(0.0);
     }
 
+    // Should be used to apply stronger brakes
+    public void crossWheels() {
+        frontLeft.move(new SwerveModuleState(0, new Rotation2d(Math.PI/4)));
+        frontRight.move(new SwerveModuleState(0, new Rotation2d(-Math.PI/4)));
+        backLeft.move(new SwerveModuleState(0, new Rotation2d(-Math.PI/4)));
+        backRight.move(new SwerveModuleState(0, new Rotation2d(Math.PI/4)));       
+    }
+
     private double getAverageEncoder() {
         return ( frontLeft.getDriveEncoder()  +
                  frontRight.getDriveEncoder() + 
@@ -388,6 +411,10 @@ public class Drive {
 
     public Rotation2d getYaw() {
         return ahrs.getRotation2d();
+    }
+
+    public void resetYaw() {
+        ahrs.zeroYaw();
     }
 
     // Updates pose based on encoder measurements
@@ -425,19 +452,50 @@ public class Drive {
         resetOdometry(aprilTagPose);
     }
 
+    public int chargeRamp() {
+        if (chargeRampFirstTime) {
+            chargeRampFirstTime = false;
+            chargeRampInitPitch = ahrs.getPitch();
+        }
+
+        double targetPitchMagnitude = Math.abs(chargeRampInitPitch) + 12;
+
+        if (Math.abs(ahrs.getPitch()) > targetPitchMagnitude) {
+            chargeRampFirstTime = true;
+            return Robot.DONE;
+        }
+        else {
+            teleopDrive(-3, 0, 0, false);
+            return Robot.CONT;  
+        }
+    }
+
     public int balanceRamp() {
         // Calculating targetVelocity based on distance to targetPoint
-        double targetRoll = 0;
+        double targetPitch = 0;
+        rampBalanceController.setSetpoint(0);
 
-        double driveVelocity = rampBalanceController.calculate(ahrs.getRoll(), targetRoll);
-        driveVelocity = MathUtil.clamp(driveVelocity, -0.9, 0.9);
+        double driveVelocity = rampBalanceController.calculate(ahrs.getPitch(), targetPitch);
+        driveVelocity = MathUtil.clamp(driveVelocity, -1.5, 1.5);
 
-        // Actual movement
-        teleopDrive(driveVelocity, 0, 0, false);
-        System.out.println("Roll: " + ahrs.getRoll());
-
+        // Does movement until routine ends
         if (rampBalanceController.atSetpoint()) {
+            crossWheels();
             return Robot.DONE;
+        }
+        else {
+            teleopDrive(driveVelocity, 0, 0, false);
+        }
+
+        return Robot.CONT;
+    }
+
+    public int rotateWheels(double driveX, double driveY, double driveZ, boolean fieldDrive) {
+        teleopDrive(driveX / 100, driveY / 100, driveZ / 100, fieldDrive);
+
+        if (frontLeft.rotateControllerAtSetpoint() && frontRight.rotateControllerAtSetpoint() &&
+            backLeft.rotateControllerAtSetpoint() && backRight.rotateControllerAtSetpoint()) {
+                return Robot.DONE;
         }
 
         return Robot.CONT;
@@ -501,7 +559,7 @@ public class Drive {
     }
 
     public void testGyro() {
-        if (printCount % 50 == 0) {
+        if (printCount % 15 == 0) {
             //System.out.println(ahrs.getRotation2d().getDegrees());
             System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
         }

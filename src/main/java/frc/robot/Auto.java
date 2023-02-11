@@ -4,14 +4,19 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 public class Auto {
+    // Instance Variables
     private boolean firstTimeDrive = true;
+    private boolean delayFirstTime = true;
+    private long delayEnd = 0;
     private int step;
+
+    // Object Creation
     private Drive drive;
 
     private static final double[][] autoCoordinates = {
-        {1, 0.0, Math.PI/2},
-        {0.0, 1.0, Math.PI}
-        //{0, 0.5, -Math.PI}
+        {0.55, 0.0, 0.0}
+        //{0.0, 0.25, 0.0},
+        //{-0.25, 0.25, 0.0}
     };
 
     private Pose2d[] listOfPoints = new Pose2d[autoCoordinates.length];
@@ -38,6 +43,48 @@ public class Auto {
 
     public int centerAuto(boolean redSide, int numCones, double delaySeconds) {
         return Robot.DONE;
+    }
+
+    public int testRamp() {
+        int status = Robot.CONT;
+    
+		if (firstTimeDrive == true) {
+			firstTimeDrive = false;
+			step = 1;
+		}
+
+        switch(step) {
+            case 1:
+                // Angles wheels before driving
+                status = drive.rotateWheels(-1, 0, 0, false);
+                break;
+            case 2:
+                status = drive.chargeRamp();
+                break;
+            case 3:
+                status = drive.balanceRamp();
+                break;
+            case 4:
+                status = autoDelay(2);
+                drive.crossWheels();
+                break;
+            default:
+                // Finished routine
+                step = 1;
+                firstTimeDrive = true;
+
+                // Stops applicable motors
+                drive.stopWheels();
+ 
+                return Robot.DONE;
+        }
+
+        //If we are done with a step, we go on to the next one and continue the routine
+        if (status == Robot.DONE) {
+            step++;
+        }
+        
+        return Robot.CONT;
     }
 
     public int driveToPointsTest() {
@@ -68,6 +115,20 @@ public class Auto {
             step++;
         }
         
+        return Robot.CONT;
+    }
+
+    public int autoDelay(long seconds) {
+        long currentMS = System.currentTimeMillis();
+
+        if (delayFirstTime) {
+            delayEnd = currentMS + (seconds * 1000);
+        }
+
+        if (currentMS > delayEnd) {
+            delayFirstTime = true;
+            return Robot.DONE;
+        }
         return Robot.CONT;
     }
 

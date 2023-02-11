@@ -113,6 +113,7 @@ public class Robot extends TimedRobot {
 		m_objectsPlaced = m_objectChooser.getSelected();
 
 		//
+		drive.resetYaw();
 		drive.resetOdometry(new Pose2d(0, 0, drive.getYaw()));
 	}
 
@@ -125,6 +126,8 @@ public class Robot extends TimedRobot {
 		drive.updateOdometry();
 
 		if (status == Robot.CONT) {
+			status = auto.testRamp();
+			/*
 			switch (m_autoSelected) {
 				case "Wall":
 					status = auto.wallAuto(isRedAlliance.getBoolean(true), 1, delaySec);
@@ -139,7 +142,7 @@ public class Robot extends TimedRobot {
 					status = Robot.DONE;
 					//status = auto.driveToPointsTest();
 					break;
-			}
+			}*/
     	}
 	}
 
@@ -200,7 +203,8 @@ public class Robot extends TimedRobot {
 		//drive.testEncoders();
 		//drive.testWheelPower();
 		//drive.periodicTestDrivePower();
-		drive.balanceRamp();
+		//drive.balanceRamp();
+		drive.testGyro();
 	}
 
 	/**

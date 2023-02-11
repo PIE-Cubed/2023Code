@@ -75,7 +75,7 @@ public class SwerveModule {
 
         rotateMotorController = new PIDController(ROTATE_P, ROTATE_I, ROTATE_D);
         rotateMotorController.enableContinuousInput(-Math.PI, Math.PI);
-        // Tolerance only used by autoDriveToPoints - wide tolerance to not delay auto
+        // Wide tolerance to not delay auto
         rotateMotorController.setTolerance(0.15); 
 
         driveMotorController  = new PIDController(DRIVE_P, DRIVE_I, DRIVE_D);
