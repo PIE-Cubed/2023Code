@@ -452,7 +452,7 @@ public class Drive {
         resetOdometry(aprilTagPose);
     }
 
-    public int chargeRamp() {
+    public int chargeRamp(boolean frontEndFirst) {
         if (chargeRampFirstTime) {
             chargeRampFirstTime = false;
             chargeRampInitPitch = ahrs.getPitch();
@@ -465,7 +465,12 @@ public class Drive {
             return Robot.DONE;
         }
         else {
-            teleopDrive(-3, 0, 0, false);
+            if (frontEndFirst) {
+                teleopDrive(3, 0, 0, false);
+            }
+            else {
+                teleopDrive(-3, 0, 0, false);
+            }
             return Robot.CONT;  
         }
     }
