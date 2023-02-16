@@ -83,11 +83,23 @@ public class Controls {
 	/**
 	 * ARM CONTROLS
 	 */
-	public double getShoulderPower() {
+	public double getBasePower() {
+		double rightAxis = xboxController.getRightTriggerAxis();
+		double leftAxis  = xboxController.getLeftTriggerAxis();
+
+		if (rightAxis > 0) {
+			return rightAxis;
+		}
+		else {
+			return -1 * leftAxis;
+		}
+	}
+
+	public double getMiddlePower() {
 		return Math.pow(-xboxController.getLeftY(), 3);
 	}
 
-	public double getElbowPower() {
+	public double getEndPower() {
 		return Math.pow(-xboxController.getRightY(), 3);
 	}
 

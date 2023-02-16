@@ -183,13 +183,13 @@ public class Robot extends TimedRobot {
 
 	private void armControl() {
 		// Add the grabber controls
-		double shoulderPower = controls.getShoulderPower();
-		double elbowPower    = controls.getElbowPower();
+		double basePower   = controls.getBasePower();
+		double middlePower = controls.getMiddlePower();
+		double endPower    = controls.getEndPower();
 
-		// Positive power moves the shoulder towards the front of the robot
-		// Positive power deploys the elbow
-		arm.shoulderPower(shoulderPower);
-		arm.elbowPower(elbowPower);
+		arm.setBasePower(basePower);
+		arm.setMiddlePower(middlePower);
+		arm.setEndPower(endPower);
 	}
 }
 
