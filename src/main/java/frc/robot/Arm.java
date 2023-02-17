@@ -23,6 +23,9 @@ public class Arm {
     private AbsoluteEncoder middleAbsoluteEncoder;
     private AbsoluteEncoder endAbsoluteEncoder;
 
+	private DoubleSolenoid  claw;
+	private final int PNEU_CONTROLLER_ID = 1;
+
 	//private DoubleSolenoid claw;
 
 	// Last valid set of angles, in case user passes boundaries
@@ -63,7 +66,7 @@ public class Arm {
         middleMotor = new CANSparkMax(7, MotorType.kBrushless);
         endMotor    = new CANSparkMax(6, MotorType.kBrushless);
 
-		//claw = new DoubleSolenoid(2, PneumaticsModuleType.REVPH, 0, 1);
+	//	claw = new DoubleSolenoid(PNEU_CONTROLLER_ID, PneumaticsModuleType.REVPH, 0, 15);
 
         baseMotor.setIdleMode(IdleMode.kCoast);
         middleMotor.setIdleMode(IdleMode.kCoast);
