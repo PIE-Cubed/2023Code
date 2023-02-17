@@ -168,7 +168,7 @@ public class Robot extends TimedRobot {
 	 * Runs constantly during test
 	 */
 	public void testPeriodic() {
-		// Nothing yet...
+		arm.testAbsEncoders();
 	}
 
 	/**

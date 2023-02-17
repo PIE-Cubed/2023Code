@@ -6,6 +6,9 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.math.MathUtil;
 import com.revrobotics.CANSparkMax.IdleMode;
 import edu.wpi.first.math.controller.ArmFeedforward;
@@ -20,58 +23,61 @@ public class Arm {
     private AbsoluteEncoder middleAbsoluteEncoder;
     private AbsoluteEncoder endAbsoluteEncoder;
 
-    // Used to calculate torque on motors
-    private Translation2d baseJointLocation   = new Translation2d(0, 0);
-    private Translation2d middleJointLocation = new Translation2d(0, 0);
-    private Translation2d endJointLocation    = new Translation2d(0, 0);
-	
+	//private DoubleSolenoid claw;
+
 	// Last valid set of angles, in case user passes boundaries
 	private double prevBaseAngle   = 0;
 	private double prevMiddleAngle = 0;
 	private double prevEndAngle    = 0;
 
+	private double printCount = 0;
+
     // Constants - need to measure all
-    private final double LENGTH_BASE   = 0.5;
-    private final double LENGTH_MIDDLE = 0.5;
-    private final double LENGTH_END    = 0.5;
-	private final double ROBOT_FRONT   = -0.15;
-	private final double ROBOT_BACK    = 0.4;
+    private final double LENGTH_BASE   = 0.5588;
+    private final double LENGTH_MIDDLE = 0.53848;
+    private final double LENGTH_END    = 0.4318;
+	private final double ROBOT_FRONT   = -0.2032;
+	private final double ROBOT_BACK    = 0.6096;
 	
 	private final double ANGLE_1_MIN   = Math.PI / 6;
 	private final double ANGLE_1_MAX   = Math.PI;
-	private final double ANGLE_2_MIN   = -5 * Math.PI / 6;
+	private final double ANGLE_2_MIN   = -5 * Math.PI / 4;
 	private final double ANGLE_2_MAX   = 5  * Math.PI / 6;
 	private final double ANGLE_3_MIN   = -5 * Math.PI / 6;
 	private final double ANGLE_3_MAX   = 5  * Math.PI / 6;
 	
-	private final double BASE_MASS    = 1;
-	private final double MIDDLE_MASS  = 1;
-	private final double END_MASS     = 1;
-	private final double JOINT_2_MASS = 1;
-	private final double JOINT_3_MASS = 1;
-	private final double CONE_MASS    = 0.5;
-	private final double CUBE_MASS    = 0.01;
+	// Masses in kg
+	private final double BASE_MASS    = 1.9912705;
+	private final double MIDDLE_MASS  = 1.44695966;
+	private final double END_MASS     = 0.94800805;
+	private final double JOINT_2_MASS = 0.48080791;
+	private final double JOINT_3_MASS = 0.48080791;
+	private final double CONE_MASS    = 0.65203903;
+	private final double CUBE_MASS    = 0.07087381;
 	
 	// Enum for claw empty, claw holding cone, claw holding cube
 
 	// Constructor
     public Arm() {
         baseMotor   = new CANSparkMax(5, MotorType.kBrushless);
-        middleMotor = new CANSparkMax(6, MotorType.kBrushless);
-        endMotor    = new CANSparkMax(7, MotorType.kBrushless);
+        middleMotor = new CANSparkMax(7, MotorType.kBrushless);
+        endMotor    = new CANSparkMax(6, MotorType.kBrushless);
 
-        baseMotor.setIdleMode(IdleMode.kBrake);
-        middleMotor.setIdleMode(IdleMode.kBrake);
+		//claw = new DoubleSolenoid(2, PneumaticsModuleType.REVPH, 0, 1);
+
+        baseMotor.setIdleMode(IdleMode.kCoast);
+        middleMotor.setIdleMode(IdleMode.kCoast);
         endMotor.setIdleMode(IdleMode.kBrake);
 
         baseAbsoluteEncoder   = baseMotor.getAbsoluteEncoder(Type.kDutyCycle);
         middleAbsoluteEncoder = middleMotor.getAbsoluteEncoder(Type.kDutyCycle);
         endAbsoluteEncoder    = endMotor.getAbsoluteEncoder(Type.kDutyCycle);
 
-        // TBD, may need to be negative
-        baseAbsoluteEncoder.setPositionConversionFactor(1);
-        middleAbsoluteEncoder.setPositionConversionFactor(1);
-        endAbsoluteEncoder.setPositionConversionFactor(1);
+        baseAbsoluteEncoder.setPositionConversionFactor(2 * Math.PI);
+        middleAbsoluteEncoder.setPositionConversionFactor(2 * Math.PI);
+        endAbsoluteEncoder.setPositionConversionFactor(2 * Math.PI);
+		endAbsoluteEncoder.setInverted(true);
+		baseAbsoluteEncoder.setZeroOffset(Math.PI/2 + 0.0332);
 		
 		prevBaseAngle   = baseAbsoluteEncoder.getPosition();
 		prevMiddleAngle = middleAbsoluteEncoder.getPosition();
@@ -271,4 +277,32 @@ public class Arm {
     public double getEndRotation() {
         return endAbsoluteEncoder.getPosition();
     }
+
+	/*
+	public void openClaw() {
+		claw.set(Value.kReverse);
+	}
+
+	public void closeClaw() {
+		claw.set(Value.kForward);
+	}*/
+
+	// Test functions
+	public void testAbsEncoders() {
+		if (printCount % 15 == 0) {
+			System.out.println("Base:" + baseAbsoluteEncoder.getPosition() + " Middle:" + middleAbsoluteEncoder.getPosition() + " End:" + endAbsoluteEncoder.getPosition());
+		}
+		printCount++;
+	}
+
+	public void testTorque() {
+		double q1 = baseAbsoluteEncoder.getPosition();
+		double q2 = middleAbsoluteEncoder.getPosition();
+		double q3 = endAbsoluteEncoder.getPosition();
+
+		if (printCount % 15 == 0) {
+			System.out.println("Base:" + torqueJoint1(q1, q2, q3) + " Middle:" + torqueJoint2(q1, q2, q3) + " End:" + torqueJoint3(q1, q2, q3));
+		}
+		printCount++;
+	}
 }
