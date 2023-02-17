@@ -23,6 +23,9 @@ public class Arm {
     private AbsoluteEncoder middleAbsoluteEncoder;
     private AbsoluteEncoder endAbsoluteEncoder;
 
+	private DoubleSolenoid  claw;
+	private final int PNEU_CONTROLLER_ID = 1;
+
 	//private DoubleSolenoid claw;
 
 	// Last valid set of angles, in case user passes boundaries
