@@ -168,6 +168,8 @@ public class Robot extends TimedRobot {
 	 * Runs constantly during test
 	 */
 	public void testPeriodic() {
+		//arm.testTorque();
+		//arm.restArm();
 		arm.testAbsEncoders();
 	}
 

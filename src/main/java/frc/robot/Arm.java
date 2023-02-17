@@ -54,20 +54,25 @@ public class Arm {
 	private final double JOINT_3_MASS = 0.48080791;
 	private final double CONE_MASS    = 0.65203903;
 	private final double CUBE_MASS    = 0.07087381;
-	
-	// Enum for claw empty, claw holding cone, claw holding cube
 
+	// Negative ratio to counter the force of gravity
+	private final double BASE_TORQUE_TO_POWER   = -0.02;
+	private final double MIDDLE_TORQUE_TO_POWER = -0.1;
+	private final double END_TORQUE_TO_POWER    = -0.5;
+	
 	// Constructor
     public Arm() {
         baseMotor   = new CANSparkMax(5, MotorType.kBrushless);
         middleMotor = new CANSparkMax(7, MotorType.kBrushless);
         endMotor    = new CANSparkMax(6, MotorType.kBrushless);
 
-		//claw = new DoubleSolenoid(2, PneumaticsModuleType.REVPH, 0, 1);
+		//claw = new DoubleSolenoid(1, PneumaticsModuleType.REVPH, 0, 1);
 
         baseMotor.setIdleMode(IdleMode.kCoast);
         middleMotor.setIdleMode(IdleMode.kCoast);
         endMotor.setIdleMode(IdleMode.kBrake);
+
+		baseMotor.setInverted(true);
 
         baseAbsoluteEncoder   = baseMotor.getAbsoluteEncoder(Type.kDutyCycle);
         middleAbsoluteEncoder = middleMotor.getAbsoluteEncoder(Type.kDutyCycle);
@@ -78,11 +83,23 @@ public class Arm {
         endAbsoluteEncoder.setPositionConversionFactor(2 * Math.PI);
 		endAbsoluteEncoder.setInverted(true);
 		baseAbsoluteEncoder.setZeroOffset(Math.PI/2 + 0.0332);
+		endAbsoluteEncoder.setZeroOffset(5.432);
 		
 		prevBaseAngle   = baseAbsoluteEncoder.getPosition();
 		prevMiddleAngle = middleAbsoluteEncoder.getPosition();
 		prevEndAngle    = endAbsoluteEncoder.getPosition();
     }
+
+	public void restArm() {
+		// Just base for now
+		double q1 = baseAbsoluteEncoder.getPosition();
+		double q2 = middleAbsoluteEncoder.getPosition();
+		double q3 = endAbsoluteEncoder.getPosition();
+
+		double torque = torqueJoint3(q1, q2, q3);
+		double power = torque * END_TORQUE_TO_POWER;
+		setEndPower(power);
+	}
 
     // Determines the angle of each joint. Wrist angle is relative to the floor in radians
     public double[] getJointAngles(double reachAngle, double reachDistance, double wristAngle) {
@@ -301,7 +318,7 @@ public class Arm {
 		double q3 = endAbsoluteEncoder.getPosition();
 
 		if (printCount % 15 == 0) {
-			System.out.println("Base:" + torqueJoint1(q1, q2, q3) + " Middle:" + torqueJoint2(q1, q2, q3) + " End:" + torqueJoint3(q1, q2, q3));
+			System.out.println(" End:" + torqueJoint3(q1, q2, q3) + " Total angle:" + (q1+q2+q3));
 		}
 		printCount++;
 	}
