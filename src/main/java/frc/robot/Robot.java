@@ -168,10 +168,15 @@ public class Robot extends TimedRobot {
 	 * Runs constantly during test
 	 */
 	public void testPeriodic() {
-		//arm.testTorque();
+		if (status == Robot.CONT) {
+			status = arm.coneTop();
+		}
+		arm.testAbsEncoders();
+		//arm.storeObject();
+		//arm.setArmAngles(2.117, 0.239, 0.104); // Top cone
 		//arm.restArm();
 		//arm.testAbsEncoders();
-		arm.moveArmTo(Math.PI/2, 1, 0);
+		//arm.moveArmTo(Math.PI/2, 1.95, 0);
 	}
 
 	/**

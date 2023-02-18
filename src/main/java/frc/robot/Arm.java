@@ -33,12 +33,16 @@ public class Arm {
 	private double prevMiddleAngle = 0;
 	private double prevEndAngle    = 0;
 
-	private double printCount = 0;
+	private double  printCount = 0;
+	private int     storeCount = 0;
+	private boolean secondConeTopCase = false;
+
 
     // Constants - need to verify joint limits
+	private final double MAX_X_REACH   = 1.1;
     private final double LENGTH_BASE   = 0.5588;
     private final double LENGTH_MIDDLE = 0.53848;
-    private final double LENGTH_END    = 0.4318;
+    private final double LENGTH_END    = 0.6096; //0.4318
 	private final double ROBOT_FRONT   = -0.2032;
 	private final double ROBOT_BACK    = 0.6096;
 	
@@ -64,9 +68,9 @@ public class Arm {
 	private final double END_TORQUE_TO_POWER    = -0.5;
 
 	// PIDs
-	private final double p1 = 0.12;
-	private final double p2 = 0.08;
-	private final double p3 = 0.16;
+	private final double p1 = 0.4; //0.16 without cone
+	private final double p2 = 0.3;
+	private final double p3 = 0.3;
 
 	private final double BASE_TOLERANCE   = Math.PI / 45; // Base angle has the most effects, needs to be tight
 	private final double MIDDLE_TOLERANCE = Math.PI / 25;
@@ -98,6 +102,9 @@ public class Arm {
         baseAbsoluteEncoder.setPositionConversionFactor(2 * Math.PI);
         middleAbsoluteEncoder.setPositionConversionFactor(2 * Math.PI);
         endAbsoluteEncoder.setPositionConversionFactor(2 * Math.PI);
+		baseAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
+        middleAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
+        endAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
 		endAbsoluteEncoder.setInverted(true);
 		baseAbsoluteEncoder.setZeroOffset(Math.PI/2 + 0.0332);
 		endAbsoluteEncoder.setZeroOffset(5.432);
@@ -115,9 +122,72 @@ public class Arm {
 		endPID.setTolerance(END_TOLERANCE);
     }
 
-	public int moveArmTo(double reachAngle, double reachDistance, double wristAngle) {
+	public int storeObject() {
+		return setArmAngles(0.608, Math.PI, 3.273);
+	}
+
+	public int coneTop() {
+		int status = Robot.CONT;
+
+		if (secondConeTopCase == false) {
+			status = moveArmToPoint(2.117, 0.239, 5*Math.PI/6);
+			if (status == Robot.DONE) {
+				secondConeTopCase = true;
+			}
+		}
+		else {
+			status = moveArmToPoint(2.117, 0.239, 0.104);
+			if (status == Robot.DONE) {
+				secondConeTopCase = false;
+				return Robot.DONE;
+			}
+		}
+
+		return Robot.CONT;
+	}
+
+	public int moveArmToPoint(double reachAngle, double reachDistance, double wristAngle) {
 		// Target joint angles
 		double[] targetJointAngles  = getJointAngles(reachAngle, reachDistance, wristAngle);
+		for (int i = 0; i < 3; i++) {
+			targetJointAngles[i] = MathUtil.angleModulus(targetJointAngles[i]);
+		}
+		
+		basePID.setSetpoint(targetJointAngles[0]);
+		middlePID.setSetpoint(targetJointAngles[1]);
+		endPID.setSetpoint(targetJointAngles[2]);
+
+		// Using current joint angles to get PID powers
+		double[] currentJointAngles = {
+			MathUtil.angleModulus(getBaseRotation()),
+			MathUtil.angleModulus(getMiddleRotation()),
+			MathUtil.angleModulus(getEndRotation())
+		};
+		double basePower   = basePID.calculate(currentJointAngles[0], targetJointAngles[0]);
+		double middlePower = middlePID.calculate(currentJointAngles[1], targetJointAngles[1]);
+		double endPower    = endPID.calculate(currentJointAngles[2], targetJointAngles[2]);
+
+		basePower   = MathUtil.clamp(basePower, -0.1, 0.1);
+		middlePower = MathUtil.clamp(middlePower, -0.1, 0.1);
+		endPower    = MathUtil.clamp(endPower, -0.1, 0.1);
+
+		// Combining PID power and feed forward to set motor powers
+		double[] feedForward = restArmPowers();
+
+		setBasePower(basePower + feedForward[0]);
+		setMiddlePower(middlePower + feedForward[1]);
+		setEndPower(endPower + feedForward[2]);
+
+		// Checking if all joints are at setpoint
+		if (basePID.atSetpoint() && middlePID.atSetpoint() && endPID.atSetpoint()) {
+			return Robot.DONE;
+		}
+		return Robot.CONT;
+	}
+
+	public int setArmAngles(double baseAngle, double middleAngle, double endAngle) {
+		// Target joint angles
+		double[] targetJointAngles  = {baseAngle, middleAngle, endAngle};
 		for (int i = 0; i < 3; i++) {
 			targetJointAngles[i] = MathUtil.angleModulus(targetJointAngles[i]);
 		}
@@ -174,6 +244,12 @@ public class Arm {
         // Total X and Y from base to end of claw
         double reachX = reachDistance * Math.cos(reachAngle);
         double reachY = reachDistance * Math.sin(reachAngle);
+
+		// Clamping max range to slightly under 4ft out
+		if (reachX > 1.1) {
+			reachY *= (1.1 / reachX);
+			reachX = 1.1;
+		}
 
         // X and Y from base to joint 3
         double joint3X   = reachX - (LENGTH_END * Math.cos(wristAngle));
@@ -281,7 +357,7 @@ public class Arm {
 		
 		double joint2Torque  = JOINT_2_MASS * -1 * joint2X;
 		double joint3Torque  = JOINT_3_MASS * -1 * joint3X;
-		double clawTorque    = 0            * -1 * endX; // Implement cone/cube mass
+		double clawTorque    = 0    * -1 * endX; // Implement cone/cube mass
 		
 		double baseTorque    = BASE_MASS    * -1 * baseCenterX;
 		double middleTorque  = MIDDLE_MASS  * -1 * middleCenterX;
@@ -299,7 +375,7 @@ public class Arm {
 		double endCenterX    = (joint3X + endX) / 2;
 		
 		double joint3Torque  = JOINT_3_MASS * -1 * joint3X;
-		double clawTorque    = 0            * -1 * endX; // Implement cone/cube mass
+		double clawTorque    = 0    * -1 * endX; // Implement cone/cube mass
 		
 		double middleTorque  = MIDDLE_MASS  * -1 * middleCenterX;
 		double endTorque     = END_MASS     * -1 * endCenterX;
@@ -312,7 +388,7 @@ public class Arm {
 		double endX          = LENGTH_END * Math.cos(q1 + q2 + q3);
 		double endCenterX    = endX / 2;
 		
-		double clawTorque    = 0        * -1 * endX; // Implement cone/cube mass
+		double clawTorque    = 0 * -1 * (endX - 0.15); // Implement cone/cube mass
 		double endTorque     = END_MASS * -1 * endCenterX;
 		
 		return clawTorque + endTorque;
