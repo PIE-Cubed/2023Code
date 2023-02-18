@@ -33,10 +33,14 @@ public class Robot extends TimedRobot {
 	Controls controls;
 	Drive    drive;
 	Auto     auto;
+	LED      led;
 
 	// Variables
 	private int status = CONT;
 	private int count = 0;
+
+	private long coneFlashEnd = 0;
+	private long cubeFlashEnd = 0;
 
 	// Auto path
 	private static final String wallAuto   = "Wall";
@@ -51,7 +55,6 @@ public class Robot extends TimedRobot {
 
 	// Auto Delay
 	private long delaySec = 0;
-	
 
 	/**
 	 * Constructor
@@ -61,6 +64,7 @@ public class Robot extends TimedRobot {
 		controls = new Controls(true);
 		drive    = new Drive();
 		auto     = new Auto(drive);
+		led      = LED.getInstance();
 
 		//Creates a Network Tables instance
 		FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
@@ -97,7 +101,6 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds on the robot
 	 */
 	public void robotPeriodic() {
-		// Nothing yet...
 	}
 
 	@Override
@@ -160,6 +163,7 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopPeriodic() {
 		wheelControl();
+		ledControl();
 	}
 
 	@Override
@@ -218,6 +222,45 @@ public class Robot extends TimedRobot {
 
 		drive.updateOdometry();
 		drive.testGyro();
+	}
+
+	private void ledControl() {
+		boolean cone = controls.getCone();
+		boolean cube = controls.getCube();
+
+		long currentTime = System.currentTimeMillis();
+
+		// Resetting timer for flashing what object we want
+		if (cone) {
+			coneFlashEnd = currentTime + (long) 5000;
+			cubeFlashEnd = 0;
+		}
+		if (cube) {
+			cubeFlashEnd = currentTime + (long) 5000;
+			coneFlashEnd = 0;
+		}
+
+		// If we signaled for object less than 5 seconds ago, turn LED on half the time to create a flash
+		if (currentTime < coneFlashEnd) {
+			if ((coneFlashEnd - currentTime) % 400 < 200) {
+				led.flashConeOn();
+			}
+			else {
+				led.flashConeOff();
+			}
+		}
+		else if (currentTime < cubeFlashEnd) {
+			if ((cubeFlashEnd - currentTime) % 400 < 200) {
+				led.flashCubeOn();
+			}
+			else {
+				led.flashCubeOff();
+			}
+		}
+		else {
+			led.teamColors();
+		}
+		led.updateLED();
 	}
 }
 

@@ -179,6 +179,18 @@ public class Controls {
 
 
 	/**
+	 * LED CONTROLS
+	 */
+	public boolean getCone() {
+		return driveController.getYButton();
+	}
+
+	public boolean getCube() {
+		return driveController.getXButton();
+	}
+
+
+	/**
 	 * Checks if the start button is pressed
 	 * @return start button pressed
 	 */

@@ -71,6 +71,8 @@ public class SwerveModule {
         driveEncoder          = driveMotor.getEncoder();
         rotateEncoder         = rotateMotor.getEncoder();
         absoluteEncoder       = rotateMotor.getAbsoluteEncoder(Type.kDutyCycle);
+        absoluteEncoder.setPositionConversionFactor(1);
+        absoluteEncoder.setInverted(false);
         driveEncoder.setPosition(0);
 
         rotateMotorController = new PIDController(ROTATE_P, ROTATE_I, ROTATE_D);
