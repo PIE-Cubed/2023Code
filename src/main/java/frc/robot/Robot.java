@@ -7,8 +7,13 @@ package frc.robot;
 import frc.robot.auto.*;
 //import frc.robot.commands.*;
 import frc.robot.commands.CommandGroups.*;
-import edu.wpi.first.math.geometry.Pose2d;
+
 import edu.wpi.first.wpilibj.TimedRobot;
+
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -31,6 +36,7 @@ public class Robot extends TimedRobot {
 	CustomTables   nTables;
 	Controls       controls;
 	Drive          drive;
+	LED            led;
 
 	// Command creation
     private Command autoCommand;
@@ -52,9 +58,12 @@ public class Robot extends TimedRobot {
 	public Robot() {
 		// Instance creation
 		drive    = new Drive();
-		nTables  = CustomTables.getInstance();
 		controls = new Controls();
 		position = new PoseEstimation(drive);
+
+		// Instance getters
+		led      = LED.getInstance();
+		nTables  = CustomTables.getInstance();
 	}
 
 	@Override
@@ -80,7 +89,7 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotPeriodic() {
 		// Updates the PoseTrackers constantly
-		position.updatePoseTrackers();
+		//position.updatePoseTrackers();
 
 		// Runs the CommandScheduler
 		CommandScheduler.getInstance().run();
@@ -133,6 +142,9 @@ public class Robot extends TimedRobot {
         if (autoCommand != null) {
             autoCommand.cancel();
         }
+
+		//
+		position.resetPoseTrackers(new Pose2d(new Translation2d(), new Rotation2d(-Math.PI/2)));
 	}
 
 	@Override
@@ -142,6 +154,13 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopPeriodic() {
 		wheelControl();
+		position.updatePoseTrackers();
+
+		Pose2d thing = position.getVisionPose();
+		// System.out.println(
+		// 	"X Position: " + Units.metersToInches(thing.getTranslation().getX()) +
+		// 	" Y Position: " + Units.metersToInches(thing.getTranslation().getY())
+		// );
 	}
 
 	@Override

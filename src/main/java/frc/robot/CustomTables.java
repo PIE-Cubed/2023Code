@@ -62,7 +62,7 @@ public class CustomTables {
      * 
      * @return isRed
      */
-    public boolean getRedAlliance() {
+    public boolean getIsRedAlliance() {
         return isRedAlliance.getBoolean(false);
     }
 

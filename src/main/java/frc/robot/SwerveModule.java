@@ -34,7 +34,7 @@ public class SwerveModule {
     private final double DRIVE_VEL_CONVERSION_FACTOR = DRIVE_POS_CONVERSION_FACTOR / 60;         // Meters per second
 
     // Absolute Encoder Conversion Factors
-    private final double MODULE_POS_CONVERSION_FACTOR = -1 * 2 * Math.PI;             // Radians per tick
+    private final double MODULE_POS_CONVERSION_FACTOR = 2 * Math.PI;             // Radians per tick
     private final double MODULE_VEL_CONVERSION_FACTOR = MODULE_POS_CONVERSION_FACTOR; // Radians per second
 
     // Create motors
@@ -94,6 +94,7 @@ public class SwerveModule {
         driveEncoder          = driveMotor .getEncoder();
         rotateEncoder         = rotateMotor.getEncoder();
         absoluteEncoder       = rotateMotor.getAbsoluteEncoder(Type.kDutyCycle);
+        absoluteEncoder.setInverted(true);
 
         // Resets the encoders
         driveEncoder .setPosition(0.00);

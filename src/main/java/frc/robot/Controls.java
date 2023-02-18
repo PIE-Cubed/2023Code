@@ -15,14 +15,15 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
  */
 public class Controls {
 	// CONSTANTS
-	private final int XBOX_ID     = 0;
-	private final int JOYSTICK_ID = 1;
+	private final int DRIVE_ID = 1;
+	private final int XBOX_ID  = 0;
 
 	// Controller object declaration
-	private Joystick       joystick;
+	//private Joystick       joystick;
+	private XboxController driveController;
 	private XboxController xboxController;
 
-	// Rate limiter declaration
+	// Rate limiters
 	private SlewRateLimiter xLimiter;
 	private SlewRateLimiter yLimiter;
 	private SlewRateLimiter rotateLimiter;
@@ -32,13 +33,13 @@ public class Controls {
 	 */
 	public Controls() {
 		// Instance Creation
-		joystick       = new Joystick(JOYSTICK_ID);
-		xboxController = new XboxController(XBOX_ID);
+		xboxController  = new XboxController(XBOX_ID);
+		driveController = new XboxController(DRIVE_ID);
 
-		// Rate limiter declaration
-		xLimiter      = new SlewRateLimiter(3);
-		yLimiter      = new SlewRateLimiter(3);
-		rotateLimiter = new SlewRateLimiter(3);
+		// Create the rate limiters
+		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
+		yLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
+		rotateLimiter = new SlewRateLimiter(6 * Math.PI);
 	}
 
 	/****************************************************************************************** 
@@ -55,7 +56,7 @@ public class Controls {
 	 */
 	public double getForwardSpeed() {
 		double speed;
-		double power = -1 * joystick.getY();
+		double power = -1 * driveController.getLeftY();
 
 		// If we are in deadzone, y is 0
 		power = MathUtil.applyDeadband(power, 0.1, 1);
@@ -78,7 +79,7 @@ public class Controls {
 	 */
 	public double getStrafeSpeed() {
 		double speed;
-		double power = -1 * joystick.getX();
+		double power = -1 * driveController.getLeftX();
 
 		// If we are in deadzone, x is 0
 		power = MathUtil.applyDeadband(power, 0.1, 1);
@@ -101,7 +102,7 @@ public class Controls {
 	 */
 	public double getRotateSpeed() {
 		double speed;
-		double power = -1 * joystick.getZ(); 
+		double power = -1 * driveController.getRightX();
 
 		// If we are in deadzone, rotatespeed is 0
 		power = MathUtil.applyDeadband(power, 0.15, 1);
@@ -114,6 +115,7 @@ public class Controls {
 
 		return speed;    
 	}
+
 
 	/****************************************************************************************** 
     *
@@ -141,9 +143,17 @@ public class Controls {
 
 	/****************************************************************************************** 
     *
-    *    AUTOKILL
+    *    LED FUNCTIONS
     * 
     ******************************************************************************************/
+	public boolean getCone() {
+		return driveController.getYButton();
+	}
+
+	public boolean getCube() {
+		return driveController.getXButton();
+	}
+
 	/**
 	 * Checks if the start button is pressed
 	 * @return startButtonPressed

@@ -25,9 +25,9 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;;
 public class PoseEstimation {
     // CONSTANTS
     // Dimensions of the camera to robot transform (inches)
-    private double X_OFFSET_IN = 0;
-    private double Y_OFFSET_IN = 0;
-    private double Z_OFFSET_IN = 0;
+    private double X_OFFSET_IN = -6  + 1/4;
+    private double Y_OFFSET_IN = -12 + 3/8;
+    private double Z_OFFSET_IN = 19 + 3/8;
 
     // Dimensions of the camera to robot transform (meters)
     private double X_OFFSET_M = Units.inchesToMeters(X_OFFSET_IN);
@@ -61,8 +61,13 @@ public class PoseEstimation {
         this.drive   = drive;
         this.nTables = CustomTables.getInstance();
  
-        // Default module positions
-        SwerveModulePosition[] moduleStartPosition = new SwerveModulePosition[4];
+        // Starting module positions
+        SwerveModulePosition[] moduleStartPosition = {
+            drive.getFLPosition(),
+            drive.getFRPosition(),
+            drive.getBLPosition(),
+            drive.getBRPosition()
+        };
 
         // Creates the odometry tracker
         odometry = new SwerveDriveOdometry(
@@ -73,8 +78,8 @@ public class PoseEstimation {
         );
 
         // Defines the vision pose estimator's trust values (higher means less trusted)
-        Matrix<N3, N1> odometryTrust = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01); // x, y, theta
-        Matrix<N3, N1> visionTrust   = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01); // x, y, theta
+        Matrix<N3, N1> odometryTrust = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(100.00, 100.00, 100.00); // x, y, theta
+        Matrix<N3, N1> visionTrust   = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.00, 0.00, 0.00); // x, y, theta
 
         // Creates the vision pose tracker
         visionEstimator = new SwerveDrivePoseEstimator(
@@ -86,22 +91,22 @@ public class PoseEstimation {
             visionTrust
         );
 
-        // Tries to load the field from a json
+        // Tries to load the AprilTag positions from a json
         try {
-            field = new AprilTagFieldLayout("src/main/java/frc/robot/2023-chargedup.json");
+            field = new AprilTagFieldLayout("/home/lvuser/2023-chargedup.json");
         } catch (IOException ex) {
             System.out.println("Unable to open trajectory: " + ex.getStackTrace());
         }
 
         // Sets the origin depending on alliance color
-        boolean color = nTables.getRedAlliance();
+        boolean color = nTables.getIsRedAlliance();
         if (color == false) {
             // We are on the Red Alliance
-            field.setOrigin(OriginPosition.kRedAllianceWallRightSide);
+            field.setOrigin(OriginPosition.kBlueAllianceWallRightSide);
         }
         else {
             // We are on the Blue Alliance
-            field.setOrigin(OriginPosition.kBlueAllianceWallRightSide);
+            field.setOrigin(OriginPosition.kRedAllianceWallRightSide);
         }
     }
 
@@ -183,6 +188,11 @@ public class PoseEstimation {
 
                 // Tranforms the camera's pose to the robot's center
                 Pose3d measurement = camPose.transformBy(CAMERA_TO_ROBOT.inverse());
+
+                System.out.println("target: " + targetPose);
+                System.out.println("cam_target: " + camToTarget);
+                System.out.println("cam: " + camPose);
+                System.out.println("measurement: " + measurement);
 
                 // Adds the vision measurement
                 visionEstimator.addVisionMeasurement(
