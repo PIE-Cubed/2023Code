@@ -91,16 +91,19 @@ public class Auto {
                 status = drive.autoDriveToPoints(rampAutoExitCommunity);
                 break;
             case 8:
-                // Charge toward ramp with front side
-                status = drive.chargeRamp(true);
                 // Find drifted pitch of ground - ramp should be the same angle
                 balancedPitch = drive.getPitch();
+                status = Robot.DONE;
                 break;
             case 9:
+                // Charge toward ramp with front side
+                status = drive.chargeRamp(true);
+                break;
+            case 10:
                 // Balance on ramp
                 status = drive.balanceRamp(balancedPitch);
                 break;
-            case 10:
+            case 11:
                 // Lock wheels
                 status = autoDelay(1);
                 drive.crossWheels();

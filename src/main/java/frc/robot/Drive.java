@@ -51,7 +51,7 @@ public class Drive {
     private static final double MAX_WHEEL_SPEED      = 4; // Meters per second
 
     private final double MAX_APRIL_TAG_ERROR         = 10;
-    private final double AUTO_DRIVE_TOLERANCE        = 0.02; //0.01
+    private final double AUTO_DRIVE_TOLERANCE        = 0.05; //0.01
     private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.15; //0.075
     private final double RAMP_BALANCE_TOLERANCE      = 2;
 
@@ -70,6 +70,7 @@ public class Drive {
     private double  initXVelocity          = 0;
     private double  initYVelocity          = 0;
     private double  initRotateVelocity     = 0;
+    private int     rampStep               = 1;
 
     // NAVX
     public static AHRS ahrs;
@@ -461,40 +462,94 @@ public class Drive {
     }
 
     public int chargeRamp(boolean frontEndFirst) {
+        int status = Robot.CONT;
+
+        double changeInPitch;
+        double targetPitch;
+
         if (rampFirstTime) {
             rampFirstTime = false;
+            rampStep = 1;
             rampInitPitch = ahrs.getPitch();
         }
 
-        // Pitch should decrease by 12 if front end up, increase by 12 if back end up
-        double changeInPitch = 12;
-        if (frontEndFirst) {
-            changeInPitch *= -1;
-        }
-        double targetPitch = rampInitPitch + changeInPitch;
+        switch(rampStep) {
+            // Step 1: charge ramp until we go up by 20 degrees
+            case 1:
+                // Pitch should decrease by 20 if front end up, increase by 20 if back end up
+                changeInPitch = 20;
+                if (frontEndFirst) {
+                    changeInPitch *= -1;
+                }
+                targetPitch = rampInitPitch + changeInPitch;
 
-        // If frontEndFirst, decreasing pitch should pass below target
-        // If backEndFirst, increasing pitch should pass above target
-        if (frontEndFirst) {
-            if (ahrs.getPitch() < targetPitch) {
+                // If frontEndFirst, decreasing pitch should pass below target
+                // If backEndFirst, increasing pitch should pass above target
+                System.out.println("Current pitch:" + ahrs.getPitch() + " target:>" + targetPitch);
+                if (frontEndFirst) {
+                    if (ahrs.getPitch() < targetPitch) {
+                        status = Robot.DONE;
+                    }
+                    else {
+                        teleopDrive(3, 0, 0, false);
+                        status = Robot.CONT;  
+                    }
+                }
+                else {
+                    if (ahrs.getPitch() > targetPitch) {
+                        System.out.println("Status is DONE");
+                        status = Robot.DONE;
+                    }
+                    else {
+                        teleopDrive(-3, 0, 0, false);
+                        status = Robot.CONT;  
+                    }
+                }
+                break;
+            // Step 2: keep charging ramp until our angle comes back below 8
+            case 2:
+                // Pitch should increase from -20 to -15 if front end first, decrease from 20 to 15 if back end first
+                changeInPitch = 15;
+                if (frontEndFirst) {
+                    changeInPitch *= -1;
+                }
+                targetPitch = rampInitPitch + changeInPitch;
+
+                // If frontEndFirst, pitch should start increasing and pass above target
+                // If backEndFirst, pitch should start decreasing and pass below target
+                System.out.println("Current pitch:" + ahrs.getPitch() + " target:<" + targetPitch);
+                if (frontEndFirst) {
+                    if (ahrs.getPitch() > targetPitch) {
+                        status = Robot.DONE;
+                    }
+                    else {
+                        teleopDrive(3, 0, 0, false);
+                        status = Robot.CONT;  
+                    }
+                }
+                else {
+                    if (ahrs.getPitch() < targetPitch) {
+                        status = Robot.DONE;
+                    }
+                    else {
+                        teleopDrive(-3, 0, 0, false);
+                        status = Robot.CONT;  
+                    }
+                }
+                break;
+            default:
+                rampStep = 1;
                 rampFirstTime = true;
-                return Robot.DONE;
-            }
-            else {
-                teleopDrive(3, 0, 0, false);
-                return Robot.CONT;  
-            }
+                System.out.println("Returning done");
+                return Robot.DONE;      
         }
-        else {
-            if (ahrs.getPitch() > targetPitch) {
-                rampFirstTime = true;
-                return Robot.DONE;
-            }
-            else {
-                teleopDrive(-3, 0, 0, false);
-                return Robot.CONT;  
-            }
+
+        if (status == Robot.DONE) {
+            rampStep++;
+            System.out.println("Going to step " + rampStep);
         }
+            
+        return Robot.CONT; 
     }
 
     public int leaveRamp(boolean frontEndFirst) {
