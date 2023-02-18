@@ -159,6 +159,10 @@ public class Controls {
 		return speed;    
 	}
 
+	public boolean zeroYaw() {
+		return driveController.getLeftStickButtonPressed();
+	}
+
 
 	/**
 	 * ARM CONTROLS

@@ -136,9 +136,9 @@ public class Drive {
         ahrs.zeroYaw();
 
         // Initializing rate limiters
-        xLimiter = new SlewRateLimiter(12);
-        yLimiter = new SlewRateLimiter(12);
-        rotateLimiter = new SlewRateLimiter(4 * Math.PI);
+        xLimiter = new SlewRateLimiter(24);
+        yLimiter = new SlewRateLimiter(24);
+        rotateLimiter = new SlewRateLimiter(8 * Math.PI);
 
         /* The locations for the modules must be relative to the center of the robot. 
          * Positive x values represent moving toward the front of the robot 
@@ -195,7 +195,7 @@ public class Drive {
 
         if (fieldOriented) {
             try {
-                swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( pose.getRotation() )));
+                swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( ahrs.getRotation2d() )));
             } 
             catch (Exception e) {
                 swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
@@ -423,7 +423,9 @@ public class Drive {
     }
 
     public void resetYaw() {
+        // Resets odometry to link our current pose with the new gyro angle
         ahrs.zeroYaw();
+        resetOdometry(pose);
     }
 
     // Updates pose based on encoder measurements

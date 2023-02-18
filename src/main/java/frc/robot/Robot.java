@@ -218,10 +218,16 @@ public class Robot extends TimedRobot {
 		double strafeSpeed  = controls.getStrafeSpeed();
 		double rotateSpeed  = controls.getRotateSpeed();
 
-		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, false);
+		boolean zeroYaw = controls.zeroYaw();
+
+		if (zeroYaw) {
+			drive.resetYaw();
+			System.out.println("Zeroing yaw");
+		}
+
+		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
 
 		drive.updateOdometry();
-		drive.testGyro();
 	}
 
 	private void ledControl() {
