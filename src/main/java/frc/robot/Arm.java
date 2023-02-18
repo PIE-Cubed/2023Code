@@ -35,7 +35,7 @@ public class Arm {
 
 	private double printCount = 0;
 
-    // Constants - need to measure all
+    // Constants - need to verify joint limits
     private final double LENGTH_BASE   = 0.5588;
     private final double LENGTH_MIDDLE = 0.53848;
     private final double LENGTH_END    = 0.4318;
@@ -44,10 +44,10 @@ public class Arm {
 	
 	private final double ANGLE_1_MIN   = Math.PI / 6;
 	private final double ANGLE_1_MAX   = Math.PI;
-	private final double ANGLE_2_MIN   = -5 * Math.PI / 4;
+	private final double ANGLE_2_MIN   = -5 * Math.PI / 6;
 	private final double ANGLE_2_MAX   = 5  * Math.PI / 6;
 	private final double ANGLE_3_MIN   = -5 * Math.PI / 6;
-	private final double ANGLE_3_MAX   = 5  * Math.PI / 6;
+	private final double ANGLE_3_MAX   = Math.PI / 2;
 	
 	// Masses in kg
 	private final double BASE_MASS    = 1.9912705;
@@ -59,9 +59,22 @@ public class Arm {
 	private final double CUBE_MASS    = 0.07087381;
 
 	// Negative ratio to counter the force of gravity
-	private final double BASE_TORQUE_TO_POWER   = -0.02;
-	private final double MIDDLE_TORQUE_TO_POWER = -0.1;
+	private final double BASE_TORQUE_TO_POWER   = -0.01;
+	private final double MIDDLE_TORQUE_TO_POWER = -0.0175;
 	private final double END_TORQUE_TO_POWER    = -0.5;
+
+	// PIDs
+	private final double p1 = 0.12;
+	private final double p2 = 0.08;
+	private final double p3 = 0.16;
+
+	private final double BASE_TOLERANCE   = Math.PI / 45; // Base angle has the most effects, needs to be tight
+	private final double MIDDLE_TOLERANCE = Math.PI / 25;
+	private final double END_TOLERANCE    = Math.PI / 25;
+
+	private PIDController basePID;  
+	private PIDController middlePID;
+	private PIDController endPID;
 	
 	// Constructor
     public Arm() {
@@ -71,11 +84,12 @@ public class Arm {
 
 		//claw = new DoubleSolenoid(1, PneumaticsModuleType.REVPH, 0, 1);
 
-        baseMotor.setIdleMode(IdleMode.kCoast);
-        middleMotor.setIdleMode(IdleMode.kCoast);
+        baseMotor.setIdleMode(IdleMode.kBrake);
+        middleMotor.setIdleMode(IdleMode.kBrake);
         endMotor.setIdleMode(IdleMode.kBrake);
 
 		baseMotor.setInverted(true);
+		middleMotor.setInverted(true);
 
         baseAbsoluteEncoder   = baseMotor.getAbsoluteEncoder(Type.kDutyCycle);
         middleAbsoluteEncoder = middleMotor.getAbsoluteEncoder(Type.kDutyCycle);
@@ -91,17 +105,68 @@ public class Arm {
 		prevBaseAngle   = baseAbsoluteEncoder.getPosition();
 		prevMiddleAngle = middleAbsoluteEncoder.getPosition();
 		prevEndAngle    = endAbsoluteEncoder.getPosition();
+
+		basePID   = new PIDController(p1, 0, 0);
+		middlePID = new PIDController(p2, 0, 0);
+		endPID    = new PIDController(p3, 0, 0);
+
+		basePID.setTolerance(BASE_TOLERANCE);
+		middlePID.setTolerance(MIDDLE_TOLERANCE);
+		endPID.setTolerance(END_TOLERANCE);
     }
 
-	public void restArm() {
+	public int moveArmTo(double reachAngle, double reachDistance, double wristAngle) {
+		// Target joint angles
+		double[] targetJointAngles  = getJointAngles(reachAngle, reachDistance, wristAngle);
+		for (int i = 0; i < 3; i++) {
+			targetJointAngles[i] = MathUtil.angleModulus(targetJointAngles[i]);
+		}
+		
+		basePID.setSetpoint(targetJointAngles[0]);
+		middlePID.setSetpoint(targetJointAngles[1]);
+		endPID.setSetpoint(targetJointAngles[2]);
+
+		// Using current joint angles to get PID powers
+		double[] currentJointAngles = {
+			MathUtil.angleModulus(getBaseRotation()),
+			MathUtil.angleModulus(getMiddleRotation()),
+			MathUtil.angleModulus(getEndRotation())
+		};
+		double basePower   = basePID.calculate(currentJointAngles[0], targetJointAngles[0]);
+		double middlePower = middlePID.calculate(currentJointAngles[1], targetJointAngles[1]);
+		double endPower    = endPID.calculate(currentJointAngles[2], targetJointAngles[2]);
+
+		// Combining PID power and feed forward to set motor powers
+		double[] feedForward = restArmPowers();
+
+		setBasePower(basePower + feedForward[0]);
+		setMiddlePower(middlePower + feedForward[1]);
+		setEndPower(endPower + feedForward[2]);
+
+		// Checking if all joints are at setpoint
+		if (basePID.atSetpoint() && middlePID.atSetpoint() && endPID.atSetpoint()) {
+			return Robot.DONE;
+		}
+		return Robot.CONT;
+	}
+
+	public double[] restArmPowers() {
 		// Just base for now
 		double q1 = baseAbsoluteEncoder.getPosition();
 		double q2 = middleAbsoluteEncoder.getPosition();
 		double q3 = endAbsoluteEncoder.getPosition();
 
-		double torque = torqueJoint3(q1, q2, q3);
-		double power = torque * END_TORQUE_TO_POWER;
-		setEndPower(power);
+		double torque1 = torqueJoint1(q1, q2, q3);
+		double power1 = torque1 * BASE_TORQUE_TO_POWER;
+
+		double torque2 = torqueJoint2(q1, q2, q3);
+		double power2 = torque2 * MIDDLE_TORQUE_TO_POWER;
+
+		double torque3 = torqueJoint3(q1, q2, q3);
+		double power3 = torque3 * END_TORQUE_TO_POWER;
+
+		double[] results = {power1, power2, power3};
+		return results;
 	}
 
     // Determines the angle of each joint. Wrist angle is relative to the floor in radians
@@ -134,8 +199,8 @@ public class Arm {
         double angleFromJoint3ToArm1 = Math.asin(height / LENGTH_BASE);
 		double q1 = joint3Angle + angleFromJoint3ToArm1;
 		
-		double q2 = -1 * (180 - (90 - angleFromJoint3ToArm1) - Math.acos(height / LENGTH_MIDDLE));
-		
+		double q2 = -1 * (Math.PI - (Math.PI/2 - angleFromJoint3ToArm1) - Math.acos(height / LENGTH_MIDDLE));
+
 		// Clamp q1 and q2 before calculating q3 so the wrist angle calculation will be based on the actual q1 and q2
 		q1 = MathUtil.clamp(q1, ANGLE_1_MIN, ANGLE_1_MAX);
 		q2 = MathUtil.clamp(q2, ANGLE_2_MIN, ANGLE_2_MAX);
@@ -144,14 +209,13 @@ public class Arm {
 		q3 = MathUtil.clamp(q3, ANGLE_3_MIN, ANGLE_3_MAX);
 		
 		// Determine if any part of arm intersects with robot
-		// For all 3 segments, find when y = -0.05 meters below joint 1. If this occurs in the robot's x-values, reject the calculated angles and use the previous ones
-		double baseIntersect = findRobotIntersection(0, 0, q1);
-		
+		// For all 3 segments, find when y = -0.05 meters below joint 1. If this occurs in the robot's x-values, reject the calculated angles and use the previous ones		
 		double joint2X = LENGTH_BASE * Math.cos(q1);
 		double joint2Y = LENGTH_BASE * Math.sin(q1);
-		double middleIntersect = findRobotIntersection(joint2X, joint2Y, (q1 + q2));
+		double baseIntersect = findRobotIntersection(0, 0, joint2X, q1);
+		double middleIntersect = findRobotIntersection(joint2X, joint2Y, joint3X, (q1 + q2));
 		
-		double endIntersect = findRobotIntersection(joint3X, joint3Y, (q1 + q2 + q3));
+		double endIntersect = findRobotIntersection(joint3X, joint3Y, reachX, (q1 + q2 + q3));
 		
 		if (	(ROBOT_FRONT < baseIntersect   && baseIntersect   < ROBOT_BACK) ||
 				(ROBOT_FRONT < middleIntersect && middleIntersect < ROBOT_BACK) ||
@@ -180,16 +244,26 @@ public class Arm {
 		return height;
 	}
 	
-	private double findRobotIntersection(double startX, double startY, double radians) {
+	private double findRobotIntersection(double startX, double startY, double endX, double radians) {
 		// Standard calculation for intersection of 2 lines --> ax + b = -0.05
 		if (radians % (Math.PI) == Math.PI / 2) {
 			radians += 0.001;
 		}
 			
 		double slope = Math.tan(radians);
+
 		double yIntercept = (0 - startX) * slope + startY;
 		
 		double robotInterceptX = (-1 * yIntercept - 0.05) / slope;
+
+		// If slope is 0, or Y-intercept is outside of the start and end X values, the robot is not in danger
+		if (robotInterceptX < Math.min(startX, endX) || robotInterceptX > Math.max(startX, endX)) {
+			return -100;
+		}
+		if (slope == 0) {
+			return -100;
+		}
+
 		return robotInterceptX;
 	}		
 

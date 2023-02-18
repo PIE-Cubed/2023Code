@@ -170,7 +170,8 @@ public class Robot extends TimedRobot {
 	public void testPeriodic() {
 		//arm.testTorque();
 		//arm.restArm();
-		arm.testAbsEncoders();
+		//arm.testAbsEncoders();
+		arm.moveArmTo(Math.PI/2, 1, 0);
 	}
 
 	/**
