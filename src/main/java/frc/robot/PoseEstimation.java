@@ -25,8 +25,8 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;;
 public class PoseEstimation {
     // CONSTANTS
     // Dimensions of the camera to robot transform (inches)
-    private double X_OFFSET_IN = -6  + 1/4;
-    private double Y_OFFSET_IN = -12 + 3/8;
+    private double X_OFFSET_IN = -12 + 3/8;
+    private double Y_OFFSET_IN = -6  + 1/4;
     private double Z_OFFSET_IN = 19 + 3/8;
 
     // Dimensions of the camera to robot transform (meters)
@@ -145,8 +145,7 @@ public class PoseEstimation {
         SwerveModulePosition[] allModulePosition = getAllModulePositions();
 
         // Updates the pose estimator (without vision)
-        visionEstimator.updateWithTime(
-            sysTime,
+        visionEstimator.update(
             new Rotation2d( drive.getHeading() ),
             allModulePosition
         );
@@ -179,15 +178,15 @@ public class PoseEstimation {
                 );
 
                 // Gets the camera's pose relative to the tag
-                Pose3d camPose = targetPose.transformBy(camToTarget.inverse());
+                Pose3d camPose = targetPose.transformBy(camToTarget);
 
                 // Tranforms the camera's pose to the robot's center
                 Pose3d measurement = camPose.transformBy(CAMERA_TO_ROBOT.inverse());
 
-                System.out.println("target: " + targetPose);
-                System.out.println("cam_target: " + camToTarget);
-                System.out.println("cam: " + camPose);
-                System.out.println("measurement: " + measurement);
+                // System.out.println("target: " + targetPose);
+                // System.out.println("cam_target: " + camToTarget);
+                // System.out.println("cam: " + camPose);
+                // System.out.println("measurement: " + measurement);
 
                 // Adds the vision measurement
                 visionEstimator.addVisionMeasurement(
