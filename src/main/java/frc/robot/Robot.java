@@ -143,8 +143,18 @@ public class Robot extends TimedRobot {
             autoCommand.cancel();
         }
 
-		//
-		position.resetPoseTrackers(new Pose2d(new Translation2d(), new Rotation2d(-Math.PI/2)));
+		// Resets the pose trackers to be near tag 7
+		position.resetPoseTrackers(
+			new Pose2d(
+				new Translation2d(
+					Units.inchesToMeters(50),
+					Units.inchesToMeters(80)
+				),
+				new Rotation2d(
+					-Math.PI/2
+				)
+			)
+		);
 	}
 
 	@Override
@@ -157,10 +167,10 @@ public class Robot extends TimedRobot {
 		position.updatePoseTrackers();
 
 		Pose2d thing = position.getVisionPose();
-		// System.out.println(
-		// 	"X Position: " + Units.metersToInches(thing.getTranslation().getX()) +
-		// 	" Y Position: " + Units.metersToInches(thing.getTranslation().getY())
-		// );
+		System.out.println(
+			"X Position: " + Units.metersToInches(thing.getTranslation().getX()) +
+			" Y Position: " + Units.metersToInches(thing.getTranslation().getY())
+		);
 	}
 
 	@Override

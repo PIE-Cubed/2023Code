@@ -15,7 +15,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.numbers.*;
 import edu.wpi.first.math.util.Units;
-
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;;
 
@@ -62,29 +62,24 @@ public class PoseEstimation {
         this.nTables = CustomTables.getInstance();
  
         // Starting module positions
-        SwerveModulePosition[] moduleStartPosition = {
-            drive.getFLPosition(),
-            drive.getFRPosition(),
-            drive.getBLPosition(),
-            drive.getBRPosition()
-        };
+        SwerveModulePosition[] moduleStartPosition = getAllModulePositions();
 
         // Creates the odometry tracker
         odometry = new SwerveDriveOdometry(
             drive.swerveDriveKinematics,
-            new Rotation2d(0),
+            new Rotation2d( drive.getHeading() ),
             moduleStartPosition,
             new Pose2d()
         );
 
         // Defines the vision pose estimator's trust values (higher means less trusted)
         Matrix<N3, N1> odometryTrust = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(100.00, 100.00, 100.00); // x, y, theta
-        Matrix<N3, N1> visionTrust   = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.00, 0.00, 0.00); // x, y, theta
+        Matrix<N3, N1> visionTrust   = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.01, 0.01, 0.01); // x, y, theta
 
         // Creates the vision pose tracker
         visionEstimator = new SwerveDrivePoseEstimator(
             drive.swerveDriveKinematics,
-            new Rotation2d(),
+            new Rotation2d( drive.getHeading() ),
             moduleStartPosition,
             new Pose2d(),
             odometryTrust,
@@ -101,11 +96,11 @@ public class PoseEstimation {
         // Sets the origin depending on alliance color
         boolean color = nTables.getIsRedAlliance();
         if (color == false) {
-            // We are on the Red Alliance
+            // We are on the Blue Alliance
             field.setOrigin(OriginPosition.kBlueAllianceWallRightSide);
         }
         else {
-            // We are on the Blue Alliance
+            // We are on the Red Alliance
             field.setOrigin(OriginPosition.kRedAllianceWallRightSide);
         }
     }
@@ -141,22 +136,22 @@ public class PoseEstimation {
      * Updates the VisionEstimator.
      */
     public void updateVisionEstimator() {
-        // Compiles all the module positions
+        // Gets current values
+        int                    id                = nTables.getBestResultID();
+        boolean                tv                = nTables.getTargetValid();
+        Pose3d                 detPose           = nTables.getBestResult();
+        double                 detTime           = nTables.getDetectionTime();
+        double                 sysTime           = Timer.getFPGATimestamp();
         SwerveModulePosition[] allModulePosition = getAllModulePositions();
 
         // Updates the pose estimator (without vision)
-        visionEstimator.update(
+        visionEstimator.updateWithTime(
+            sysTime,
             new Rotation2d( drive.getHeading() ),
             allModulePosition
         );
 
-        // Gets current values
-        int     id     = nTables.getBestResultID();
-        boolean tv     = nTables.getTargetValid();
-        Pose3d detPose = nTables.getBestResult();
-        double detTime = nTables.getDetectionTime();
-
-        // Adds the vision measurement if it hasn't been calculated yet
+        // Adds the vision measurement if it hasn't been calculated and a target is visible
         if ((prevTime != detTime) && (prevPose != detPose) && (tv == true)) {
             // Sets the prev variables
             prevTime = detTime;
@@ -197,7 +192,7 @@ public class PoseEstimation {
                 // Adds the vision measurement
                 visionEstimator.addVisionMeasurement(
                     measurement.toPose2d(),
-                    detTime
+                    sysTime
                 );
             }
         }
