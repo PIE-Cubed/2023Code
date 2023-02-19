@@ -179,12 +179,7 @@ public class Drive {
         SwerveModuleState[] swerveModuleStates; 
 
         if (fieldOriented) {
-            try {
-                swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( new Rotation2d( getZ() ))));
-            } 
-            catch (Exception e) {
-                swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
-            }
+            swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( new Rotation2d( getZ() ))));
         }
         else {
             swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));

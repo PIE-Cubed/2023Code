@@ -231,7 +231,7 @@ public class Robot extends TimedRobot {
 			System.out.println("Zeroing yaw");
 		}
 
-		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, false);
 	}
 
 	private void ledControl() {
