@@ -6,6 +6,10 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.*;
 
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -28,27 +32,39 @@ public class Robot extends TimedRobot {
 	// Object creation
 	Controls controls;
 	Drive    drive;
+	Auto     auto;
+	LED      led;
 
 	// Variables
 	private int status = CONT;
+	private int count = 0;
+
+	private long coneFlashEnd = 0;
+	private long cubeFlashEnd = 0;
 
 	// Auto path
-	private static final String leftAuto = "Left";
-	private static final String middleAuto   = "Middle";
-	private static final String rightAuto = "Right";
+	private static final String wallAuto   = "Wall";
+	private static final String rampAuto   = "Ramp";
+	private static final String centerAuto = "Center";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+	// Auto number of objects
+	private int m_objectsPlaced;
+	private final SendableChooser<Integer> m_objectChooser = new SendableChooser<>();
+
 	// Auto Delay
-	private int delaySec = 0;
+	private long delaySec = 0;
 
 	/**
 	 * Constructor
 	 */
 	public Robot() {
 		// Instance creation
-		controls = new Controls();
+		controls = new Controls(true);
 		drive    = new Drive();
+		auto     = new Auto(drive);
+		led      = LED.getInstance();
 
 		//Creates a Network Tables instance
 		FMSInfo = NetworkTableInstance.getDefault().getTable("FMSInfo");
@@ -64,10 +80,16 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// Auto start location
-		m_chooser.setDefaultOption("Left", leftAuto);
-		m_chooser.addOption("Middle", middleAuto);
-		m_chooser.addOption("Right", rightAuto);
+		m_chooser.setDefaultOption("Wall", wallAuto);
+		m_chooser.addOption("Ramp", rampAuto);
+		m_chooser.addOption("Center", centerAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
+
+		// Auto objects placed
+		m_objectChooser.setDefaultOption("1", 1);
+		m_objectChooser.addOption("2", 2);
+		m_objectChooser.addOption("3", 3);
+		SmartDashboard.putData("Auto objects placed", m_objectChooser);
 
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
@@ -79,7 +101,6 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds on the robot
 	 */
 	public void robotPeriodic() {
-		// Nothing yet...
 	}
 
 	@Override
@@ -90,12 +111,15 @@ public class Robot extends TimedRobot {
 	public void autonomousInit() {
 		// Choses start position
 		m_autoSelected = m_chooser.getSelected();
-		System.out.println("Auto selected: " + m_autoSelected);
 
 		// Gets the auto delay 
-		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
+		delaySec = (long)SmartDashboard.getNumber("Auto delay seconds", 0);
 
-		// Reset the gyro
+		// Gets the number of objects placed in auto
+		m_objectsPlaced = m_objectChooser.getSelected();
+
+		//
+		drive.resetYaw();
 	}
 
 	@Override
@@ -104,15 +128,23 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Autonomous
 	 */
 	public void autonomousPeriodic() {
-		long autoDelayMSec = delaySec * 1000;
-
 		if (status == Robot.CONT) {
 			switch (m_autoSelected) {
+				case "Wall":
+					status = auto.wallAuto(isRedAlliance.getBoolean(false), 1, delaySec);
+					break;
+				case "Ramp":
+					status = auto.rampAuto(delaySec);
+					break;
+				case "Center":
+					status = auto.centerAuto(isRedAlliance.getBoolean(false), 1, delaySec);
+					break;
 				default:
-				status = DONE;
-				break;
+					status = Robot.DONE;
+					break;
 			}
     	}
+		drive.updateOdometry();
 	}
 
 	@Override
@@ -131,6 +163,8 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopPeriodic() {
 		wheelControl();
+		ledControl();
+		drive.testAngle();
 	}
 
 	@Override
@@ -160,7 +194,7 @@ public class Robot extends TimedRobot {
 	public void testInit() {
 		// Resets status
 		status = Robot.CONT;
-		drive.initTestWheelPower();
+		drive.initTestDrivePower();
 	}
 
 	@Override
@@ -169,8 +203,11 @@ public class Robot extends TimedRobot {
 	 * Runs constantly during test
 	 */
 	public void testPeriodic() {
-		drive.testEncoders();
-		drive.testWheelPower();
+		//drive.testEncoders();
+		//drive.testWheelPower();
+		//drive.periodicTestDrivePower();
+		//drive.balanceRamp();
+		drive.testGyro();
 	}
 
 	/**
@@ -178,11 +215,59 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Gets Joystick Values
-		double forwardPower = controls.getForwardPower();
-		double strafePower  = controls.getStrafePower();
-		double rotatePower  = controls.getRotatePower();
+		double forwardSpeed = controls.getForwardSpeed();
+		double strafeSpeed  = controls.getStrafeSpeed();
+		double rotateSpeed  = controls.getRotateSpeed();
 
-		drive.teleopDrive(forwardPower, strafePower, rotatePower);
+		boolean zeroYaw = controls.zeroYaw();
+
+		if (zeroYaw) {
+			drive.resetYaw();
+			System.out.println("Zeroing yaw");
+		}
+
+		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+
+		drive.updateOdometry();
+	}
+
+	private void ledControl() {
+		boolean cone = controls.getCone();
+		boolean cube = controls.getCube();
+
+		long currentTime = System.currentTimeMillis();
+
+		// Resetting timer for flashing what object we want
+		if (cone) {
+			coneFlashEnd = currentTime + (long) 5000;
+			cubeFlashEnd = 0;
+		}
+		if (cube) {
+			cubeFlashEnd = currentTime + (long) 5000;
+			coneFlashEnd = 0;
+		}
+
+		// If we signaled for object less than 5 seconds ago, turn LED on half the time to create a flash
+		if (currentTime < coneFlashEnd) {
+			if ((coneFlashEnd - currentTime) % 400 < 200) {
+				led.flashConeOn();
+			}
+			else {
+				led.flashConeOff();
+			}
+		}
+		else if (currentTime < cubeFlashEnd) {
+			if ((cubeFlashEnd - currentTime) % 400 < 200) {
+				led.flashCubeOn();
+			}
+			else {
+				led.flashCubeOff();
+			}
+		}
+		else {
+			led.teamColors();
+		}
+		led.updateLED();
 	}
 }
 
