@@ -185,6 +185,13 @@ public class Drive {
         autoRotateController = new PIDController(arP, arI, arD);
         autoRotateController.enableContinuousInput(-180.0, 180.0);
         autoRotateController.setTolerance(2);
+
+        pose = swerveDriveOdometry.update(
+            getYaw(),
+            new SwerveModulePosition[] {
+                frontLeft.getPosition(), frontRight.getPosition(),
+                backLeft.getPosition(), backRight.getPosition()
+            });
     }
     
     /*Positive Forward Goes Forward
@@ -195,7 +202,7 @@ public class Drive {
 
         if (fieldOriented) {
             try {
-                swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( ahrs.getRotation2d() )));
+                swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( new Rotation2d(Math.toRadians(ahrs.getAngle())) )));
             } 
             catch (Exception e) {
                 swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
@@ -204,8 +211,7 @@ public class Drive {
         else {
             swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
         }
-
-
+        
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
         /* The swerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation */
@@ -428,6 +434,10 @@ public class Drive {
         resetOdometry(pose);
     }
 
+    public void setAngleAdjustment(double radians) {
+        ahrs.setAngleAdjustment(radians);
+    }
+
     // Updates pose based on encoder measurements
     // Runs periodically in Autonomous and Teleop
     public void updateOdometry() {
@@ -630,7 +640,7 @@ public class Drive {
     }
 
     public double getZ() {
-        return pose.getRotation().getRadians();
+        return MathUtil.angleModulus(Math.toRadians(ahrs.getAngle()));
     }
 
     // Checks if all rotate motors are at setpoint
@@ -648,6 +658,16 @@ public class Drive {
     public void testEncoders() {
         if (printCount % 50 == 0) {
             frontLeft.displayEncoderValues();
+            //frontRight.displayEncoderValues();
+            //backLeft.displayEncoderValues();
+            //backRight.displayEncoderValues();
+        }
+        printCount++;
+    }
+
+    public void testAngle() {
+        if (printCount % 15 == 0) {
+            System.out.println("ahrs.getAngle(): " + ahrs.getAngle());
             //frontRight.displayEncoderValues();
             //backLeft.displayEncoderValues();
             //backRight.displayEncoderValues();

@@ -131,13 +131,13 @@ public class Robot extends TimedRobot {
 		if (status == Robot.CONT) {
 			switch (m_autoSelected) {
 				case "Wall":
-					status = auto.wallAuto(isRedAlliance.getBoolean(true), 1, delaySec);
+					status = auto.wallAuto(isRedAlliance.getBoolean(false), 1, delaySec);
 					break;
 				case "Ramp":
 					status = auto.rampAuto(delaySec);
 					break;
 				case "Center":
-					status = auto.centerAuto(isRedAlliance.getBoolean(true), 1, delaySec);
+					status = auto.centerAuto(isRedAlliance.getBoolean(false), 1, delaySec);
 					break;
 				default:
 					status = Robot.DONE;
@@ -164,6 +164,7 @@ public class Robot extends TimedRobot {
 	public void teleopPeriodic() {
 		wheelControl();
 		ledControl();
+		drive.testAngle();
 	}
 
 	@Override

@@ -54,7 +54,7 @@ public class SwerveModule {
     private final double WHEEL_DIAMETER_METERS = Units.inchesToMeters(3);
     private final double WHEEL_ROTATION_METERS = Math.PI * WHEEL_DIAMETER_METERS;
     private final double ROTATIONS_PER_TICK    = 1 / 5.5;
-    private final double POS_CONVERSION_FACTOR = WHEEL_ROTATION_METERS * ROTATIONS_PER_TICK; // Meters per tick (tick --> meter)
+    private final double POS_CONVERSION_FACTOR = WHEEL_ROTATION_METERS * ROTATIONS_PER_TICK; // Meters per tick (tick --> meter). 1.05 is magic number
     private final double VEL_CONVERSION_FACTOR = POS_CONVERSION_FACTOR / 60; // m/s per tick/min (tick/min --> m/s)
 
     // Constructor
