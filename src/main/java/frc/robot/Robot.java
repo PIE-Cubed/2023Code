@@ -4,22 +4,13 @@
 
 package frc.robot;
 
-import frc.robot.auto.*;
-//import frc.robot.commands.*;
-import frc.robot.commands.CommandGroups.*;
-
 import edu.wpi.first.wpilibj.TimedRobot;
 
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * Start of the Robot class
@@ -37,10 +28,6 @@ public class Robot extends TimedRobot {
 	Controls       controls;
 	Drive          drive;
 	LED            led;
-
-	// Command creation
-    private Command autoCommand;
-	private Command testCommand;
 
 	// Auto path
 	private static final String leftAuto   = "Left";
@@ -89,10 +76,7 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotPeriodic() {
 		// Updates the PoseTrackers constantly
-		//position.updatePoseTrackers();
-
-		// Runs the CommandScheduler
-		CommandScheduler.getInstance().run();
+		position.updatePoseTrackers();
 	}
 
 	@Override
@@ -115,12 +99,8 @@ public class Robot extends TimedRobot {
 		switch (m_autoSelected) {
 			default:
 				position.resetPoseTrackers(defaultStart);
-				autoCommand = new BasicAuto(drive, position, delaySec);
 				break;
 		}
-
-		// Schedules autoCommand to run
-        autoCommand.schedule();
 	}
 
 	@Override
@@ -138,23 +118,8 @@ public class Robot extends TimedRobot {
 	 * Runs once at the start of TeleOp.
 	 */
 	public void teleopInit() {
-		// Makes sure that the autonomous stops running when teleop starts
-        if (autoCommand != null) {
-            autoCommand.cancel();
-        }
-
-		// Resets the pose trackers to be near tag 7
-		position.resetPoseTrackers(
-			new Pose2d(
-				new Translation2d(
-					Units.inchesToMeters(50),
-					Units.inchesToMeters(80)
-				),
-				new Rotation2d(
-					-Math.PI/2
-				)
-			)
-		);
+		// Resets the pose to the vision estimator's reading
+		position.resetPoseTrackers( position.getVisionPose() );
 	}
 
 	@Override
@@ -164,12 +129,12 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopPeriodic() {
 		wheelControl();
-		position.updatePoseTrackers();
 
 		Pose2d thing = position.getVisionPose();
 		System.out.println(
-			"X Position: " + Units.metersToInches(thing.getTranslation().getX()) +
-			" Y Position: " + Units.metersToInches(thing.getTranslation().getY())
+			"X Position: "  + Units.metersToInches(thing.getTranslation().getX()) +
+			" Y Position: " + Units.metersToInches(thing.getTranslation().getY()) + 
+			" Yaw: "        + thing.getRotation().getDegrees()
 		);
 	}
 
@@ -179,8 +144,7 @@ public class Robot extends TimedRobot {
 	 * Runs once when the robot enteres Disabled mode.
 	 */
 	public void disabledInit() {
-		// Cancels all commands
-		CommandScheduler.getInstance().cancelAll(); 
+		// Nothing yet...
 	}
 
 	@Override
@@ -201,12 +165,6 @@ public class Robot extends TimedRobot {
 	public void testInit() {
 		// Inits the sliders
 		drive.initWheelPowerTests();
-
-		// Creates the test command
-		testCommand = new TestModules(drive);
-
-		// Runs the test command
-		testCommand.schedule();
 	}
 
 	@Override
