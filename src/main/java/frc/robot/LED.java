@@ -83,5 +83,4 @@ public class LED {
         ledCode = 0.65;
     }
 }
-
 // End of the LED class

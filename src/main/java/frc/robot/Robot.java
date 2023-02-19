@@ -27,17 +27,28 @@ public class Robot extends TimedRobot {
 	CustomTables   nTables;
 	Controls       controls;
 	Drive          drive;
+	Auto           auto;
 	LED            led;
 
+	// Variables
+	private int status = CONT;
+
+	private long coneFlashEnd = 0;
+	private long cubeFlashEnd = 0;
+
 	// Auto path
-	private static final String leftAuto   = "Left";
-	private static final String rightAuto  = "Right";
-	private static final String middleAuto = "Middle";
+	private static final String wallAuto   = "Wall";
+	private static final String rampAuto   = "Ramp";
+	private static final String centerAuto = "Center";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+	// Auto number of objects
+	private int m_objectsPlaced;
+	private final SendableChooser<Integer> m_objectChooser = new SendableChooser<>();
+
 	// Auto Delay
-	private int delaySec = 0;
+	private long delaySec = 0;
 
 	/**
 	 * Constructor
@@ -47,6 +58,7 @@ public class Robot extends TimedRobot {
 		drive    = new Drive();
 		controls = new Controls();
 		position = new PoseEstimation(drive);
+		auto     = new Auto(drive, position);
 
 		// Instance getters
 		led      = LED.getInstance();
@@ -60,10 +72,16 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// Auto start location
-		m_chooser.addOption("Left", leftAuto);
-		m_chooser.addOption("Right", rightAuto);
-		m_chooser.setDefaultOption("Middle", middleAuto);
+		m_chooser.setDefaultOption("Wall", wallAuto);
+		m_chooser.addOption("Ramp", rampAuto);
+		m_chooser.addOption("Center", centerAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
+
+		// Auto objects placed
+		m_objectChooser.setDefaultOption("1", 1);
+		m_objectChooser.addOption("2", 2);
+		m_objectChooser.addOption("3", 3);
+		SmartDashboard.putData("Auto objects placed", m_objectChooser);
 
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
@@ -85,12 +103,17 @@ public class Robot extends TimedRobot {
 	 * Runs once when the robot enters Autonomous mode.
 	 */
 	public void autonomousInit() {
+		// Gets the auto delay 
+		delaySec = (long)SmartDashboard.getNumber("Auto delay seconds", 0);
+
 		// Choses start position
 		m_autoSelected = m_chooser.getSelected();
-		System.out.println("Auto selected: " + m_autoSelected);
 
-		// Gets the auto delay
-		delaySec = (int)SmartDashboard.getNumber("Auto delay seconds", 0);
+		// Gets the number of objects placed in auto
+		m_objectsPlaced = m_objectChooser.getSelected();
+
+		//
+		drive.resetYaw();
 
 		// Creates the path starting locations
 		Pose2d defaultStart = new Pose2d();
@@ -98,6 +121,7 @@ public class Robot extends TimedRobot {
 		// Selects an auto command to run
 		switch (m_autoSelected) {
 			default:
+				drive.setGyroAngleZero(defaultStart.getRotation().getDegrees());
 				position.resetPoseTrackers(defaultStart);
 				break;
 		}
@@ -109,7 +133,23 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Autonomous.
 	 */
 	public void autonomousPeriodic() {
-		// Since the commands are sequential, nothing needs to be here
+		// 
+		if (status == Robot.CONT) {
+			switch (m_autoSelected) {
+				case "Wall":
+					status = auto.wallAuto(nTables.getIsRedAlliance(), 1, delaySec);
+					break;
+				case "Ramp":
+					status = auto.rampAuto(delaySec);
+					break;
+				case "Center":
+					status = auto.centerAuto(nTables.getIsRedAlliance(), 1, delaySec);
+					break;
+				default:
+					status = Robot.DONE;
+					break;
+			}
+    	}
 	}
 
 	@Override
@@ -119,7 +159,7 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopInit() {
 		// Resets the pose to the vision estimator's reading
-		position.resetPoseTrackers( position.getVisionPose() );
+		// position.resetPoseTrackers( position.getVisionPose() );
 	}
 
 	@Override
@@ -129,13 +169,7 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopPeriodic() {
 		wheelControl();
-
-		Pose2d thing = position.getVisionPose();
-		System.out.println(
-			"X Position: "  + Units.metersToInches(thing.getTranslation().getX()) +
-			" Y Position: " + Units.metersToInches(thing.getTranslation().getY()) + 
-			" Yaw: "        + thing.getRotation().getDegrees()
-		);
+		ledControl();
 	}
 
 	@Override
@@ -164,6 +198,7 @@ public class Robot extends TimedRobot {
 	 */
 	public void testInit() {
 		// Inits the sliders
+		status = Robot.CONT;
 		drive.initWheelPowerTests();
 	}
 
@@ -173,8 +208,11 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		// drive.testEncoders();
-		// drive.testWheelPowers();
+		//drive.testEncoders();
+		//drive.testWheelPower();
+		//drive.periodicTestDrivePower();
+		//drive.balanceRamp();
+		drive.testGyro();
 	}
 
 	/**
@@ -186,7 +224,53 @@ public class Robot extends TimedRobot {
 		double strafeSpeed  = controls.getStrafeSpeed();
 		double rotateSpeed  = controls.getRotateSpeed();
 
-		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, false);
+		boolean zeroYaw = controls.zeroYaw();
+
+		if (zeroYaw) {
+			drive.resetYaw();
+			System.out.println("Zeroing yaw");
+		}
+
+		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+	}
+
+	private void ledControl() {
+		boolean cone = controls.getCone();
+		boolean cube = controls.getCube();
+
+		long currentTime = System.currentTimeMillis();
+
+		// Resetting timer for flashing what object we want
+		if (cone) {
+			coneFlashEnd = currentTime + (long) 5000;
+			cubeFlashEnd = 0;
+		}
+		if (cube) {
+			cubeFlashEnd = currentTime + (long) 5000;
+			coneFlashEnd = 0;
+		}
+
+		// If we signaled for object less than 5 seconds ago, turn LED on half the time to create a flash
+		if (currentTime < coneFlashEnd) {
+			if ((coneFlashEnd - currentTime) % 400 < 200) {
+				led.flashConeOn();
+			}
+			else {
+				led.flashConeOff();
+			}
+		}
+		else if (currentTime < cubeFlashEnd) {
+			if ((cubeFlashEnd - currentTime) % 400 < 200) {
+				led.flashCubeOn();
+			}
+			else {
+				led.flashCubeOff();
+			}
+		}
+		else {
+			led.teamColors();
+		}
+		led.updateLED();
 	}
 }
 

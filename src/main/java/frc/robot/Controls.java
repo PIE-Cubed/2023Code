@@ -4,10 +4,7 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
-
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 
 /**
@@ -19,7 +16,6 @@ public class Controls {
 	private final int XBOX_ID  = 0;
 
 	// Controller object declaration
-	//private Joystick       joystick;
 	private XboxController driveController;
 	private XboxController xboxController;
 
@@ -58,9 +54,6 @@ public class Controls {
 		double speed;
 		double power = -1 * driveController.getLeftY();
 
-		// If we are in deadzone, y is 0
-		power = MathUtil.applyDeadband(power, 0.1, 1);
-
 		// Turns the power into a speed
 		speed = power * Drive.MAX_DRIVE_SPEED;
 
@@ -80,9 +73,6 @@ public class Controls {
 	public double getStrafeSpeed() {
 		double speed;
 		double power = -1 * driveController.getLeftX();
-
-		// If we are in deadzone, x is 0
-		power = MathUtil.applyDeadband(power, 0.1, 1);
 
 		// Turns the power into a speed
 		speed = power * Drive.MAX_DRIVE_SPEED;
@@ -104,16 +94,13 @@ public class Controls {
 		double speed;
 		double power = -1 * driveController.getRightX();
 
-		// If we are in deadzone, rotatespeed is 0
-		power = MathUtil.applyDeadband(power, 0.15, 1);
-
 		// Turns the power into a speed
 		speed = power * Drive.MAX_ROTATE_SPEED;
 
 		// Limits the acceleration when under driver control
 		speed = rotateLimiter.calculate(speed);
 
-		return speed;    
+		return speed;
 	}
 
 
@@ -154,6 +141,10 @@ public class Controls {
 		return driveController.getXButton();
 	}
 
+	public boolean zeroYaw() {
+		return driveController.getLeftStickButtonPressed();
+	}
+
 	/**
 	 * Checks if the start button is pressed
 	 * @return startButtonPressed
@@ -162,5 +153,4 @@ public class Controls {
 		return xboxController.getStartButtonPressed();
 	}
 }
-
 // End of the Controls class

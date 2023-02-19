@@ -183,11 +183,6 @@ public class PoseEstimation {
                 // Tranforms the camera's pose to the robot's center
                 Pose3d measurement = camPose.transformBy(CAMERA_TO_ROBOT.inverse());
 
-                // System.out.println("target: " + targetPose);
-                // System.out.println("cam_target: " + camToTarget);
-                // System.out.println("cam: " + camPose);
-                // System.out.println("measurement: " + measurement);
-
                 // Adds the vision measurement
                 visionEstimator.addVisionMeasurement(
                     measurement.toPose2d(),
