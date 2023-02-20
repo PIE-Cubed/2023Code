@@ -224,7 +224,7 @@ public class Drive {
 
             initXVelocity      = autoDriveXController.calculate(currPose.getX(), targetPoint.getX());
             initYVelocity      = autoDriveYController.calculate(currPose.getY(), targetPoint.getY());
-            initRotateVelocity = autoDriveRotateController.calculate(getZ(), targetPoint.getRotation().getRadians());
+            initRotateVelocity = autoDriveRotateController.calculate(getHeading(), targetPoint.getRotation().getRadians());
         } 
         // Runs when it's not the first time for a point
         else {
@@ -240,7 +240,7 @@ public class Drive {
                 // Calculating targetVelocity based on distance to targetPoint
                 double targetXVelocity      = autoDriveXController.calculate(currPose.getX(), targetPoint.getX());
                 double targetYVelocity      = autoDriveYController.calculate(currPose.getY(), targetPoint.getY());
-                double targetRotateVelocity = autoDriveRotateController.calculate(getZ(), targetPoint.getRotation().getRadians());
+                double targetRotateVelocity = autoDriveRotateController.calculate(getHeading(), targetPoint.getRotation().getRadians());
 
                 targetXVelocity = xLimiter.calculate(targetXVelocity);
                 targetYVelocity = yLimiter.calculate(targetYVelocity);
@@ -472,20 +472,7 @@ public class Drive {
     }
 
     /**
-     * AP: These two methods are identical. Why?
-     * Plus, the first method is incorrectly defined when compared to its use in Auto.java
-     */
-    /**
-     * Sets the offset of the gyro.
-     * 
-     * @param radians
-     */
-    public void setAngleAdjustment(double radians) {
-        ahrs.setAngleAdjustment(radians);
-    }
-
-    /**
-     * Sets the offset of the gyro.
+     * Sets the zero offset for the gyro.
      * 
      * @param degrees
      */
@@ -580,27 +567,7 @@ public class Drive {
      * @return The robot's heading in radians
      */
     public double getHeading() {
-        return -1 * Units.degreesToRadians( ahrs.getYaw() );
-    }
-
-    /**
-     * Returns the Z angle (yaw) of the robot.
-     * 
-     * @return The robot's Z angle in radians
-     */
-    public double getZ() {
-        return MathUtil.angleModulus(Math.toRadians(ahrs.getAngle()));
-    }
-
-    /**
-     * @deprecated
-     * Gets the yaw from the NavX as a Rotation2d.
-     * <p> AP: This method is not used and has been marked for deletion.
-     * 
-     * @return robotYaw
-     */
-    public Rotation2d getYaw() {
-        return ahrs.getRotation2d();
+        return -1 * MathUtil.angleModulus( Units.degreesToRadians( ahrs.getAngle() ) );
     }
 
     /**

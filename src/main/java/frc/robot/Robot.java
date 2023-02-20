@@ -6,7 +6,7 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 
-import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.*;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -43,7 +43,7 @@ public class Robot extends TimedRobot {
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
 	// Auto number of objects
-	private int m_objectsPlaced;
+	private int m_objectsToPlace;
 	private final SendableChooser<Integer> m_objectChooser = new SendableChooser<>();
 
 	// Auto Delay
@@ -71,9 +71,9 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// Auto start location
-		m_chooser.setDefaultOption("Wall", wallAuto);
-		m_chooser.addOption("Ramp", rampAuto);
-		m_chooser.addOption("Center", centerAuto);
+		m_chooser.setDefaultOption(wallAuto, wallAuto);
+		m_chooser.addOption(rampAuto, rampAuto);
+		m_chooser.addOption(centerAuto, centerAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
 
 		// Auto objects placed
@@ -108,22 +108,53 @@ public class Robot extends TimedRobot {
 		// Choses start position
 		m_autoSelected = m_chooser.getSelected();
 
-		// Gets the number of objects placed in auto
-		m_objectsPlaced = m_objectChooser.getSelected();
+		// Gets the number of objects to place in auto
+		m_objectsToPlace = m_objectChooser.getSelected();
 
 		// Resets the NavX Yaw
 		drive.resetYaw();
 
-		// Creates the path starting locations
-		Pose2d defaultStart = new Pose2d();
+		// Gets alliance color
+		boolean isRed = nTables.getIsRedAlliance();
 
-		// Selects an auto command to run
+		// Creates the path starting locations
+		Pose2d startPose = new Pose2d();
+
+		// Sets the auto path to the selected one
 		switch (m_autoSelected) {
+			case wallAuto:
+				if (isRed == true) {
+					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+				}
+				else {
+					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+				}
+				break;
+			case rampAuto:
+				if (isRed == true) {
+					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+				}
+				else {
+					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+				}
+				break;
+			case centerAuto:
+				if (isRed == true) {
+					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+				}
+				else {
+					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+				}
+				break;
 			default:
-				drive.setGyroAngleZero(defaultStart.getRotation().getDegrees());
-				position.resetPoseTrackers(defaultStart);
+				// Creates a default Pose2d
+				startPose = new Pose2d();
 				break;
 		}
+
+		// Sets the starting position
+		drive.setGyroAngleZero(startPose.getRotation().getDegrees());
+		position.resetPoseTrackers(startPose);
 	}
 
 	@Override
@@ -132,17 +163,17 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Autonomous.
 	 */
 	public void autonomousPeriodic() {
-		// 
+		// Runs the standatd autonomous switch statement
 		if (status == Robot.CONT) {
 			switch (m_autoSelected) {
 				case "Wall":
-					status = auto.wallAuto(nTables.getIsRedAlliance(), 1, delaySec);
+					status = auto.wallAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
 					break;
 				case "Ramp":
-					status = auto.rampAuto(delaySec);
+					status = auto.rampAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
 					break;
 				case "Center":
-					status = auto.centerAuto(nTables.getIsRedAlliance(), 1, delaySec);
+					status = auto.centerAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
 					break;
 				default:
 					status = Robot.DONE;

@@ -53,14 +53,20 @@ public class Auto {
         this.position = position;
     }
 
-    public int wallAuto(boolean redSide, int numCones, long delaySeconds) {
+    /**
+     * 
+     * @param isRed
+     * @param numObjects
+     * @param delaySeconds
+     * @return status
+     */
+    public int wallAuto(boolean isRed, int numObjects, long delaySeconds) {
         int status = Robot.CONT;
     
 		if (firstTime == true) {
 			firstTime = false;
 			step = 1;
             System.out.println("Starting Wall Auto");
-            drive.setAngleAdjustment(180);
 		}
 
         switch(step) {
@@ -82,7 +88,7 @@ public class Auto {
                 Pose2d pose2;
                 Pose2d pose3;
 
-                if (redSide) {
+                if (isRed == true) {
                     pose1 = new Pose2d(3, 7.2, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(3, 7.2, new Rotation2d(0));
                     pose3 = new Pose2d(6.3716, 7, new Rotation2d(0));
@@ -132,7 +138,7 @@ public class Auto {
                 return Robot.DONE;
         }
 
-        //If we are done with a step, we go on to the next one and continue the routine
+        // If we are done with a step, we go on to the next one and continue the routine
         if (status == Robot.DONE) {
             step++;
         }
@@ -140,7 +146,14 @@ public class Auto {
         return Robot.CONT;
     }
 
-    public int rampAuto(long delaySeconds) {
+    /**
+     * 
+     * @param isRed
+     * @param numObjects
+     * @param delaySeconds
+     * @return status
+     */
+    public int rampAuto(boolean isRed, double numObjects, long delaySeconds) {
         int status = Robot.CONT;
     
 		if (firstTime == true) {
@@ -216,12 +229,28 @@ public class Auto {
         return Robot.CONT;
     }
 
-    public int centerAuto(boolean redSide, int numCones, double delaySeconds) {
+    /**
+     * 
+     * @param isRed
+     * @param numObjects
+     * @param delaySeconds
+     * @return status
+     */
+    public int centerAuto(boolean isRed, int numObjects, double delaySeconds) {
         return Robot.DONE;
     }
 
-    /*
-     * HELPER ROUTINES
+
+    /****************************************************************************************** 
+    *
+    *    HELPER FUNCTIONS
+    * 
+    ******************************************************************************************/
+    /**
+     * Delays the program for a set number of seconds.
+     * 
+     * @param seconds
+     * @return status
      */
     public int autoDelay(long seconds) {
         long currentMS = System.currentTimeMillis();
@@ -238,8 +267,15 @@ public class Auto {
         return Robot.CONT;
     }
 
-    /*
-     * TEST ROUTINES
+
+    /****************************************************************************************** 
+    *
+    *    TEST FUNCTIONS
+    * 
+    ******************************************************************************************/
+    /**
+     * 
+     * @return status
      */
     public int testRamp() {
         int status = Robot.CONT;
@@ -283,6 +319,10 @@ public class Auto {
         return Robot.CONT;
     }
 
+    /**
+     * 
+     * @return status
+     */
     public int driveToPointsTest() {
         int status = Robot.CONT;
     
