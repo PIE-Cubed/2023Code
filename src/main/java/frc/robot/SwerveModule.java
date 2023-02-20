@@ -89,7 +89,6 @@ public class SwerveModule {
         // Creates the encoders
         driveEncoder          = driveMotor .getEncoder();
         absoluteEncoder       = rotateMotor.getAbsoluteEncoder(Type.kDutyCycle);
-        driveEncoder.setPosition(0);
 
         // Creates the drive PID Controller
         driveMotorController  = new PIDController(DRIVE_P, DRIVE_I, DRIVE_D);
@@ -103,11 +102,15 @@ public class SwerveModule {
         // Creates the motor feed forward
         driveFeedForward      = new SimpleMotorFeedforward(STATIC_GAIN, VELOCITY_GAIN);
 
-        // Sets the motor conversion factors
+        // Configures the drive encoder
         driveEncoder   .setPositionConversionFactor(DRIVE_POS_CONVERSION_FACTOR);   // Converts from revolutions to meters
         driveEncoder   .setVelocityConversionFactor(DRIVE_VEL_CONVERSION_FACTOR);   // Converts from revolutions/minute to meters/second
+        driveEncoder.setPosition(0.00);
+
+        // Configures the absolute encoder
         absoluteEncoder.setPositionConversionFactor(MODULE_POS_CONVERSION_FACTOR);  // Converts from revolutions to radians
         absoluteEncoder.setVelocityConversionFactor(MODULE_VEL_CONVERSION_FACTOR);  // Converts from revolutions/second to radians/second
+        absoluteEncoder.setInverted(true);
     }
 
     /**
