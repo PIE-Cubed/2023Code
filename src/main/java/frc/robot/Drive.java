@@ -649,10 +649,13 @@ public class Drive {
      * 
      */
     public void printPowerandVelocity() {
-        //frontLeft.displayPowerAndVelocity();
-        //frontRight.displayPowerAndVelocity();
-        //backLeft.displayPowerAndVelocity();
-        //backRight.displayPowerAndVelocity();
+        if (printCount % 15 == 0) {
+            frontLeft.displayPowerAndVelocity();
+            frontRight.displayPowerAndVelocity();
+            backLeft.displayPowerAndVelocity();
+            backRight.displayPowerAndVelocity();
+        }
+        printCount++;
     }
 
     /**
@@ -661,7 +664,8 @@ public class Drive {
     public void testGyro() {
         if (printCount % 15 == 0) {
             //System.out.println(ahrs.getRotation2d().getDegrees());
-            System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
+            //System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
+            System.out.println("Angle: " + getHeading());
         }
         printCount++;
     }
