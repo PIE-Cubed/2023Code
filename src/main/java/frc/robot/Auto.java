@@ -34,7 +34,7 @@ public class Auto {
 
     // Coordinates to be used in routines
     private static final double[][] autoCoordinates = {
-        {0.55, 0.0, 0.0}
+        {2.0, 0.0, Math.PI}
     };
     private Pose2d[] listOfPoints = new Pose2d[autoCoordinates.length];
 
@@ -51,6 +51,37 @@ public class Auto {
 
         this.drive = drive;
         this.position = position;
+    }
+
+    public int testDriveToPoints() {
+        int status = Robot.CONT;
+    
+		if (firstTime == true) {
+			firstTime = false;
+			step = 1;
+            System.out.println("Starting Wall Auto");
+		}
+
+        switch(step) {
+            case 1:
+                status = drive.autoDriveToPoints(listOfPoints, position.getOdometryPose());
+                break;
+            default:
+                // Finished routine
+                step = 1;
+                firstTime = true;
+
+                // Stops applicable motors
+                drive.stopWheels();
+                return Robot.DONE;
+        }
+
+        // If we are done with a step, we go on to the next one and continue the routine
+        if (status == Robot.DONE) {
+            step++;
+        }
+        
+        return Robot.CONT;
     }
 
     /**
@@ -89,18 +120,18 @@ public class Auto {
                 Pose2d pose3;
 
                 if (isRed == true) {
-                    pose1 = new Pose2d(3, 7.2, new Rotation2d(Math.PI));
-                    pose2 = new Pose2d(3, 7.2, new Rotation2d(0));
-                    pose3 = new Pose2d(6.3716, 7, new Rotation2d(0));
+                    pose1 = new Pose2d(3, 7.4, new Rotation2d(Math.PI));
+                    pose2 = new Pose2d(3, 7.4, new Rotation2d(0));
+                    pose3 = new Pose2d(6.9, 7.4, new Rotation2d(0));
                 }
                 else {
-                    pose1 = new Pose2d(3, 0.8, new Rotation2d(Math.PI));
-                    pose2 = new Pose2d(3, 0.8, new Rotation2d(0));
-                    pose3 = new Pose2d(6.3716, 1, new Rotation2d(0));
+                    pose1 = new Pose2d(3, 0.6, new Rotation2d(Math.PI));
+                    pose2 = new Pose2d(3, 0.6, new Rotation2d(0));
+                    pose3 = new Pose2d(6.9, 0.6, new Rotation2d(0));
                 }
+
                 status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getVisionPose());
                 break;
-                /*
             case 5:
                 // Bring down wrist
                 status = autoDelay(2);
@@ -110,15 +141,19 @@ public class Auto {
                 status = Robot.DONE;
                 break;
             case 7:
-                // Bring object back
-                Pose2d homePose;
-                if (redSide) {
-                    homePose = new Pose2d(6.2, 7, new Rotation2d(Math.PI));
+                // Approach community
+                if (isRed == true) {
+                    pose1 = new Pose2d(3, 7.2, new Rotation2d(0));
+                    pose2 = new Pose2d(3, 7.2, new Rotation2d(Math.PI));
+                    pose3 = WALL_RED_START;
                 }
                 else {
-                    homePose = new Pose2d(6.2, 1, new Rotation2d(Math.PI));
+                    pose1 = new Pose2d(3, 0.6, new Rotation2d(0));
+                    pose2 = new Pose2d(3, 0.6, new Rotation2d(Math.PI));
+                    pose3 = WALL_BLUE_START;
                 }
-                status = drive.autoDriveToPoints(new Pose2d[]{homePose});
+                
+                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getVisionPose());
                 break;
             case 8:
                 // Reach arm to top
@@ -127,7 +162,7 @@ public class Auto {
             case 9:
                 // Open claw
                 status = Robot.DONE;
-                break;*/
+                break;
             default:
                 // Finished routine
                 step = 1;

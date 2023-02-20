@@ -124,26 +124,26 @@ public class Robot extends TimedRobot {
 		switch (m_autoSelected) {
 			case wallAuto:
 				if (isRed == true) {
-					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+					startPose = auto.WALL_RED_START;
 				}
 				else {
-					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+					startPose = auto.WALL_BLUE_START;
 				}
 				break;
 			case rampAuto:
 				if (isRed == true) {
-					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+					startPose = auto.RAMP_RED_START;
 				}
 				else {
-					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+					startPose = auto.RAMP_BLUE_START;
 				}
 				break;
 			case centerAuto:
 				if (isRed == true) {
-					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+					startPose = auto.CENTER_RED_START;
 				}
 				else {
-					startPose = new Pose2d( 0, 0, new Rotation2d(0) );
+					startPose = auto.CENTER_BLUE_START;
 				}
 				break;
 			default:
@@ -242,7 +242,7 @@ public class Robot extends TimedRobot {
 		//drive.testWheelPower();
 		//drive.periodicTestDrivePower();
 		//drive.balanceRamp();
-		drive.testGyro();
+		//drive.testGyro();
 	}
 
 	/**

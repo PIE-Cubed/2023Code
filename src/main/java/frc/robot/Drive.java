@@ -27,7 +27,7 @@ public class Drive {
     private static final double MAX_WHEEL_SPEED      = 4; // Meters per second
 
     private final double AUTO_DRIVE_TOLERANCE        = 0.05; //0.01
-    private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.15; //0.075
+    private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.05; //0.15
     private final double RAMP_BALANCE_TOLERANCE      = 2;
 
     // Instance Variables
@@ -55,8 +55,8 @@ public class Drive {
     PIDController autoDriveYController;
 
     // Auto drive to points rotate controller
-    private static final double adrp = MAX_ROTATE_SPEED * (1 / (2 * Math.PI)) ; // 2*Pi radians away --> full power
-    private static final double adri = 0.0;
+    private static final double adrp = MAX_ROTATE_SPEED * ((1.4) / Math.PI); // 1/1.4 Pi radians away --> full power
+    private static final double adri = adrp / 50;
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
 
@@ -163,6 +163,8 @@ public class Drive {
         // Limits the max speed of the wheels
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
+        System.out.println("Heading:" + getHeading());
+
         // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
         frontLeft.setDesiredState(swerveModuleStates[0]);
         frontRight.setDesiredState(swerveModuleStates[1]);
@@ -208,8 +210,6 @@ public class Drive {
 
             autoPointAngled = false;
 
-            System.out.println("X target:" + targetPoint.getX() + " Y target:" + targetPoint.getY() + " Z target:" + targetPoint.getRotation().getRadians());
-
             // For each point except the last
             if (autoPointIndex < listOfPoints.length - 1) {
                 autoDriveXController.setTolerance(2 * AUTO_DRIVE_TOLERANCE);
@@ -241,6 +241,13 @@ public class Drive {
                 double targetXVelocity      = autoDriveXController.calculate(currPose.getX(), targetPoint.getX());
                 double targetYVelocity      = autoDriveYController.calculate(currPose.getY(), targetPoint.getY());
                 double targetRotateVelocity = autoDriveRotateController.calculate(getHeading(), targetPoint.getRotation().getRadians());
+
+                if (printCount % 15 == 0) {
+                    System.out.println("CurrX:" + currPose.getX() + " TarX:" + targetPoint.getX() + " VelX:" + targetXVelocity);
+                    System.out.println("CurrY:" + currPose.getY() + " TarY:" + targetPoint.getY() + " VelY:" + targetYVelocity);
+                    System.out.println("CurrZ:" + getHeading() + " TarZ:" + targetPoint.getRotation().getRadians() + " VelZ:" + targetRotateVelocity);
+                }
+                printCount++;
 
                 targetXVelocity = xLimiter.calculate(targetXVelocity);
                 targetYVelocity = yLimiter.calculate(targetYVelocity);
