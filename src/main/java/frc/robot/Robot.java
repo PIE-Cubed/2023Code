@@ -6,7 +6,6 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.math.geometry.Pose2d;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -112,7 +111,7 @@ public class Robot extends TimedRobot {
 		// Gets the number of objects placed in auto
 		m_objectsPlaced = m_objectChooser.getSelected();
 
-		//
+		// Resets the NavX Yaw
 		drive.resetYaw();
 
 		// Creates the path starting locations

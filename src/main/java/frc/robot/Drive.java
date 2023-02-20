@@ -3,10 +3,10 @@ package frc.robot;
 import edu.wpi.first.wpilibj.SPI;
 import com.kauailabs.navx.frc.AHRS;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.*;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 
@@ -31,25 +31,22 @@ public class Drive {
     private final double RAMP_BALANCE_TOLERANCE      = 2;
 
     // Instance Variables
-    private int     printCount             = 0;
-    private int     autoPointIndex         = 0;
-    private boolean autoPointFirstTime     = true;
-    private boolean autoPointAngled        = false; // Tracks if wheels have been angled before driving
-    private boolean rampFirstTime          = true; // Used by all ramp-related functions b/c only 1 called at a time
-    private double  rampInitPitch          = 0;
-    private double  initXVelocity          = 0;
-    private double  initYVelocity          = 0;
-    private double  initRotateVelocity     = 0;
-    private int     rampStep               = 1;
-
-    // NAVX
-    public static AHRS ahrs;
+    private int     printCount         = 0;
+    private int     autoPointIndex     = 0;
+    private boolean autoPointFirstTime = true;
+    private boolean autoPointAngled    = false; // Tracks if wheels have been angled before driving
+    private boolean rampFirstTime      = true;  // Used by all ramp-related functions b/c only 1 called at a time
+    private double  rampInitPitch      = 0;
+    private double  initXVelocity      = 0;
+    private double  initYVelocity      = 0;
+    private double  initRotateVelocity = 0;
+    private int     rampStep           = 1;
 
     // Rate limiters for auto drive
     private SlewRateLimiter xLimiter;
     private SlewRateLimiter yLimiter;
     private SlewRateLimiter rotateLimiter;
-    
+
     // Auto drive to points X controller - need 2 controllers for X and Y for both setpoints
     private static final double adp = MAX_WHEEL_SPEED; // 1 meter away --> full power
     private static final double adi = 0.0;
@@ -63,20 +60,8 @@ public class Drive {
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
 
-    // Auto crab drive controller
-    private static final double acdP = 0.005; 
-    private static final double acdI = 0.000;
-    private static final double acdD = 0.000;
-    PIDController autoCrabDriveController;
-
-    // Auto rotate controller
-    private static final double arP = 0.01; 
-    private static final double arI = 0.000;
-    private static final double arD = 0.000;
-    PIDController autoRotateController;
-
     // Ramp balance controller
-    private static final double rbP = 0.06; //-0.04 works, but slow
+    private static final double rbP = 0.06; //0.04 works, but slow
     private static final double rbI = 0.00;
     private static final double rbD = 0.00;
     PIDController rampBalanceController;
@@ -87,6 +72,9 @@ public class Drive {
     private SwerveModule backLeft;
     private SwerveModule backRight;
     public  SwerveDriveKinematics swerveDriveKinematics;
+
+    // NavX
+    public static AHRS ahrs;
 
     /**
      * The constructor for the Drive class
@@ -120,9 +108,9 @@ public class Drive {
 
         /* The locations for the modules must be relative to the center of the robot. 
          * Positive x values represent moving toward the front of the robot 
-         *  whereas positive y values represent moving toward the left of the robot 
+         * whereas positive y values represent moving toward the left of the robot 
          * Values are in meters
-        */
+         */
         FRONT_LEFT_LOCATION  = new Translation2d(0.26035, 0.26035);
         FRONT_RIGHT_LOCATION = new Translation2d(0.26035, -0.26035);
         BACK_LEFT_LOCATION   = new Translation2d(-0.26035, 0.26035);
@@ -154,49 +142,42 @@ public class Drive {
 
         rampBalanceController = new PIDController(rbP, rbI, rbD);
         rampBalanceController.setTolerance(RAMP_BALANCE_TOLERANCE);
-
-        // Used during crab drive to keep the robot at same orientation
-        autoCrabDriveController = new PIDController(acdP, acdI, acdD);
-        autoCrabDriveController.enableContinuousInput(-180.0, 180.0);
-        autoCrabDriveController.setTolerance(2);
-
-        autoRotateController = new PIDController(arP, arI, arD);
-        autoRotateController.enableContinuousInput(-180.0, 180.0);
-        autoRotateController.setTolerance(2);
     }
 
     /**
      * The function to drive the robot using a joystick.
-     * Positive Forward Goes Forward
-     * Positive Strafe Goes Left
-     * Positive Rotation Speed is Counter-Clockwise 
+     * <p>Positive Forward Goes Forward, Positive Strafe Goes Left, and Positive Rotation Speed is Counter-Clockwise 
      * @param forwardSpeed
      * @param strafeSpeed
      * @param rotationSpeed
-     * @param fieldOriented
+     * @param fieldDrive
      */
-    public void teleopDrive(double forward, double strafe, double rotationSpeed, boolean fieldOriented) {
-        SwerveModuleState[] swerveModuleStates; 
+    public void teleopDrive(double forwardSpeed, double strafeSpeed, double rotationSpeed, boolean fieldDrive) {
+        // Calulates the SwerveModuleStates and determines if they are field relative
+        SwerveModuleState[] swerveModuleStates = 
+            swerveDriveKinematics.toSwerveModuleStates(
+                fieldDrive
+                ? ChassisSpeeds.fromFieldRelativeSpeeds(forwardSpeed, strafeSpeed, rotationSpeed, new Rotation2d( getHeading() ))
+                : new ChassisSpeeds(forwardSpeed, strafeSpeed, rotationSpeed));
 
-        if (fieldOriented) {
-            swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotationSpeed, ( new Rotation2d( getZ() ))));
-        }
-        else {
-            swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
-        }
-        
+        // Limits the max speed of the wheels
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
-        /* The swerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation */
+        // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
         frontLeft.setDesiredState(swerveModuleStates[0]);
         frontRight.setDesiredState(swerveModuleStates[1]);
         backLeft.setDesiredState(swerveModuleStates[2]);
         backRight.setDesiredState(swerveModuleStates[3]);
     }
 
-    // Directly feeds joystick values into motors for testing
-    public void testDrive(double forward, double strafe, double rotationSpeed) {
-        SwerveModuleState[] swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forward, strafe, rotationSpeed));
+    /**
+     * 
+     * @param forwardSpeed
+     * @param strafeSpeed
+     * @param rotationSpeed
+     */
+    public void testDrive(double forwardSpeed, double strafeSpeed, double rotationSpeed) {
+        SwerveModuleState[] swerveModuleStates = swerveDriveKinematics.toSwerveModuleStates(new ChassisSpeeds(forwardSpeed, strafeSpeed, rotationSpeed));
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, 1);
         frontLeft.directMove(swerveModuleStates[0]);
         frontRight.directMove(swerveModuleStates[1]);
@@ -204,12 +185,15 @@ public class Drive {
         backRight.directMove(swerveModuleStates[3]);
     }
 
+    // AP: Consider moving some of these methods to another class. They make Drive absurdly long
     /**
-     * 
+     * Automatically drives through a list of points.
      * @param listOfPoints
+     * @param currPose
      * @return
      */
     public int autoDriveToPoints(Pose2d[] listOfPoints, Pose2d currPose) {
+        // Grabs the target point
         Pose2d targetPoint = listOfPoints[autoPointIndex];
 
         // This runs once for each point in the list
@@ -284,49 +268,18 @@ public class Drive {
         return Robot.CONT;
     }
 
-    public void stopWheels() {
-        frontLeft.setDriveMotorPower(0.0);
-        frontLeft.setRotateMotorPower(0.0);
-        frontRight.setDriveMotorPower(0.0);
-        frontRight.setRotateMotorPower(0.0);
-        backLeft.setDriveMotorPower(0.0);
-        backLeft.setRotateMotorPower(0.0);
-        backRight.setDriveMotorPower(0.0);
-        backRight.setRotateMotorPower(0.0);
-    }
-
-    // Should be used to apply stronger brakes
-    public void crossWheels() {
-        frontLeft.setDesiredState(new SwerveModuleState(0, new Rotation2d(Math.PI/4)));
-        frontRight.setDesiredState(new SwerveModuleState(0, new Rotation2d(-Math.PI/4)));
-        backLeft.setDesiredState(new SwerveModuleState(0, new Rotation2d(-Math.PI/4)));
-        backRight.setDesiredState(new SwerveModuleState(0, new Rotation2d(Math.PI/4)));       
-    }
-
-    public Rotation2d getYaw() {
-        return ahrs.getRotation2d();
-    }
-
-    public double getPitch() {
-        return ahrs.getPitch();
-    }
-
-    public void resetYaw() {
-        // Resets odometry to link our current pose with the new gyro angle
-        ahrs.zeroYaw();
-    }
-
-    public void setAngleAdjustment(double radians) {
-        ahrs.setAngleAdjustment(radians);
-    }
-
+    /**
+     * 
+     * @param frontEndFirst
+     * @return
+     */
     public int chargeRamp(boolean frontEndFirst) {
         int status = Robot.CONT;
 
         double changeInPitch;
         double targetPitch;
 
-        if (rampFirstTime) {
+        if (rampFirstTime == true) {
             rampFirstTime = false;
             rampStep = 1;
             rampInitPitch = ahrs.getPitch();
@@ -411,6 +364,11 @@ public class Drive {
         return Robot.CONT; 
     }
 
+    /**
+     * 
+     * @param frontEndFirst
+     * @return
+     */
     public int leaveRamp(boolean frontEndFirst) {
         if (rampFirstTime) {
             rampFirstTime = false;
@@ -448,6 +406,11 @@ public class Drive {
         }
     }
 
+    /**
+     * 
+     * @param targetPitch
+     * @return
+     */
     public int balanceRamp(double targetPitch) {
         // Calculating targetVelocity based on distance to targetPoint
         rampBalanceController.setSetpoint(targetPitch);
@@ -456,17 +419,25 @@ public class Drive {
         driveVelocity = MathUtil.clamp(driveVelocity, -1.5, 1.5);
 
         // Does movement until routine ends
-        if (rampBalanceController.atSetpoint()) {
+        if (rampBalanceController.atSetpoint() == true) {
             crossWheels();
             return Robot.DONE;
         }
         else {
-            teleopDrive(driveVelocity, 0, 0, false);
+            stopWheels();
         }
 
         return Robot.CONT;
     }
 
+    /**
+     * 
+     * @param driveX
+     * @param driveY
+     * @param driveZ
+     * @param fieldDrive
+     * @return
+     */
     public int rotateWheels(double driveX, double driveY, double driveZ, boolean fieldDrive) {
         teleopDrive(driveX / 100, driveY / 100, driveZ / 100, fieldDrive);
 
@@ -478,17 +449,10 @@ public class Drive {
         return Robot.CONT;
     }
 
-    public double getZ() {
-        return MathUtil.angleModulus(Math.toRadians(ahrs.getAngle()));
-    }
-
-    public void setGyroAngleZero(double degrees) {
-        ahrs.setAngleAdjustment(-degrees);
-    }
 
     /****************************************************************************************** 
     *
-    *    DRIVE FUNCTIONS
+    *    SETTING FUNCTIONS
     * 
     ******************************************************************************************/
     /**
@@ -505,6 +469,66 @@ public class Drive {
         frontRight.setDesiredState(desiredStates[1]);
         backLeft  .setDesiredState(desiredStates[2]);
         backRight .setDesiredState(desiredStates[3]);
+    }
+
+    /**
+     * AP: These two methods are identical. Why?
+     * Plus, the first method is incorrectly defined when compared to its use in Auto.java
+     */
+    /**
+     * Sets the offset of the gyro.
+     * 
+     * @param radians
+     */
+    public void setAngleAdjustment(double radians) {
+        ahrs.setAngleAdjustment(radians);
+    }
+
+    /**
+     * Sets the offset of the gyro.
+     * 
+     * @param degrees
+     */
+    public void setGyroAngleZero(double degrees) {
+        ahrs.setAngleAdjustment(-degrees);
+    }
+
+
+    /****************************************************************************************** 
+    *
+    *    HELPER FUNCTIONS
+    * 
+    ******************************************************************************************/
+    /**
+     * Stops the wheels.
+     */
+    public void stopWheels() {
+        frontLeft.setDriveMotorPower(0.0);
+        frontLeft.setRotateMotorPower(0.0);
+        frontRight.setDriveMotorPower(0.0);
+        frontRight.setRotateMotorPower(0.0);
+        backLeft.setDriveMotorPower(0.0);
+        backLeft.setRotateMotorPower(0.0);
+        backRight.setDriveMotorPower(0.0);
+        backRight.setRotateMotorPower(0.0);
+    }
+
+    /**
+     * Crosses the wheels and makes the robot impossible to move.
+     */
+    public void crossWheels() {
+        frontLeft.setDesiredState(new SwerveModuleState(0, new Rotation2d( Math.PI / 4 )));
+        frontRight.setDesiredState(new SwerveModuleState(0, new Rotation2d( -Math.PI / 4 )));
+        backLeft.setDesiredState(new SwerveModuleState(0, new Rotation2d( -Math.PI / 4 )));
+        backRight.setDesiredState(new SwerveModuleState(0, new Rotation2d( Math.PI / 4 )));       
+    }
+
+    /**
+     * Resets the Yaw on the NavX.
+     */
+    public void resetYaw() {
+        // Resets odometry to link our current pose with the new gyro angle
+        ahrs.zeroYaw();
     }
 
 
@@ -557,6 +581,35 @@ public class Drive {
      */
     public double getHeading() {
         return -1 * Units.degreesToRadians( ahrs.getYaw() );
+    }
+
+    /**
+     * Returns the Z angle (yaw) of the robot.
+     * 
+     * @return The robot's Z angle in radians
+     */
+    public double getZ() {
+        return MathUtil.angleModulus(Math.toRadians(ahrs.getAngle()));
+    }
+
+    /**
+     * @deprecated
+     * Gets the yaw from the NavX as a Rotation2d.
+     * <p> AP: This method is not used and has been marked for deletion.
+     * 
+     * @return robotYaw
+     */
+    public Rotation2d getYaw() {
+        return ahrs.getRotation2d();
+    }
+
+    /**
+     * Gets the pitch from the NavX.
+     * 
+     * @return robotPitch
+     */
+    public double getPitch() {
+        return ahrs.getPitch();
     }
 
 
@@ -625,6 +678,9 @@ public class Drive {
         testEncoders();
     }
 
+    /**
+     * 
+     */
     public void printPowerandVelocity() {
         //frontLeft.displayPowerAndVelocity();
         //frontRight.displayPowerAndVelocity();
@@ -632,6 +688,9 @@ public class Drive {
         //backRight.displayPowerAndVelocity();
     }
 
+    /**
+     * 
+     */
     public void testGyro() {
         if (printCount % 15 == 0) {
             //System.out.println(ahrs.getRotation2d().getDegrees());
@@ -640,10 +699,9 @@ public class Drive {
         printCount++;
     }
 
-    public void initTestDrivePower() {
-        SmartDashboard.putNumber("Drive Power", 0);
-    }
-
+    /**
+     * 
+     */
     public void periodicTestDrivePower() {
         double drivePower = SmartDashboard.getNumber("Drive Power", 0);
         testDrive(drivePower, 0, 0);
@@ -654,4 +712,5 @@ public class Drive {
         printCount++;
     }
 }
+
 // End of the Drive class

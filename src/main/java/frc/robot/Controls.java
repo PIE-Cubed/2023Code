@@ -12,8 +12,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
  */
 public class Controls {
 	// CONSTANTS
-	private final int DRIVE_ID = 1;
-	private final int XBOX_ID  = 0;
+	private final int DRIVE_ID = 0;
 
 	// Controller object declaration
 	private XboxController driveController;
@@ -29,7 +28,6 @@ public class Controls {
 	 */
 	public Controls() {
 		// Instance Creation
-		xboxController  = new XboxController(XBOX_ID);
 		driveController = new XboxController(DRIVE_ID);
 
 		// Create the rate limiters
@@ -133,20 +131,42 @@ public class Controls {
     *    LED FUNCTIONS
     * 
     ******************************************************************************************/
-	public boolean getCone() {
-		return driveController.getYButton();
-	}
-
+	/**
+	 * Checks if the X button is pressed.
+	 * 
+	 * @return
+	 */
 	public boolean getCube() {
 		return driveController.getXButton();
 	}
 
+	/**
+	 * Checks if the Y button is pressed.
+	 * 
+	 * @return
+	 */
+	public boolean getCone() {
+		return driveController.getYButton();
+	}
+
+
+	/****************************************************************************************** 
+    *
+    *    MISC FUNCTIONS
+    * 
+    ******************************************************************************************/
+	/**
+	 * Checks if the left stick is pressed.
+	 * 
+	 * @return
+	 */
 	public boolean zeroYaw() {
 		return driveController.getLeftStickButtonPressed();
 	}
 
 	/**
-	 * Checks if the start button is pressed
+	 * Checks if the start button is pressed.
+	 * 
 	 * @return startButtonPressed
 	 */
 	public boolean autoKill() {
