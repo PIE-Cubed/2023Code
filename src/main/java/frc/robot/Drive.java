@@ -56,7 +56,7 @@ public class Drive {
 
     // Auto drive to points rotate controller
     private static final double adrp = MAX_ROTATE_SPEED * ((1.4) / Math.PI); // 1/1.4 Pi radians away --> full power
-    private static final double adri = adrp / 50;
+    private static final double adri = 0; //adrp / 50;
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
 
@@ -163,8 +163,6 @@ public class Drive {
         // Limits the max speed of the wheels
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
-        System.out.println("Heading:" + getHeading());
-
         // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
         frontLeft.setDesiredState(swerveModuleStates[0]);
         frontRight.setDesiredState(swerveModuleStates[1]);
@@ -241,13 +239,6 @@ public class Drive {
                 double targetXVelocity      = autoDriveXController.calculate(currPose.getX(), targetPoint.getX());
                 double targetYVelocity      = autoDriveYController.calculate(currPose.getY(), targetPoint.getY());
                 double targetRotateVelocity = autoDriveRotateController.calculate(getHeading(), targetPoint.getRotation().getRadians());
-
-                if (printCount % 15 == 0) {
-                    System.out.println("CurrX:" + currPose.getX() + " TarX:" + targetPoint.getX() + " VelX:" + targetXVelocity);
-                    System.out.println("CurrY:" + currPose.getY() + " TarY:" + targetPoint.getY() + " VelY:" + targetYVelocity);
-                    System.out.println("CurrZ:" + getHeading() + " TarZ:" + targetPoint.getRotation().getRadians() + " VelZ:" + targetRotateVelocity);
-                }
-                printCount++;
 
                 targetXVelocity = xLimiter.calculate(targetXVelocity);
                 targetYVelocity = yLimiter.calculate(targetYVelocity);

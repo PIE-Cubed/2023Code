@@ -32,8 +32,11 @@ public class Robot extends TimedRobot {
 	// Variables
 	private int status = CONT;
 
-	private long coneFlashEnd = 0;
-	private long cubeFlashEnd = 0;
+	private long   coneFlashEnd = 0;
+	private long   cubeFlashEnd = 0;
+	private double printCount   = 0;
+	private Pose2d previousPlacementLocation;
+	private int    placementStatus = Robot.CONT;
 
 	// Auto path
 	private static final String wallAuto   = "Wall";
@@ -62,6 +65,8 @@ public class Robot extends TimedRobot {
 		// Instance getters
 		led      = LED.getInstance();
 		nTables  = CustomTables.getInstance();
+
+		previousPlacementLocation = new Pose2d();
 	}
 
 	@Override
@@ -189,7 +194,9 @@ public class Robot extends TimedRobot {
 	 */
 	public void teleopInit() {
 		// Resets the pose to the vision estimator's reading
-		// position.resetPoseTrackers( position.getVisionPose() );
+		//drive.resetYaw();
+		//drive.setGyroAngleZero(180);
+		//position.resetPoseTrackers(new Pose2d(1.767, 1.067, new Rotation2d(Math.PI)) );
 	}
 
 	@Override
@@ -250,9 +257,11 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Gets Joystick Values
-		double forwardSpeed = controls.getForwardSpeed();
-		double strafeSpeed  = controls.getStrafeSpeed();
-		double rotateSpeed  = controls.getRotateSpeed();
+		Pose2d currentLocation   = position.getVisionPose();
+		double forwardSpeed      = controls.getForwardSpeed();
+		double strafeSpeed       = controls.getStrafeSpeed();
+		double rotateSpeed       = controls.getRotateSpeed();
+		Pose2d placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
 
 		boolean zeroYaw = controls.zeroYaw();
 
@@ -261,7 +270,22 @@ public class Robot extends TimedRobot {
 			System.out.println("Zeroing yaw");
 		}
 
-		drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+		if (placementLocation == null) {
+			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+		}
+		else {
+			// Resets placement location if we change locations
+			if (!placementLocation.equals(previousPlacementLocation))	{
+				placementStatus = Robot.CONT;
+			}	
+			previousPlacementLocation = placementLocation;
+
+			// Stops trying to position once status is done
+			if (placementStatus == Robot.CONT) {
+				placementStatus = drive.autoDriveToPoints(new Pose2d[]{placementLocation}, currentLocation);
+			}	
+		}
+
 	}
 
 	private void ledControl() {

@@ -6,13 +6,20 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 
 /**
  * Start of the Controls class
  */
 public class Controls {
 	// CONSTANTS
-	private final int DRIVE_ID = 0;
+	private final int    DRIVE_ID       = 0;
+
+	// Values in meters, field-based pose Y coords
+	private final double GRID_DIVIDER_1 = 1.905;
+	private final double GRID_DIVIDER_2 = 3.581;
+	private final double FIELD_WIDTH    = 8.0137;
 
 	// Controller object declaration
 	private XboxController driveController;
@@ -101,26 +108,100 @@ public class Controls {
 		return speed;
 	}
 
+	/**
+	 * Gets target location for placing objects in the grid
+	 * When in front of 1 of the 3 sets, holding X, A, and B will
+	 * align with the left cones, cubes, or right cones
+	 * Returns null if nothing is held
+	 * @return location
+	 */
+	public Pose2d getPlacementLocation(double yLocation, boolean redSide) {
+		// Left cone
+		if (driveController.getXButton()) {
+			if (redSide) {
+				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
+					return new Pose2d(1.767, FIELD_WIDTH - 1.626, new Rotation2d(Math.PI));
+				}
+				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
+					return new Pose2d(1.767, FIELD_WIDTH - 3.302, new Rotation2d(Math.PI));
+				}
+				else {
+					return new Pose2d(1.767, FIELD_WIDTH - 4.978, new Rotation2d(Math.PI));
+				}
+			}
+			else {
+				if (yLocation < GRID_DIVIDER_1) {
+					return new Pose2d(1.767, 1.626, new Rotation2d(Math.PI));
+				}
+				else if (yLocation < GRID_DIVIDER_2) {
+					return new Pose2d(1.767, 3.302, new Rotation2d(Math.PI));
+				}
+				else {
+					return new Pose2d(1.767, 4.978, new Rotation2d(Math.PI));
+				}
+			}
+			
+		}
+		// Cube
+		else if (driveController.getAButton()) {
+			if (redSide) {
+				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
+					return new Pose2d(1.767, FIELD_WIDTH - 1.067, new Rotation2d(Math.PI));
+				}
+				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
+					return new Pose2d(1.767, FIELD_WIDTH - 2.743, new Rotation2d(Math.PI));
+				}
+				else {
+					return new Pose2d(1.767, FIELD_WIDTH - 4.420, new Rotation2d(Math.PI));
+				}
+			}
+			else {
+				if (yLocation < GRID_DIVIDER_1) {
+					return new Pose2d(1.767, 1.067, new Rotation2d(Math.PI));
+				}
+				else if (yLocation < GRID_DIVIDER_2) {
+					return new Pose2d(1.767, 2.743, new Rotation2d(Math.PI));
+				}
+				else {
+					return new Pose2d(1.767, 4.420, new Rotation2d(Math.PI));
+				}
+			}
+			
+		}
+		// Right cone
+		else if (driveController.getBButton()) {
+			if (redSide) {
+				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
+					return new Pose2d(1.767, FIELD_WIDTH - 0.508, new Rotation2d(Math.PI));
+				}
+				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
+					return new Pose2d(1.767, FIELD_WIDTH - 2.184, new Rotation2d(Math.PI));
+				}
+				else {
+					return new Pose2d(1.767, FIELD_WIDTH - 3.861, new Rotation2d(Math.PI));
+				}
+			}
+			else {
+				if (yLocation < GRID_DIVIDER_1) {
+					return new Pose2d(1.767, 0.508, new Rotation2d(Math.PI));
+				}
+				else if (yLocation < GRID_DIVIDER_2) {
+					return new Pose2d(1.767, 2.184, new Rotation2d(Math.PI));
+				}
+				else {
+					return new Pose2d(1.767, 3.861, new Rotation2d(Math.PI));
+				}
+			}
+		}
+		else {
+			return null;
+		}
+	}
+
 
 	/****************************************************************************************** 
     *
     *    ARM FUNCTIONS
-    * 
-    ******************************************************************************************/
-
-
-
-	/****************************************************************************************** 
-    *
-    *    WRIST FUNCTIONS
-    * 
-    ******************************************************************************************/
-
-
-
-	/****************************************************************************************** 
-    *
-    *    CLAW FUNCTIONS
     * 
     ******************************************************************************************/
 
@@ -137,7 +218,7 @@ public class Controls {
 	 * @return
 	 */
 	public boolean getCube() {
-		return driveController.getXButton();
+		return driveController.getLeftBumper();
 	}
 
 	/**
@@ -146,7 +227,7 @@ public class Controls {
 	 * @return
 	 */
 	public boolean getCone() {
-		return driveController.getYButton();
+		return driveController.getRightBumper();
 	}
 
 
