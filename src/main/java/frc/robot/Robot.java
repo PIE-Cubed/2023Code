@@ -5,11 +5,11 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-
 import edu.wpi.first.networktables.*;
-
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.Controls.ArmStates;
+import frc.robot.Controls.Objects;
 
 /**
  * Start of the Robot class
@@ -168,10 +168,6 @@ public class Robot extends TimedRobot {
 	 * Runs constantly during test
 	 */
 	public void testPeriodic() {
-		if (status == Robot.CONT) {
-			status = arm.coneTop();
-		}
-		arm.testAbsEncoders();
 		//arm.storeObject();
 		//arm.setArmAngles(2.117, 0.239, 0.104); // Top cone
 		//arm.restArm();
@@ -184,21 +180,31 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Gets Joystick Values
-		double driveX               = controls.getDriveX();
-		double driveY               = controls.getDriveY();
-		double rotatePower          = controls.getRotatePower();
+		//double driveX               = controls.getDriveX();
+		//double driveY               = controls.getDriveY();
+		//double rotatePower          = controls.getRotatePower();
 	}
 
 	private void armControl() {
 		// Add the grabber controls
-		double basePower   = controls.getBasePower();
-		double middlePower = controls.getMiddlePower();
-		double endPower    = controls.getEndPower();
+		Objects   currentObject    = controls.getClawState();
+		double    manualWristPower = controls.getManualWristPower();
+		ArmStates armState         = controls.getArmState();
 
-		arm.setBasePower(basePower);
-		arm.setMiddlePower(middlePower);
-		arm.setEndPower(endPower);
+		// Manual wrist control overrides automatic control
+		if (manualWristPower != 0) {
+			arm.powerEnd(manualWristPower);
+		}
+		else {
+			// Bring arm through rest position to our target position
+		}
+
+		if (currentObject == Objects.EMPTY) {
+			arm.openClaw();
+		}
+		else {
+			arm.closeClaw();
+		}
 	}
 }
-
 // End of the Robot class

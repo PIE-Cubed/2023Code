@@ -4,125 +4,181 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 
 /**
  * Start of the Controls class
  */
 public class Controls {
 	// CONSTANTS
-	private final int JOYSTICK_ID = 1;
-	private final int XBOX_ID     = 0;
+	private final int DRIVE_ID = 0;
+	private final int ARM_ID   = 1;
 
 	// Controller object declaration
-	private Joystick       joystick;
-	private XboxController xboxController;
+	private XboxController driveController;
+	private XboxController armController;
 
-	//Constructor
+	// Rate limiters
+	private SlewRateLimiter xLimiter;
+	private SlewRateLimiter yLimiter;
+	private SlewRateLimiter rotateLimiter;
+
+	// Enumeration for which object the claw is holding
+	public enum Objects {
+		CONE,
+		CUBE,
+		EMPTY
+	};
+	public static Objects currentObject;
+
+	// Enumeration for which position the arm is at
+	public enum ArmStates {
+		TOP_CONE,
+		TOP_CUBE,
+		MID_CONE,
+		MID_CUBE,
+		BOT_CONE,
+		BOT_CUBE,
+		REST,
+		GRAB
+	};
+	public static ArmStates armState;
+
+	/**
+	 * The constructor for the Controls class
+	 */
 	public Controls() {
 		// Instance Creation
-		joystick       = new Joystick(JOYSTICK_ID);
-		xboxController = new XboxController(XBOX_ID);
+		driveController = new XboxController(DRIVE_ID);
+		armController   = new XboxController(ARM_ID);
+
+		// Create the rate limiters
+		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
+		yLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
+		rotateLimiter = new SlewRateLimiter(6 * Math.PI);
+
+		currentObject = Objects.EMPTY;
+		armState      = ArmStates.REST;
 	}
 
-	/**
-	 * DRIVE FUNCTIONS
-	 */
+	/****************************************************************************************** 
+    *
+    *    DRIVE FUNCTIONS
+    * 
+    ******************************************************************************************/
 
-	/**
-	 * Positive values are from clockwise rotation and negative values are from counter-clockwise
-	 * @return rotatePower
-	 */
-	public double getRotatePower() {
-		double power = joystick.getZ(); 
 
-		// If we are in deadzone, rotatepower is 0
-		if ((Math.abs(power) < 0.3)) {
-		power = 0;
+	
+	/****************************************************************************************** 
+    *
+    *    ARM FUNCTIONS
+    * 
+    ******************************************************************************************/
+	/**
+	 * Finds which object the claw should be holding.
+	 * If the state is not empty, the arm class should close the claw.
+	 * Cone and cube have different weight, so the arm should know which one we are holding.
+	 * @return currentObject
+	 */
+	public Objects getClawState() {
+		// If claw is empty, pressing a bumper will grab an object
+		if (currentObject == Objects.EMPTY) {
+			if (armController.getLeftBumperPressed()) {
+				currentObject = Objects.CONE;
+			}
+			else if (armController.getRightBumperPressed()) {
+				currentObject = Objects.CUBE;
+			}
+		}
+		// If claw is not empty, pressing a bumper will release the object
+		else {
+			if (armController.getLeftBumperPressed() || armController.getRightBumperPressed()) {
+				currentObject = Objects.EMPTY;
+			}
 		}
 
-		// Cubes the power and clamps it because the rotate is SUPER sensitive
-		power = Math.pow(power, 3.0);
-		power = MathUtil.clamp(power, -.5, .5);
-
-		return power;    
+		return currentObject;
 	}
 
 	/**
-	 * Gets the drive X
-	 * @return driveX
+	 * D-pad controls manual movement of wrist
+	 * Up on D-pad is positive power (toward front of robot), down on D-pad is negative power
+	 * @return manualPower
 	 */
-	public double getDriveX() {
-		double power = joystick.getX();
-
-		// If we are in deadzone, x is 0
-		if ((Math.abs(power) < 0.05)) {
-		power = 0;
+	public double getManualWristPower() {
+		// Higher power if we are grabbing heavier object
+		double manualPower;
+		if (getClawState() == Objects.EMPTY) {
+			manualPower = 0.06;
 		}
-
-		return power;
-	}
-
-	/**
-	 * Gets the drive Y
-	 * @return driveY
-	 */
-	public double getDriveY() {
-		double power = joystick.getY() * -1;
-
-		// If we are in deadzone, y is 0
-		if ((Math.abs(power) < 0.05)) {
-		power = 0;
-		}
-
-		return power;
-	}
-
-	/**
-	 * ARM CONTROLS
-	 */
-	public double getBasePower() {
-		double rightAxis = xboxController.getRightTriggerAxis();
-		double leftAxis  = xboxController.getLeftTriggerAxis();
-
-		if (rightAxis > 0) {
-			return rightAxis;
+		else if (getClawState() == Objects.CONE) {
+			manualPower = 0.18;
 		}
 		else {
-			return -1 * leftAxis;
+			manualPower = 0.12;
+		}
+
+		// Up on D-pad
+		if (armController.getPOV() == 0) {
+			return manualPower;
+		}
+		else if (armController.getPOV() == 180) {
+			return -1 * manualPower;
+		}
+		else {
+			return 0;
 		}
 	}
 
-	public double getMiddlePower() {
-		return Math.pow(-xboxController.getLeftY(), 3);
+	public ArmStates getArmState() {
+		if (armController.getAButton()) {
+			armState = (getClawState() == Objects.CONE)? ArmStates.BOT_CONE : ArmStates.BOT_CUBE;
+		}
+		else if (armController.getBButton()) {
+			armState = (getClawState() == Objects.CONE)? ArmStates.MID_CONE : ArmStates.MID_CUBE;
+		}
+		else if (armController.getYButton()) {
+			armState = (getClawState() == Objects.CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
+		}
+		else if (armController.getPOV() == 90) {
+			armState = ArmStates.REST;
+		}
+		else if (armController.getPOV() == 270) {
+			armState = ArmStates.GRAB;
+		}
+		return armState;
 	}
 
-	public double getEndPower() {
-		return Math.pow(-xboxController.getRightY(), 3);
+
+	/****************************************************************************************** 
+    *
+    *    LED FUNCTIONS
+    * 
+    ******************************************************************************************/
+	
+
+	
+	/****************************************************************************************** 
+    *
+    *    MISC FUNCTIONS
+    * 
+    ******************************************************************************************/
+	/**
+	 * Checks if the left stick is pressed.
+	 * 
+	 * @return
+	 */
+	public boolean zeroYaw() {
+		return driveController.getLeftStickButtonPressed();
 	}
-
-
-
-	/**
-	 * WRIST CONTROLS
-	 */
-
-
-
-	/**
-	 * CLAW CONTROLS
-	 */
-
-
 
 	/**
 	 * Checks if the start button is pressed
 	 * @return start button pressed
 	 */
 	public boolean autoKill() {
-		return xboxController.getStartButtonPressed();
+		return driveController.getStartButtonPressed();
 	}
 }
 

@@ -12,6 +12,8 @@ import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.math.MathUtil;
 import com.revrobotics.CANSparkMax.IdleMode;
 import edu.wpi.first.math.controller.ArmFeedforward;
+import frc.robot.Controls.ArmStates;
+import frc.robot.Controls.Objects;
 
 public class Arm {
     // Object Creation
@@ -25,8 +27,6 @@ public class Arm {
 
 	private DoubleSolenoid  claw;
 	private final int PNEU_CONTROLLER_ID = 1;
-
-	//private DoubleSolenoid claw;
 
 	// Last valid set of angles, in case user passes boundaries
 	private double prevBaseAngle   = 0;
@@ -86,11 +86,13 @@ public class Arm {
         middleMotor = new CANSparkMax(7, MotorType.kBrushless);
         endMotor    = new CANSparkMax(6, MotorType.kBrushless);
 
-		//claw = new DoubleSolenoid(1, PneumaticsModuleType.REVPH, 0, 1);
+		claw = new DoubleSolenoid(1, PneumaticsModuleType.REVPH, 0, 15);
 
-        baseMotor.setIdleMode(IdleMode.kBrake);
-        middleMotor.setIdleMode(IdleMode.kBrake);
-        endMotor.setIdleMode(IdleMode.kBrake);
+		// Coast mode allows motors to rest in rest position
+		// Brake mode is not needed because motors are always given some power to fight gravity
+        baseMotor.setIdleMode(IdleMode.kCoast);
+        middleMotor.setIdleMode(IdleMode.kCoast);
+        endMotor.setIdleMode(IdleMode.kCoast);
 
 		baseMotor.setInverted(true);
 		middleMotor.setInverted(true);
@@ -122,28 +124,19 @@ public class Arm {
 		endPID.setTolerance(END_TOLERANCE);
     }
 
-	public int storeObject() {
-		return setArmAngles(0.608, Math.PI, 3.273);
-	}
+	public void powerEnd(double power) {
+		double[] restArmPowers = restArmPowers();
 
-	public int coneTop() {
-		int status = Robot.CONT;
-
-		if (secondConeTopCase == false) {
-			status = moveArmToPoint(2.117, 0.239, 5*Math.PI/6);
-			if (status == Robot.DONE) {
-				secondConeTopCase = true;
-			}
+		// If arm is folded in, base and middle don't need powers to hold their position
+		if (Controls.armState == ArmStates.REST || Controls.armState == ArmStates.GRAB) {
+			setMiddlePower(0);
+			setEndPower(0);
 		}
 		else {
-			status = moveArmToPoint(2.117, 0.239, 0.104);
-			if (status == Robot.DONE) {
-				secondConeTopCase = false;
-				return Robot.DONE;
-			}
+			setMiddlePower(restArmPowers[1]);
+			setEndPower(restArmPowers[2]);
 		}
-
-		return Robot.CONT;
+		setEndPower(power + restArmPowers[3]);
 	}
 
 	public int moveArmToPoint(double reachAngle, double reachDistance, double wristAngle) {
@@ -357,7 +350,16 @@ public class Arm {
 		
 		double joint2Torque  = JOINT_2_MASS * -1 * joint2X;
 		double joint3Torque  = JOINT_3_MASS * -1 * joint3X;
-		double clawTorque    = 0    * -1 * endX; // Implement cone/cube mass
+
+		double objectMass = 0;
+		if (Controls.currentObject == Objects.CONE) {
+			objectMass = CONE_MASS;
+		}
+		else if (Controls.currentObject == Objects.CUBE) {
+			objectMass = CUBE_MASS;
+		}
+
+		double clawTorque    = objectMass   * -1 * endX; // Implement cone/cube mass
 		
 		double baseTorque    = BASE_MASS    * -1 * baseCenterX;
 		double middleTorque  = MIDDLE_MASS  * -1 * middleCenterX;
@@ -375,7 +377,16 @@ public class Arm {
 		double endCenterX    = (joint3X + endX) / 2;
 		
 		double joint3Torque  = JOINT_3_MASS * -1 * joint3X;
-		double clawTorque    = 0    * -1 * endX; // Implement cone/cube mass
+
+		double objectMass = 0;
+		if (Controls.currentObject == Objects.CONE) {
+			objectMass = CONE_MASS;
+		}
+		else if (Controls.currentObject == Objects.CUBE) {
+			objectMass = CUBE_MASS;
+		}
+
+		double clawTorque    = objectMass   * -1 * endX; // Implement cone/cube mass
 		
 		double middleTorque  = MIDDLE_MASS  * -1 * middleCenterX;
 		double endTorque     = END_MASS     * -1 * endCenterX;
@@ -387,9 +398,17 @@ public class Arm {
 		// All distances are relative to Joint 3
 		double endX          = LENGTH_END * Math.cos(q1 + q2 + q3);
 		double endCenterX    = endX / 2;
+
+		double objectMass = 0;
+		if (Controls.currentObject == Objects.CONE) {
+			objectMass = CONE_MASS;
+		}
+		else if (Controls.currentObject == Objects.CUBE) {
+			objectMass = CUBE_MASS;
+		}
 		
-		double clawTorque    = 0 * -1 * (endX - 0.15); // Implement cone/cube mass
-		double endTorque     = END_MASS * -1 * endCenterX;
+		double clawTorque    = objectMass * -1 * (endX - 0.15); // Implement cone/cube mass
+		double endTorque     = END_MASS   * -1 * endCenterX;
 		
 		return clawTorque + endTorque;
 	}
@@ -448,14 +467,13 @@ public class Arm {
         return endAbsoluteEncoder.getPosition();
     }
 
-	/*
 	public void openClaw() {
 		claw.set(Value.kReverse);
 	}
 
 	public void closeClaw() {
 		claw.set(Value.kForward);
-	}*/
+	}
 
 	// Test functions
 	public void testAbsEncoders() {
