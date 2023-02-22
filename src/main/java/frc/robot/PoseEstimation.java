@@ -13,6 +13,7 @@ import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.MatBuilder;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.numbers.*;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
@@ -67,7 +68,7 @@ public class PoseEstimation {
         // Creates the odometry tracker
         odometry = new SwerveDriveOdometry(
             drive.swerveDriveKinematics,
-            new Rotation2d( drive.getHeading() ),
+            new Rotation2d( drive.getYawPose() ),
             moduleStartPosition,
             new Pose2d()
         );
@@ -79,7 +80,7 @@ public class PoseEstimation {
         // Creates the vision pose tracker
         visionEstimator = new SwerveDrivePoseEstimator(
             drive.swerveDriveKinematics,
-            new Rotation2d( drive.getHeading() ),
+            new Rotation2d( drive.getYawPose() ),
             moduleStartPosition,
             new Pose2d(),
             odometryTrust,
@@ -127,7 +128,7 @@ public class PoseEstimation {
 
         // Updates odometry
         odometry.update(
-            new Rotation2d( drive.getHeading() ),
+            new Rotation2d( MathUtil.angleModulus(drive.getYawPose()) ),
             allModulePosition
         );
     }
@@ -146,7 +147,7 @@ public class PoseEstimation {
 
         // Updates the pose estimator (without vision)
         visionEstimator.update(
-            new Rotation2d( drive.getHeading() ),
+            new Rotation2d( drive.getYawPose() ),
             allModulePosition
         );
 
@@ -219,7 +220,7 @@ public class PoseEstimation {
 
         // Resets the SwerveOdometry
         odometry.resetPosition(
-            pose.getRotation(),
+            new Rotation2d(MathUtil.angleModulus(drive.getYawPose())),
             allPositiions,
             pose
         );

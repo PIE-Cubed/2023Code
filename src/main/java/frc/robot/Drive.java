@@ -157,7 +157,7 @@ public class Drive {
         SwerveModuleState[] swerveModuleStates = 
             swerveDriveKinematics.toSwerveModuleStates(
                 fieldDrive
-                ? ChassisSpeeds.fromFieldRelativeSpeeds(forwardSpeed, strafeSpeed, rotationSpeed, new Rotation2d( getHeading() ))
+                ? ChassisSpeeds.fromFieldRelativeSpeeds(forwardSpeed, strafeSpeed, rotationSpeed, new Rotation2d( getYawRobot() ))
                 : new ChassisSpeeds(forwardSpeed, strafeSpeed, rotationSpeed));
 
         // Limits the max speed of the wheels
@@ -222,7 +222,7 @@ public class Drive {
 
             initXVelocity      = autoDriveXController.calculate(currPose.getX(), targetPoint.getX());
             initYVelocity      = autoDriveYController.calculate(currPose.getY(), targetPoint.getY());
-            initRotateVelocity = autoDriveRotateController.calculate(getHeading(), targetPoint.getRotation().getRadians());
+            initRotateVelocity = autoDriveRotateController.calculate(getYawPose(), targetPoint.getRotation().getRadians());
         } 
         // Runs when it's not the first time for a point
         else {
@@ -238,7 +238,7 @@ public class Drive {
                 // Calculating targetVelocity based on distance to targetPoint
                 double targetXVelocity      = autoDriveXController.calculate(currPose.getX(), targetPoint.getX());
                 double targetYVelocity      = autoDriveYController.calculate(currPose.getY(), targetPoint.getY());
-                double targetRotateVelocity = autoDriveRotateController.calculate(getHeading(), targetPoint.getRotation().getRadians());
+                double targetRotateVelocity = autoDriveRotateController.calculate(getYawPose(), targetPoint.getRotation().getRadians());
 
                 targetXVelocity = xLimiter.calculate(targetXVelocity);
                 targetYVelocity = yLimiter.calculate(targetYVelocity);
@@ -469,16 +469,6 @@ public class Drive {
         backRight .setDesiredState(desiredStates[3]);
     }
 
-    /**
-     * Sets the zero offset for the gyro.
-     * 
-     * @param degrees
-     */
-    public void setGyroAngleZero(double degrees) {
-        ahrs.setAngleAdjustment(-degrees);
-    }
-
-
     /****************************************************************************************** 
     *
     *    HELPER FUNCTIONS
@@ -512,7 +502,6 @@ public class Drive {
      * Resets the Yaw on the NavX.
      */
     public void resetYaw() {
-        // Resets odometry to link our current pose with the new gyro angle
         ahrs.zeroYaw();
     }
 
@@ -558,14 +547,12 @@ public class Drive {
         return backRight.getModulePosition();
     }
 
-    /**
-     * Returns the robot's heading.
-     * <p>This value has transformed to radians and negated to keep with convention.
-     * 
-     * @return The robot's heading in radians
-     */
-    public double getHeading() {
-        return -1 * MathUtil.angleModulus( Units.degreesToRadians( ahrs.getAngle() ) );
+    public double getYawRobot() {
+        return MathUtil.angleModulus(-1 * Units.degreesToRadians( ahrs.getYaw() ) + Math.PI);
+    }
+
+    public double getYawPose() {
+        return MathUtil.angleModulus(-1 * Units.degreesToRadians( ahrs.getYaw() ) + Math.PI/2);
     }
 
     /**
@@ -582,7 +569,7 @@ public class Drive {
     *
     *    TEST FUNCTIONS
     * 
-    ******************************************************************************************/
+    ******************************************************************************************/  
     /**
      * Inits the motor sliders
      */
@@ -663,7 +650,7 @@ public class Drive {
         if (printCount % 15 == 0) {
             //System.out.println(ahrs.getRotation2d().getDegrees());
             //System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
-            System.out.println("Angle: " + getHeading());
+            System.out.println("Angle: " + getYawRobot());
         }
         printCount++;
     }

@@ -158,7 +158,6 @@ public class Robot extends TimedRobot {
 		}
 
 		// Sets the starting position
-		drive.setGyroAngleZero(startPose.getRotation().getDegrees());
 		position.resetPoseTrackers(startPose);
 	}
 
@@ -195,7 +194,7 @@ public class Robot extends TimedRobot {
 	public void teleopInit() {
 		// Resets the pose to the vision estimator's reading
 		//drive.resetYaw();
-		//drive.setGyroAngleZero(180);
+		//drive.setGyroAngleZero(90);
 		//position.resetPoseTrackers(new Pose2d(1.767, 1.067, new Rotation2d(Math.PI)) );
 	}
 
@@ -207,6 +206,10 @@ public class Robot extends TimedRobot {
 	public void teleopPeriodic() {
 		wheelControl();
 		ledControl();
+		if (printCount % 15 == 0) {
+			System.out.println(position.getOdometryPose().getX() + " Rotated Y:" + position.getOdometryPose().getY() + " Heading:" + drive.getYawPose());
+		}
+		printCount++;
 	}
 
 	@Override
@@ -262,13 +265,6 @@ public class Robot extends TimedRobot {
 		double strafeSpeed       = controls.getStrafeSpeed();
 		double rotateSpeed       = controls.getRotateSpeed();
 		Pose2d placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
-
-		boolean zeroYaw = controls.zeroYaw();
-
-		if (zeroYaw) {
-			drive.resetYaw();
-			System.out.println("Zeroing yaw");
-		}
 
 		if (placementLocation == null) {
 			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);

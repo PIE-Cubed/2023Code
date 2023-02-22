@@ -237,15 +237,6 @@ public class Controls {
     * 
     ******************************************************************************************/
 	/**
-	 * Checks if the left stick is pressed.
-	 * 
-	 * @return
-	 */
-	public boolean zeroYaw() {
-		return driveController.getLeftStickButtonPressed();
-	}
-
-	/**
 	 * Checks if the start button is pressed.
 	 * 
 	 * @return startButtonPressed
