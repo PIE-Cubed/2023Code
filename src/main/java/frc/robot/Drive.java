@@ -1,17 +1,13 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.wpilibj.SerialPort.StopBits;
-
 import com.kauailabs.navx.frc.AHRS;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**

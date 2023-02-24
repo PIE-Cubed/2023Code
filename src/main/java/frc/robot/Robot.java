@@ -4,10 +4,8 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.TimedRobot;
-
 import edu.wpi.first.math.geometry.*;
-
+import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 
@@ -34,7 +32,6 @@ public class Robot extends TimedRobot {
 
 	private long   coneFlashEnd = 0;
 	private long   cubeFlashEnd = 0;
-	private double printCount   = 0;
 	private Pose2d previousPlacementLocation;
 	private int    placementStatus = Robot.CONT;
 
