@@ -6,6 +6,7 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 
 public class Auto {
     // State tracking variables - each variable can only be used in one function at any time
@@ -21,12 +22,12 @@ public class Auto {
     private PoseEstimation position;
 
     // Constants for starting poses for each auto
-    public final Pose2d RAMP_RED_START    = new Pose2d(0, 0, new Rotation2d(Math.PI/2));
-    public final Pose2d RAMP_BLUE_START   = new Pose2d(0, 0, new Rotation2d(Math.PI/2));
-    public final Pose2d WALL_RED_START    = new Pose2d(2.0, 7.5936, new Rotation2d(Math.PI/2));
-    public final Pose2d WALL_BLUE_START   = new Pose2d(2.0, 0.4064, new Rotation2d(Math.PI/2));
-    public final Pose2d CENTER_RED_START  = new Pose2d(0, 0, new Rotation2d(0));
-    public final Pose2d CENTER_BLUE_START = new Pose2d(0, 0, new Rotation2d(0));
+    public final Translation2d RAMP_RED_START    = new Translation2d(0, 0);
+    public final Translation2d RAMP_BLUE_START   = new Translation2d(0, 0);
+    public final Translation2d WALL_RED_START    = new Translation2d(2.0, 7.5936);
+    public final Translation2d WALL_BLUE_START   = new Translation2d(2.0, 0.4064);
+    public final Translation2d CENTER_RED_START  = new Translation2d(0, 0);
+    public final Translation2d CENTER_BLUE_START = new Translation2d(0, 0);
 
     // Variables
     private Pose2d[] rampAutoExitCommunity = new Pose2d[1]; // Stores location that will ensure we leave community
@@ -145,12 +146,12 @@ public class Auto {
                 if (isRed == true) {
                     pose1 = new Pose2d(3, 7.2, new Rotation2d(0));
                     pose2 = new Pose2d(3, 7.2, new Rotation2d(Math.PI/2));
-                    pose3 = WALL_RED_START;
+                    pose3 = new Pose2d(WALL_RED_START, new Rotation2d(Math.PI/2));
                 }
                 else {
                     pose1 = new Pose2d(3, 0.6, new Rotation2d(0));
                     pose2 = new Pose2d(3, 0.6, new Rotation2d(Math.PI/2));
-                    pose3 = WALL_BLUE_START;
+                    pose3 = new Pose2d(WALL_BLUE_START, new Rotation2d(Math.PI/2));
                 }
                 
                 status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getVisionPose());

@@ -129,26 +129,26 @@ public class Robot extends TimedRobot {
 		switch (m_autoSelected) {
 			case wallAuto:
 				if (isRed == true) {
-					startPose = auto.WALL_RED_START;
+					startPose = new Pose2d(auto.WALL_RED_START, new Rotation2d(-Math.PI/2));
 				}
 				else {
-					startPose = auto.WALL_BLUE_START;
+					startPose = new Pose2d(auto.WALL_BLUE_START, new Rotation2d(-Math.PI/2));
 				}
 				break;
 			case rampAuto:
 				if (isRed == true) {
-					startPose = auto.RAMP_RED_START;
+					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(-Math.PI/2));
 				}
 				else {
-					startPose = auto.RAMP_BLUE_START;
+					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(-Math.PI/2));
 				}
 				break;
 			case centerAuto:
 				if (isRed == true) {
-					startPose = auto.CENTER_RED_START;
+					startPose = new Pose2d(auto.CENTER_RED_START, new Rotation2d(-Math.PI/2));
 				}
 				else {
-					startPose = auto.CENTER_BLUE_START;
+					startPose = new Pose2d(auto.CENTER_BLUE_START, new Rotation2d(-Math.PI/2));
 				}
 				break;
 			default:
@@ -195,7 +195,7 @@ public class Robot extends TimedRobot {
 		// Resets the pose to the vision estimator's reading
 		//drive.resetYaw();
 		//drive.setGyroAngleZero(90);
-		//position.resetPoseTrackers(new Pose2d(1.767, 1.067, new Rotation2d(Math.PI)) );
+		position.resetPoseTrackers(new Pose2d(1.767, 1.067, new Rotation2d(Math.PI)) );
 	}
 
 	@Override
@@ -207,7 +207,8 @@ public class Robot extends TimedRobot {
 		wheelControl();
 		ledControl();
 		if (printCount % 15 == 0) {
-			System.out.println(position.getOdometryPose().getX() + " Rotated Y:" + position.getOdometryPose().getY() + " Heading:" + drive.getYawPose());
+			System.out.println("X:" + 
+			position.getOdometryPose().getX() + " Y:" + position.getOdometryPose().getY() + " Heading:" + drive.getYawTranslational());
 		}
 		printCount++;
 	}

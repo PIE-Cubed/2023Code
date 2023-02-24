@@ -1,6 +1,8 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.SerialPort.StopBits;
+
 import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.MathUtil;
@@ -157,7 +159,7 @@ public class Drive {
         SwerveModuleState[] swerveModuleStates = 
             swerveDriveKinematics.toSwerveModuleStates(
                 fieldDrive
-                ? ChassisSpeeds.fromFieldRelativeSpeeds(forwardSpeed, strafeSpeed, rotationSpeed, new Rotation2d( getYawRobot() ))
+                ? ChassisSpeeds.fromFieldRelativeSpeeds(forwardSpeed, strafeSpeed, rotationSpeed, new Rotation2d( getYawTranslational() ))
                 : new ChassisSpeeds(forwardSpeed, strafeSpeed, rotationSpeed));
 
         // Limits the max speed of the wheels
@@ -222,7 +224,7 @@ public class Drive {
 
             initXVelocity      = autoDriveXController.calculate(currPose.getX(), targetPoint.getX());
             initYVelocity      = autoDriveYController.calculate(currPose.getY(), targetPoint.getY());
-            initRotateVelocity = autoDriveRotateController.calculate(getYawPose(), targetPoint.getRotation().getRadians());
+            initRotateVelocity = autoDriveRotateController.calculate(getYawRotational(), targetPoint.getRotation().getRadians());
         } 
         // Runs when it's not the first time for a point
         else {
@@ -238,7 +240,7 @@ public class Drive {
                 // Calculating targetVelocity based on distance to targetPoint
                 double targetXVelocity      = autoDriveXController.calculate(currPose.getX(), targetPoint.getX());
                 double targetYVelocity      = autoDriveYController.calculate(currPose.getY(), targetPoint.getY());
-                double targetRotateVelocity = autoDriveRotateController.calculate(getYawPose(), targetPoint.getRotation().getRadians());
+                double targetRotateVelocity = autoDriveRotateController.calculate(getYawRotational(), targetPoint.getRotation().getRadians());
 
                 targetXVelocity = xLimiter.calculate(targetXVelocity);
                 targetYVelocity = yLimiter.calculate(targetYVelocity);
@@ -260,6 +262,7 @@ public class Drive {
         if (autoPointIndex >= listOfPoints.length) {
             autoPointIndex = 0;
             autoPointFirstTime = true;
+            stopWheels();
             return Robot.DONE;
         }
 
@@ -547,11 +550,15 @@ public class Drive {
         return backRight.getModulePosition();
     }
 
-    public double getYawRobot() {
+    public double getYawTranslational() {
         return MathUtil.angleModulus(-1 * Units.degreesToRadians( ahrs.getYaw() ) + Math.PI);
     }
 
-    public double getYawPose() {
+    /* Returns angle + PI/2 radians
+       All field poses use the +Y direction as 0 degrees
+       We need to add Pi/2 radians to our angle to adjust for starting the gyro at the angle Pi/2
+    */
+    public double getYawRotational() {
         return MathUtil.angleModulus(-1 * Units.degreesToRadians( ahrs.getYaw() ) + Math.PI/2);
     }
 
@@ -650,7 +657,7 @@ public class Drive {
         if (printCount % 15 == 0) {
             //System.out.println(ahrs.getRotation2d().getDegrees());
             //System.out.println("Yaw=" + String.format( "%.2f", ahrs.getYaw()) + " Roll=" + String.format( "%.2f", ahrs.getRoll()) + " Pitch=" + String.format( "%.2f", ahrs.getPitch()));
-            System.out.println("Angle: " + getYawRobot());
+            System.out.println("Translational angle: " + getYawTranslational() + " Rotational angle:" + getYawRotational());
         }
         printCount++;
     }
