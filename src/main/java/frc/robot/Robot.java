@@ -195,7 +195,7 @@ public class Robot extends TimedRobot {
 		// Resets the pose to the vision estimator's reading
 		//drive.resetYaw();
 		//drive.setGyroAngleZero(90);
-		position.resetPoseTrackers(new Pose2d(1.767, 1.067, new Rotation2d(Math.PI)) );
+		//position.resetPoseTrackers(new Pose2d(1.767, 1.067, new Rotation2d(Math.PI)) );
 	}
 
 	@Override
@@ -206,11 +206,6 @@ public class Robot extends TimedRobot {
 	public void teleopPeriodic() {
 		wheelControl();
 		ledControl();
-		if (printCount % 15 == 0) {
-			System.out.println("X:" + 
-			position.getOdometryPose().getX() + " Y:" + position.getOdometryPose().getY() + " Heading:" + drive.getYawTranslational());
-		}
-		printCount++;
 	}
 
 	@Override
