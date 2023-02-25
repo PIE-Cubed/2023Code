@@ -6,6 +6,8 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 
 /**
  * Start of the Controls class
@@ -14,6 +16,11 @@ public class Controls {
 	// CONSTANTS
 	private final int DRIVE_ID = 0;
 	private final int ARM_ID   = 1;
+
+	// Values in meters, field-based pose Y coords
+	private final double GRID_DIVIDER_1 = 1.905;
+	private final double GRID_DIVIDER_2 = 3.581;
+	private final double FIELD_WIDTH    = 8.0137;
 
 	// Controller object declaration
 	private XboxController driveController;
@@ -67,7 +74,155 @@ public class Controls {
     *    DRIVE FUNCTIONS
     * 
     ******************************************************************************************/
+/**
+	 * Gets the forward speed
+	 * <p>Forward is positive to match chassis speed standards
+	 * <p>This measures rotatation around the Y axis, which is effectively translation on the X axis
+	 * 
+	 * @return forwardSpeed
+	 */
+	public double getForwardSpeed() {
+		double speed;
+		double power = -1 * driveController.getLeftY();
 
+		// Turns the power into a speed
+		speed = power * Drive.MAX_DRIVE_SPEED;
+
+		// Limits the acceleration when under driver control
+		speed = xLimiter.calculate(speed);
+
+		return speed;
+	}
+
+	/**
+	 * Gets the strafe speed
+	 * <p>Left is positive to match chassis speed standards
+	 * <p>This measures rotatation around the X axis, which is effectively translation on the Y axis
+	 * 
+	 * @return strafeSpeed
+	 */
+	public double getStrafeSpeed() {
+		double speed;
+		double power = -1 * driveController.getLeftX();
+
+		// Turns the power into a speed
+		speed = power * Drive.MAX_DRIVE_SPEED;
+
+		// Limits the acceleration when under driver control
+		speed = yLimiter.calculate(speed);
+
+		return speed;
+	}
+
+	/**
+	 * Gets the rotate speed
+	 * <p>Counterclockwise is positive to match chassis speed standards
+	 * <p>This measures rotatation around the Z axis
+	 * 
+	 * @return rotateSpeed
+	 */
+	public double getRotateSpeed() {
+		double speed;
+		double power = -1 * driveController.getRightX();
+
+		// Turns the power into a speed
+		speed = power * Drive.MAX_ROTATE_SPEED;
+
+		// Limits the acceleration when under driver control
+		speed = rotateLimiter.calculate(speed);
+
+		return speed;
+	}
+
+	/**
+	 * Gets target location for placing objects in the grid
+	 * When in front of 1 of the 3 sets, holding X, A, and B will
+	 * align with the left cones, cubes, or right cones
+	 * Returns null if nothing is held
+	 * @return location
+	 */
+	public Pose2d getPlacementLocation(double yLocation, boolean redSide) {
+		// Left cone
+		if (driveController.getXButton()) {
+			if (redSide) {
+				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 1.626, new Rotation2d(Math.PI/2));
+				}
+				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 3.302, new Rotation2d(Math.PI/2));
+				}
+				else {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 4.978, new Rotation2d(Math.PI/2));
+				}
+			}
+			else {
+				if (yLocation < GRID_DIVIDER_1) {
+					return new Pose2d(1.767+0.150, 1.626, new Rotation2d(Math.PI/2));
+				}
+				else if (yLocation < GRID_DIVIDER_2) {
+					return new Pose2d(1.767+0.150, 3.302, new Rotation2d(Math.PI/2));
+				}
+				else {
+					return new Pose2d(1.767+0.150, 4.978, new Rotation2d(Math.PI/2));
+				}
+			}
+			
+		}
+		// Cube
+		else if (driveController.getAButton()) {
+			if (redSide) {
+				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 1.067, new Rotation2d(Math.PI/2));
+				}
+				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 2.743, new Rotation2d(Math.PI/2));
+				}
+				else {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 4.420, new Rotation2d(Math.PI/2));
+				}
+			}
+			else {
+				if (yLocation < GRID_DIVIDER_1) {
+					return new Pose2d(1.767+0.150, 1.067, new Rotation2d(Math.PI/2));
+				}
+				else if (yLocation < GRID_DIVIDER_2) {
+					return new Pose2d(1.767+0.150, 2.743, new Rotation2d(Math.PI/2));
+				}
+				else {
+					return new Pose2d(1.767+0.150, 4.420, new Rotation2d(Math.PI/2));
+				}
+			}
+			
+		}
+		// Right cone
+		else if (driveController.getBButton()) {
+			if (redSide) {
+				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 0.508, new Rotation2d(Math.PI/2));
+				}
+				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 2.184, new Rotation2d(Math.PI/2));
+				}
+				else {
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 3.861, new Rotation2d(Math.PI/2));
+				}
+			}
+			else {
+				if (yLocation < GRID_DIVIDER_1) {
+					return new Pose2d(1.767+0.150, 0.508, new Rotation2d(Math.PI/2));
+				}
+				else if (yLocation < GRID_DIVIDER_2) {
+					return new Pose2d(1.767+0.150, 2.184, new Rotation2d(Math.PI/2));
+				}
+				else {
+					return new Pose2d(1.767+0.150, 3.861, new Rotation2d(Math.PI/2));
+				}
+			}
+		}
+		else {
+			return null;
+		}
+	}
 
 	
 	/****************************************************************************************** 
@@ -131,6 +286,21 @@ public class Controls {
 		}
 	}
 
+
+	/****************************************************************************************** 
+    *
+    *    LED FUNCTIONS
+    * 
+    ******************************************************************************************/
+	/**
+	 * Checks if the X button is pressed.
+	 * 
+	 * @return
+	 */
+	public boolean getCube() {
+		return driveController.getLeftBumper();
+	}
+
 	public ArmStates getArmState() {
 		if (armController.getAButton()) {
 			armState = (getClawState() == Objects.CONE)? ArmStates.BOT_CONE : ArmStates.BOT_CUBE;
@@ -150,14 +320,6 @@ public class Controls {
 		return armState;
 	}
 
-
-	/****************************************************************************************** 
-    *
-    *    LED FUNCTIONS
-    * 
-    ******************************************************************************************/
-	
-
 	
 	/****************************************************************************************** 
     *
@@ -165,21 +327,27 @@ public class Controls {
     * 
     ******************************************************************************************/
 	/**
-	 * Checks if the left stick is pressed.
+	 * Checks if the Y button is pressed.
 	 * 
 	 * @return
 	 */
-	public boolean zeroYaw() {
-		return driveController.getLeftStickButtonPressed();
+	public boolean getCone() {
+		return driveController.getRightBumper();
 	}
 
+
+	/****************************************************************************************** 
+    *
+    *    MISC FUNCTIONS
+    * 
+    ******************************************************************************************/
 	/**
-	 * Checks if the start button is pressed
-	 * @return start button pressed
+	 * Checks if the start button is pressed.
+	 * 
+	 * @return startButtonPressed
 	 */
 	public boolean autoKill() {
 		return driveController.getStartButtonPressed();
 	}
 }
-
 // End of the Controls class
