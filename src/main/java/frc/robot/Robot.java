@@ -171,6 +171,7 @@ public class Robot extends TimedRobot {
 		//arm.storeObject();
 		//arm.setArmAngles(2.117, 0.239, 0.104); // Top cone
 		//arm.restArm();
+		arm.testEndPower(0.3); //3.6 is grab pos
 		//arm.testAbsEncoders();
 		//arm.moveArmTo(Math.PI/2, 1.95, 0);
 	}
@@ -188,16 +189,22 @@ public class Robot extends TimedRobot {
 	private void armControl() {
 		// Add the grabber controls
 		Objects   currentObject    = controls.getClawState();
-		double    manualWristPower = controls.getManualWristPower();
+		double    manualWristPower = 0; //controls.getManualWristPower();
 		ArmStates armState         = controls.getArmState();
 
 		// Manual wrist control overrides automatic control
-		if (manualWristPower != 0) {
-			arm.powerEnd(manualWristPower);
-		}
-		else {
+		//if (manualWristPower != 0) {
+		//	arm.powerEnd(manualWristPower);
+		//}
+		//else {
 			// Bring arm through rest position to our target position
-		}
+			if (armState == ArmStates.REST) {
+				arm.toRestPosition();
+			}
+			else if (armState == ArmStates.GRAB) {
+				arm.toGrabPosition();
+			}
+		//}
 
 		if (currentObject == Objects.EMPTY) {
 			arm.openClaw();

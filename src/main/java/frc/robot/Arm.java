@@ -90,9 +90,9 @@ public class Arm {
 
 		// Coast mode allows motors to rest in rest position
 		// Brake mode is not needed because motors are always given some power to fight gravity
-        baseMotor.setIdleMode(IdleMode.kCoast);
-        middleMotor.setIdleMode(IdleMode.kCoast);
-        endMotor.setIdleMode(IdleMode.kCoast);
+        baseMotor.setIdleMode(IdleMode.kBrake);
+        middleMotor.setIdleMode(IdleMode.kBrake);
+        endMotor.setIdleMode(IdleMode.kBrake);
 
 		baseMotor.setInverted(true);
 		middleMotor.setInverted(true);
@@ -108,8 +108,6 @@ public class Arm {
         middleAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
         endAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
 		endAbsoluteEncoder.setInverted(true);
-		baseAbsoluteEncoder.setZeroOffset(Math.PI/2 + 0.0332);
-		endAbsoluteEncoder.setZeroOffset(5.432);
 		
 		prevBaseAngle   = baseAbsoluteEncoder.getPosition();
 		prevMiddleAngle = middleAbsoluteEncoder.getPosition();
@@ -123,6 +121,28 @@ public class Arm {
 		middlePID.setTolerance(MIDDLE_TOLERANCE);
 		endPID.setTolerance(END_TOLERANCE);
     }
+
+	public int toGrabPosition() {
+		if (endAbsoluteEncoder.getPosition() > 3.85 || endAbsoluteEncoder.getPosition() < 1) {
+			endMotor.set(0.3);
+			return Robot.CONT;
+		}
+		else {
+			endMotor.set(0);
+			return Robot.DONE;
+		}
+	}
+
+	public int toRestPosition() {
+		if (endAbsoluteEncoder.getPosition() < 5.8 && endAbsoluteEncoder.getPosition() > 1) {
+			endMotor.set(-0.4);
+			return Robot.CONT;
+		}
+		else {
+			endMotor.set(0);
+			return Robot.DONE;
+		}
+	}
 
 	public void powerEnd(double power) {
 		double[] restArmPowers = restArmPowers();
@@ -481,6 +501,25 @@ public class Arm {
 			System.out.println("Base:" + baseAbsoluteEncoder.getPosition() + " Middle:" + middleAbsoluteEncoder.getPosition() + " End:" + endAbsoluteEncoder.getPosition());
 		}
 		printCount++;
+	}
+
+	public void testEndPower(double power) {
+		/*
+		// To grab position
+		if (endAbsoluteEncoder.getPosition() > 3.85 || endAbsoluteEncoder.getPosition() < 1) {
+			endMotor.set(0.3);
+		}
+		else {
+			endMotor.set(0);
+		}
+		*/
+		// To rest position
+		if (Math.abs(endAbsoluteEncoder.getPosition()) > 0.5) {
+			endMotor.set(-0.4);
+		}
+		else {
+			endMotor.set(0);
+		}
 	}
 
 	public void testTorque() {
