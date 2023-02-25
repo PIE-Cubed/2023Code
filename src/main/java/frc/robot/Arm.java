@@ -5,13 +5,11 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.math.MathUtil;
 import com.revrobotics.CANSparkMax.IdleMode;
-import edu.wpi.first.math.controller.ArmFeedforward;
 import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
 
@@ -28,23 +26,15 @@ public class Arm {
 	private DoubleSolenoid  claw;
 	private final int PNEU_CONTROLLER_ID = 1;
 
-	// Last valid set of angles, in case user passes boundaries
-	private double prevBaseAngle   = 0;
-	private double prevMiddleAngle = 0;
-	private double prevEndAngle    = 0;
-
 	private double  printCount = 0;
-	private int     storeCount = 0;
-	private boolean secondConeTopCase = false;
+	private int     step       = 1;
+	private boolean firstTime  = false;
 
 
     // Constants - need to verify joint limits
-	private final double MAX_X_REACH   = 1.1;
     private final double LENGTH_BASE   = 0.5588;
     private final double LENGTH_MIDDLE = 0.53848;
     private final double LENGTH_END    = 0.6096; //0.4318
-	private final double ROBOT_FRONT   = -0.2032;
-	private final double ROBOT_BACK    = 0.6096;
 	
 	private final double ANGLE_1_MIN   = Math.PI / 6;
 	private final double ANGLE_1_MAX   = Math.PI;
@@ -86,16 +76,14 @@ public class Arm {
         middleMotor = new CANSparkMax(7, MotorType.kBrushless);
         endMotor    = new CANSparkMax(6, MotorType.kBrushless);
 
-		claw = new DoubleSolenoid(1, PneumaticsModuleType.REVPH, 0, 15);
+		claw = new DoubleSolenoid(PNEU_CONTROLLER_ID, PneumaticsModuleType.REVPH, 15, 0);
 
-		// Coast mode allows motors to rest in rest position
-		// Brake mode is not needed because motors are always given some power to fight gravity
         baseMotor.setIdleMode(IdleMode.kBrake);
         middleMotor.setIdleMode(IdleMode.kBrake);
         endMotor.setIdleMode(IdleMode.kBrake);
 
 		baseMotor.setInverted(true);
-		middleMotor.setInverted(true);
+		middleMotor.setInverted(false);
 
         baseAbsoluteEncoder   = baseMotor.getAbsoluteEncoder(Type.kDutyCycle);
         middleAbsoluteEncoder = middleMotor.getAbsoluteEncoder(Type.kDutyCycle);
@@ -109,10 +97,6 @@ public class Arm {
         endAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
 		endAbsoluteEncoder.setInverted(true);
 		
-		prevBaseAngle   = baseAbsoluteEncoder.getPosition();
-		prevMiddleAngle = middleAbsoluteEncoder.getPosition();
-		prevEndAngle    = endAbsoluteEncoder.getPosition();
-
 		basePID   = new PIDController(p1, 0, 0);
 		middlePID = new PIDController(p2, 0, 0);
 		endPID    = new PIDController(p3, 0, 0);
@@ -134,14 +118,216 @@ public class Arm {
 	}
 
 	public int toRestPosition() {
-		if (endAbsoluteEncoder.getPosition() < 5.8 && endAbsoluteEncoder.getPosition() > 1) {
-			endMotor.set(-0.4);
-			return Robot.CONT;
+
+		if (firstTime) {
+			step = 1;
+			firstTime = false;
 		}
-		else {
-			endMotor.set(0);
-			return Robot.DONE;
+
+		if (step == 1) {
+			boolean done = true;
+
+			if (endAbsoluteEncoder.getPosition() < 5.8 && endAbsoluteEncoder.getPosition() > 1) {
+				done = false;
+				endMotor.set(-0.4);
+			}
+			else {
+				endMotor.set(0);
+			}
+
+			if (done) {
+				step = 2;
+			}
 		}
+
+		if (step == 2) {
+			boolean done = true;
+
+			if (!(middleAbsoluteEncoder.getPosition() > 5.8 || middleAbsoluteEncoder.getPosition() < 0.5)) {
+				middleMotor.set(-0.75);
+				done = false;
+			}
+			else {
+				middleMotor.set(0);
+			}
+	
+			if (!(baseAbsoluteEncoder.getPosition() > 6.0 || baseAbsoluteEncoder.getPosition() < 0.5)) {
+				baseMotor.set(-0.5);
+				done = false;
+			}
+			else {
+				baseMotor.set(0);
+			}
+
+			if (done) {
+				return Robot.DONE;
+			}
+		}
+
+		return Robot.CONT;
+	}
+
+	public int toMidCone() {
+		if (firstTime) {
+			step = 1;
+			firstTime = false;
+		}
+
+		if (step == 1) {
+			boolean done = true;
+
+			if (middleAbsoluteEncoder.getPosition() > 4.55 || middleAbsoluteEncoder.getPosition() < 1) {
+				middleMotor.set(0.75);
+				done = false;
+			}
+			else {
+				middleMotor.set(0);
+			}
+	
+			if (baseAbsoluteEncoder.getPosition() < 0.52 || baseAbsoluteEncoder.getPosition() > 5.5) {
+				baseMotor.set(0.5);
+				done = false;
+			}
+			else {
+				baseMotor.set(0);
+			}
+
+			if (done) {
+				step = 2;
+			}
+		}
+
+		if (step == 2) {
+			if (endAbsoluteEncoder.getPosition() > 2.84 || endAbsoluteEncoder.getPosition() < 1) {
+				endMotor.set(0.4);
+			}
+			else {
+				endMotor.set(0);
+				return Robot.DONE;
+			}
+		}
+
+		return Robot.CONT;
+	}
+
+	public int toMidCube() {
+		if (firstTime) {
+			step = 1;
+			firstTime = false;
+		}
+
+		if (step == 1) {
+			if (middleAbsoluteEncoder.getPosition() > 5.3 || middleAbsoluteEncoder.getPosition() < 1) {
+				middleMotor.set(0.75);
+			}
+			else {
+				middleMotor.set(0);
+				step = 2;
+			}
+		}
+
+		if (step == 2) {
+			if (endAbsoluteEncoder.getPosition() > 3.02 || endAbsoluteEncoder.getPosition() < 1) {
+				endMotor.set(0.4);
+			}
+			else {
+				endMotor.set(0);
+				return Robot.DONE;
+			}
+		}
+
+		return Robot.CONT;
+	}
+
+	public int toTopCone() {
+		if (firstTime) {
+			step = 1;
+			firstTime = false;
+		}
+
+		if (step == 1) {
+			boolean done = true;
+
+			if (middleAbsoluteEncoder.getPosition() > 3.32 || middleAbsoluteEncoder.getPosition() < 1) {
+				middleMotor.set(0.75);
+				done = false;
+			}
+			else {
+				middleMotor.set(0);
+			}
+	
+			if (baseAbsoluteEncoder.getPosition() < 1.61 || baseAbsoluteEncoder.getPosition() > 5.5) {
+				baseMotor.set(0.5);
+				done = false;
+			}
+			else {
+				baseMotor.set(0);
+			}
+
+			if (done) {
+				step = 2;
+			}
+		}
+
+		if (step == 2) {
+			if (endAbsoluteEncoder.getPosition() > 3.35 || endAbsoluteEncoder.getPosition() < 1) {
+				endMotor.set(0.4);
+			}
+			else {
+				endMotor.set(0);
+				return Robot.DONE;
+			}
+		}
+
+		return Robot.CONT;
+	}
+
+	public int toTopCube() {
+		if (firstTime) {
+			step = 1;
+			firstTime = false;
+		}
+
+		if (step == 1) {
+			boolean done = true;
+
+			if (middleAbsoluteEncoder.getPosition() > 4.62 || middleAbsoluteEncoder.getPosition() < 1) {
+				middleMotor.set(0.75);
+				done = false;
+			}
+			else {
+				middleMotor.set(0);
+			}
+	
+			if (baseAbsoluteEncoder.getPosition() < 0.83 || baseAbsoluteEncoder.getPosition() > 5.5) {
+				baseMotor.set(0.5);
+				done = false;
+			}
+			else {
+				baseMotor.set(0);
+			}
+
+			if (done) {
+				step = 2;
+			}
+		}
+
+		if (step == 2) {
+			if (endAbsoluteEncoder.getPosition() > 3.57 || endAbsoluteEncoder.getPosition() < 1) {
+				endMotor.set(0.4);
+			}
+			else {
+				endMotor.set(0);
+				return Robot.DONE;
+			}
+		}
+
+		return Robot.CONT;
+	}
+
+	public void resetArmState() {
+		firstTime = true;
+		step = 1;
 	}
 
 	public void powerEnd(double power) {
@@ -159,45 +345,6 @@ public class Arm {
 		setEndPower(power + restArmPowers[3]);
 	}
 
-	public int moveArmToPoint(double reachAngle, double reachDistance, double wristAngle) {
-		// Target joint angles
-		double[] targetJointAngles  = getJointAngles(reachAngle, reachDistance, wristAngle);
-		for (int i = 0; i < 3; i++) {
-			targetJointAngles[i] = MathUtil.angleModulus(targetJointAngles[i]);
-		}
-		
-		basePID.setSetpoint(targetJointAngles[0]);
-		middlePID.setSetpoint(targetJointAngles[1]);
-		endPID.setSetpoint(targetJointAngles[2]);
-
-		// Using current joint angles to get PID powers
-		double[] currentJointAngles = {
-			MathUtil.angleModulus(getBaseRotation()),
-			MathUtil.angleModulus(getMiddleRotation()),
-			MathUtil.angleModulus(getEndRotation())
-		};
-		double basePower   = basePID.calculate(currentJointAngles[0], targetJointAngles[0]);
-		double middlePower = middlePID.calculate(currentJointAngles[1], targetJointAngles[1]);
-		double endPower    = endPID.calculate(currentJointAngles[2], targetJointAngles[2]);
-
-		basePower   = MathUtil.clamp(basePower, -0.1, 0.1);
-		middlePower = MathUtil.clamp(middlePower, -0.1, 0.1);
-		endPower    = MathUtil.clamp(endPower, -0.1, 0.1);
-
-		// Combining PID power and feed forward to set motor powers
-		double[] feedForward = restArmPowers();
-
-		setBasePower(basePower + feedForward[0]);
-		setMiddlePower(middlePower + feedForward[1]);
-		setEndPower(endPower + feedForward[2]);
-
-		// Checking if all joints are at setpoint
-		if (basePID.atSetpoint() && middlePID.atSetpoint() && endPID.atSetpoint()) {
-			return Robot.DONE;
-		}
-		return Robot.CONT;
-	}
-
 	public int setArmAngles(double baseAngle, double middleAngle, double endAngle) {
 		// Target joint angles
 		double[] targetJointAngles  = {baseAngle, middleAngle, endAngle};
@@ -211,9 +358,9 @@ public class Arm {
 
 		// Using current joint angles to get PID powers
 		double[] currentJointAngles = {
-			MathUtil.angleModulus(getBaseRotation()),
-			MathUtil.angleModulus(getMiddleRotation()),
-			MathUtil.angleModulus(getEndRotation())
+			getAdjustedBaseAngle(),
+			getAdjustedMiddleAngle(),
+			getAdjustedEndAngle()
 		};
 		double basePower   = basePID.calculate(currentJointAngles[0], targetJointAngles[0]);
 		double middlePower = middlePID.calculate(currentJointAngles[1], targetJointAngles[1]);
@@ -251,110 +398,6 @@ public class Arm {
 		double[] results = {power1, power2, power3};
 		return results;
 	}
-
-    // Determines the angle of each joint. Wrist angle is relative to the floor in radians
-    public double[] getJointAngles(double reachAngle, double reachDistance, double wristAngle) {
-        // Total X and Y from base to end of claw
-        double reachX = reachDistance * Math.cos(reachAngle);
-        double reachY = reachDistance * Math.sin(reachAngle);
-
-		// Clamping max range to slightly under 4ft out
-		if (reachX > 1.1) {
-			reachY *= (1.1 / reachX);
-			reachX = 1.1;
-		}
-
-        // X and Y from base to joint 3
-        double joint3X   = reachX - (LENGTH_END * Math.cos(wristAngle));
-        double joint3Y   = reachY - (LENGTH_END * Math.sin(wristAngle));
-        double joint3Hyp = Math.hypot(joint3X, joint3Y);
-		
-		// Avoid divide by 0 error
-		if (joint3Hyp == 0) {
-			joint3Hyp = 0.0001;
-		}
-		
-		double joint3Angle = Math.atan2(joint3Y, joint3X);
-
-        // Can now consider triangle between Joint 1, 2, and 3
-		double height = triangleHeight(joint3Hyp, LENGTH_BASE, LENGTH_MIDDLE);
-		
-		// If arm is facing forward/down, a positive height goes down. We want height to be positive to avoid robot
-		if (joint3X < 0) {
-			height *= -1;
-		}
-
-        // Using value of height, we have 2 right triangles that can be solved for angle 1 and 2
-        double angleFromJoint3ToArm1 = Math.asin(height / LENGTH_BASE);
-		double q1 = joint3Angle + angleFromJoint3ToArm1;
-		
-		double q2 = -1 * (Math.PI - (Math.PI/2 - angleFromJoint3ToArm1) - Math.acos(height / LENGTH_MIDDLE));
-
-		// Clamp q1 and q2 before calculating q3 so the wrist angle calculation will be based on the actual q1 and q2
-		q1 = MathUtil.clamp(q1, ANGLE_1_MIN, ANGLE_1_MAX);
-		q2 = MathUtil.clamp(q2, ANGLE_2_MIN, ANGLE_2_MAX);
-
-		double q3 = wristAngle - (q1 + q2); // Rearrangement of q1 + q2 + q3 = wristAngle
-		q3 = MathUtil.clamp(q3, ANGLE_3_MIN, ANGLE_3_MAX);
-		
-		// Determine if any part of arm intersects with robot
-		// For all 3 segments, find when y = -0.05 meters below joint 1. If this occurs in the robot's x-values, reject the calculated angles and use the previous ones		
-		double joint2X = LENGTH_BASE * Math.cos(q1);
-		double joint2Y = LENGTH_BASE * Math.sin(q1);
-		double baseIntersect = findRobotIntersection(0, 0, joint2X, q1);
-		double middleIntersect = findRobotIntersection(joint2X, joint2Y, joint3X, (q1 + q2));
-		
-		double endIntersect = findRobotIntersection(joint3X, joint3Y, reachX, (q1 + q2 + q3));
-		
-		if (	(ROBOT_FRONT < baseIntersect   && baseIntersect   < ROBOT_BACK) ||
-				(ROBOT_FRONT < middleIntersect && middleIntersect < ROBOT_BACK) ||
-				(ROBOT_FRONT < endIntersect    && endIntersect    < ROBOT_BACK)) {
-					q1 = prevBaseAngle;
-					q2 = prevMiddleAngle;
-					q3 = prevEndAngle;
-				}
-		
-		prevBaseAngle   = q1;
-		prevMiddleAngle = q2;
-		prevEndAngle    = q3;
-		
-		double[] results = {q1, q2, q3};
-		return results;
-    }
-	
-	// Helper methods for getJointAngles()
-	private double triangleHeight(double baseLength, double leg1Length, double leg2Length) {
-		// Using Heron's formula, can find area of triangle
-        double s = (baseLength + leg1Length + leg2Length) / 2;
-        double area = Math.sqrt(s * (s - baseLength) * (s - leg1Length) * (s - leg2Length));
-
-        // Using area, can find height from base
-        double height = 2 * area / baseLength;
-		return height;
-	}
-	
-	private double findRobotIntersection(double startX, double startY, double endX, double radians) {
-		// Standard calculation for intersection of 2 lines --> ax + b = -0.05
-		if (radians % (Math.PI) == Math.PI / 2) {
-			radians += 0.001;
-		}
-			
-		double slope = Math.tan(radians);
-
-		double yIntercept = (0 - startX) * slope + startY;
-		
-		double robotInterceptX = (-1 * yIntercept - 0.05) / slope;
-
-		// If slope is 0, or Y-intercept is outside of the start and end X values, the robot is not in danger
-		if (robotInterceptX < Math.min(startX, endX) || robotInterceptX > Math.max(startX, endX)) {
-			return -100;
-		}
-		if (slope == 0) {
-			return -100;
-		}
-
-		return robotInterceptX;
-	}		
 
 	// Positive torque --> toward positive angle. If arm is back to positive X, it will have a negative torque, therefore, X is multiplied by -1
 	// kg * m^2/s^2
@@ -434,7 +477,6 @@ public class Arm {
 	}
 	
 	// kg * m^2
-	// Only necessary if we focus on acceleration (probably not)
 	public double rotationalInertiaJoint1(double q1, double q2, double q3) {
 		// Integral representation of inertia of horinzontal line is m * integral from r1 to r2 of r^2
 		// Solving integral results in m/3 * ((r2)^3 - (r1)^3)
@@ -475,17 +517,23 @@ public class Arm {
         endMotor.set(power);
     }
 
-    public double getBaseRotation() {
-        return baseAbsoluteEncoder.getPosition();
+	/*
+	 * Methods to get angles of arms
+	 * Offset so 0 is backwards on base, and straight on the middle and end
+	 * Wrapped to -pi to pi
+	 */
+    public double getAdjustedBaseAngle() {
+        return MathUtil.angleModulus(baseAbsoluteEncoder.getPosition() + 0);
     }
 
-    public double getMiddleRotation() {
-        return middleAbsoluteEncoder.getPosition();
+    public double getAdjustedMiddleAngle() {
+        return MathUtil.angleModulus(middleAbsoluteEncoder.getPosition() + 0);
     }
 
-    public double getEndRotation() {
-        return endAbsoluteEncoder.getPosition();
+    public double getAdjustedEndAngle() {
+        return MathUtil.angleModulus(endAbsoluteEncoder.getPosition() + 0);
     }
+
 
 	public void openClaw() {
 		claw.set(Value.kReverse);
@@ -503,23 +551,44 @@ public class Arm {
 		printCount++;
 	}
 
-	public void testEndPower(double power) {
-		/*
-		// To grab position
-		if (endAbsoluteEncoder.getPosition() > 3.85 || endAbsoluteEncoder.getPosition() < 1) {
-			endMotor.set(0.3);
+	public void testMiddlePower() {
+		if (firstTime) {
+			step = 1;
+			firstTime = false;
 		}
-		else {
-			endMotor.set(0);
+
+		if (step == 1) {
+			boolean done = true;
+
+			if (middleAbsoluteEncoder.getPosition() > 4.55 || middleAbsoluteEncoder.getPosition() < 1) {
+				middleMotor.set(0.75);
+				done = false;
+			}
+			else {
+				middleMotor.set(0);
+			}
+	
+			if (baseAbsoluteEncoder.getPosition() < 0.52 || baseAbsoluteEncoder.getPosition() > 5.5) {
+				baseMotor.set(0.5);
+				done = false;
+			}
+			else {
+				baseMotor.set(0);
+			}
+
+			if (done) {
+				step = 2;
+			}
 		}
-		*/
-		// To rest position
-		if (Math.abs(endAbsoluteEncoder.getPosition()) > 0.5) {
-			endMotor.set(-0.4);
+		if (step == 2) {
+			if (endAbsoluteEncoder.getPosition() > 2.84 || endAbsoluteEncoder.getPosition() < 1) {
+				endMotor.set(0.4);
+			}
+			else {
+				endMotor.set(0);
+			}
 		}
-		else {
-			endMotor.set(0);
-		}
+		
 	}
 
 	public void testTorque() {

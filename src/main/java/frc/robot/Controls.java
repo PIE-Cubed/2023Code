@@ -74,7 +74,7 @@ public class Controls {
     *    DRIVE FUNCTIONS
     * 
     ******************************************************************************************/
-/**
+	/**
 	 * Gets the forward speed
 	 * <p>Forward is positive to match chassis speed standards
 	 * <p>This measures rotatation around the Y axis, which is effectively translation on the X axis
@@ -239,10 +239,10 @@ public class Controls {
 	public Objects getClawState() {
 		// If claw is empty, pressing a bumper will grab an object
 		if (currentObject == Objects.EMPTY) {
-			if (armController.getLeftBumperPressed()) {
+			if (armController.getRightBumperPressed()) {
 				currentObject = Objects.CONE;
 			}
-			else if (armController.getRightBumperPressed()) {
+			else if (armController.getLeftBumperPressed()) {
 				currentObject = Objects.CUBE;
 			}
 		}

@@ -33,10 +33,11 @@ public class Robot extends TimedRobot {
 	// Variables
 	private int status = CONT;
 
-	private long   coneFlashEnd = 0;
-	private long   cubeFlashEnd = 0;
-	private Pose2d previousPlacementLocation;
-	private int    placementStatus = Robot.CONT;
+	private long      coneFlashEnd = 0;
+	private long      cubeFlashEnd = 0;
+	private Pose2d    previousPlacementLocation;
+	private int       placementStatus = Robot.CONT;
+	private ArmStates previousArmState;
 
 	// Auto path
 	private static final String wallAuto   = "Wall";
@@ -69,6 +70,7 @@ public class Robot extends TimedRobot {
 		nTables  = CustomTables.getInstance();
 
 		previousPlacementLocation = new Pose2d();
+		previousArmState          = ArmStates.REST;
 	}
 
 	@Override
@@ -252,6 +254,8 @@ public class Robot extends TimedRobot {
 		//drive.periodicTestDrivePower();
 		//drive.balanceRamp();
 		//drive.testGyro();
+		//arm.testMiddlePower();
+		arm.testAbsEncoders();
 	}
 
 	/**
@@ -288,6 +292,12 @@ public class Robot extends TimedRobot {
 		double    manualWristPower = 0; //controls.getManualWristPower();
 		ArmStates armState         = controls.getArmState();
 
+		// Change in arm state - reset arm movements
+		if (armState != previousArmState) {
+			arm.resetArmState();
+		}
+		previousArmState = armState;
+
 		// Manual wrist control overrides automatic control
 		if (manualWristPower != 0) {
 			arm.powerEnd(manualWristPower);
@@ -299,6 +309,18 @@ public class Robot extends TimedRobot {
 			}
 			else if (armState == ArmStates.GRAB) {
 				arm.toGrabPosition();
+			}
+			else if (armState == ArmStates.MID_CONE) {
+				arm.toMidCone();
+			}
+			else if (armState == ArmStates.MID_CUBE) {
+				arm.toMidCube();
+			}
+			else if (armState == ArmStates.TOP_CONE) {
+				arm.toTopCone();
+			}
+			else if (armState == ArmStates.TOP_CUBE) {
+				arm.toTopCube();
 			}
 		}
 
