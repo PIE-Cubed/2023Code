@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.Arm.AngleStates;
 import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
 
@@ -37,7 +38,7 @@ public class Robot extends TimedRobot {
 	private long      cubeFlashEnd = 0;
 	private Pose2d    previousPlacementLocation;
 	private int       placementStatus = Robot.CONT;
-	private ArmStates previousArmState;
+	private ArmStates acceptedArmState;
 
 	// Auto path
 	private static final String wallAuto   = "Wall";
@@ -63,14 +64,14 @@ public class Robot extends TimedRobot {
 
 		controls = new Controls();
 		arm      = new Arm();
-		auto     = new Auto(drive, position);
+		auto     = new Auto(drive, position, arm);
 
 		// Instance getters
 		led      = LED.getInstance();
 		nTables  = CustomTables.getInstance();
 
 		previousPlacementLocation = new Pose2d();
-		previousArmState          = ArmStates.REST;
+		acceptedArmState          = ArmStates.REST;
 	}
 
 	@Override
@@ -211,7 +212,6 @@ public class Robot extends TimedRobot {
 		armControl();
 		wheelControl();
 		ledControl();
-		arm.testTorque();
 	}
 
 	@Override
@@ -256,7 +256,9 @@ public class Robot extends TimedRobot {
 		//drive.balanceRamp();
 		//drive.testGyro();
 		//arm.testMiddlePower();
-		arm.testHoldPosition();
+		//arm.testHoldPosition();
+		AngleStates status = arm.jointToAngle(1, Math.PI/2);
+		System.out.println(status);
 	}
 
 	/**
@@ -291,37 +293,58 @@ public class Robot extends TimedRobot {
 		// Add the grabber controls
 		Objects   currentObject    = controls.getClawState();
 		double    manualWristPower = 0; //controls.getManualWristPower();
-		ArmStates armState         = controls.getArmState();
-
-		// Change in arm state - reset arm movements
-		if (armState != previousArmState) {
-			arm.resetArmState();
-		}
-		previousArmState = armState;
+		ArmStates inputArmState    = controls.getArmState();
 
 		// Manual wrist control overrides automatic control
 		if (manualWristPower != 0) {
 			arm.powerEnd(manualWristPower);
 		}
 		else {
+			AngleStates status;
+
 			// Bring arm through rest position to our target position
-			if (armState == ArmStates.REST) {
-				arm.toRestPosition();
+			if (acceptedArmState == ArmStates.REST) {
+				// Movement
+				status = auto.armToRestPosition();
+
+				// Conditions to change arm state - close to resting and receives different target state
+				if ((status == AngleStates.DONE || status == AngleStates.CLOSE) && inputArmState != ArmStates.REST) {
+					acceptedArmState = inputArmState;
+					auto.resetArmRoutines();
+				}
 			}
-			else if (armState == ArmStates.GRAB) {
-				arm.toGrabPosition();
-			}
-			else if (armState == ArmStates.MID_CONE) {
-				arm.toMidCone();
-			}
-			else if (armState == ArmStates.MID_CUBE) {
-				arm.toMidCube();
-			}
-			else if (armState == ArmStates.TOP_CONE) {
-				arm.toTopCone();
-			}
-			else if (armState == ArmStates.TOP_CUBE) {
-				arm.toTopCube();
+			else {
+				int placeStatus = CONT;
+
+				// Movement
+				if (acceptedArmState == ArmStates.GRAB) {
+					auto.armToGrabPosition();
+				}
+				else if (acceptedArmState == ArmStates.MID_CONE) {
+					placeStatus = auto.armToMidPosition(arm.MID_CONE_ANGLES);
+				}
+				else if (acceptedArmState == ArmStates.MID_CUBE) {
+					placeStatus = auto.armToMidPosition(arm.MID_CUBE_ANGLES);
+				}
+				else if (acceptedArmState == ArmStates.TOP_CONE) {
+					placeStatus = auto.armToTopCone();
+				}
+				else if (acceptedArmState == ArmStates.TOP_CUBE) {
+					placeStatus = auto.armToTopCube();
+				}
+				// No valid arm state - go to rest
+				else {
+					Controls.armState = ArmStates.REST;
+					acceptedArmState = ArmStates.REST;
+					auto.resetArmRoutines();
+				}
+
+				// Conditions to change to rest state - receive rest input or finish placing object
+				if (inputArmState == ArmStates.REST || placeStatus == DONE) {
+					Controls.armState = ArmStates.REST;
+					acceptedArmState = ArmStates.REST;
+					auto.resetArmRoutines();
+				}
 			}
 		}
 

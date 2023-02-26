@@ -8,7 +8,6 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
-import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.math.MathUtil;
 import com.revrobotics.CANSparkMax.IdleMode;
 import frc.robot.Controls.ArmStates;
@@ -27,23 +26,23 @@ public class Arm {
 	private DoubleSolenoid  claw;
 	private final int PNEU_CONTROLLER_ID = 1;
 
-	private double  printCount = 0;
-	private int     step       = 1;
-	private boolean firstTime  = false;
-
-
+	private double printCount = 0;
+	
     // Constants
     private final double LENGTH_BASE   = 0.5545;
     private final double LENGTH_MIDDLE = 0.4498;
-    private final double LENGTH_END    = 0.7112; // Center of mass may be closer to joint because claw is lighter than arm
+    private final double LENGTH_END    = 0.5842; // 0.7112 // Center of mass may be closer to joint because claw is lighter than arm
 	
 	// Joint limits use same angle measurements that are used to calculate physics and kinematics
 	private final double ANGLE_1_MIN   = 0.817;
 	private final double ANGLE_1_MAX   = Math.PI; // Need to consider if it goes to -pi
 	private final double ANGLE_2_MIN   = -Math.PI/2;
-	private final double ANGLE_2_MAX   = 2.844;
+	private final double ANGLE_2_MAX   = 2.95;
 	private final double ANGLE_3_MIN   = -2.985;
 	private final double ANGLE_3_MAX   = Math.PI / 2;
+
+	// Max motor powers
+	private final double MAX_END_POWER = 0.4;
 	
 	// Masses in kg - updated for new arm
 	private final double BASE_MASS    = 3.175;
@@ -59,9 +58,10 @@ public class Arm {
 	private final double END_TORQUE_TO_POWER    = -0.035;
 
 	// PIDs
-	private final double p1 = 0.4; //0.16 without cone
-	private final double p2 = 0.3;
-	private final double p3 = 0.3;
+	private final double p1 = 0.4;
+	private final double p2 = -1;
+	private final double p3 = 1.8;
+	private final double i3 = 0;//0.5; 
 
 	private final double BASE_TOLERANCE   = Math.PI / 45; // Base angle has the most effects, needs to be tight
 	private final double MIDDLE_TOLERANCE = Math.PI / 25;
@@ -70,7 +70,22 @@ public class Arm {
 	private PIDController basePID;  
 	private PIDController middlePID;
 	private PIDController endPID;
-	
+
+	// Measures how close joints/arm are to being on target
+	public enum AngleStates {
+		DONE,
+		CLOSE,
+		CONT
+	};
+
+	// Angles for all positions
+	public static double[] REST_ANGLES     = {0.825, 2.95, -2.9};
+	public static double[] MID_CONE_ANGLES = {1.0, 1.7, 0};
+	public static double[] MID_CUBE_ANGLES = {1.0, 1.7, 0.4};
+	public static double[] TOP_CONE_ANGLES = {2.4, 0.0, 0.0};
+	public static double[] TOP_CUBE_ANGLES = {2.2, 0.4, 0.0};
+	//double[] SHELF_ANGLES    = {0.85, 2.7, -2.8};
+
 	// Constructor
     public Arm() {
         baseMotor   = new CANSparkMax(5, MotorType.kBrushless);
@@ -100,235 +115,130 @@ public class Arm {
 		
 		basePID   = new PIDController(p1, 0, 0);
 		middlePID = new PIDController(p2, 0, 0);
-		endPID    = new PIDController(p3, 0, 0);
+		endPID    = new PIDController(p3, i3, 0);
 
 		basePID.setTolerance(BASE_TOLERANCE);
 		middlePID.setTolerance(MIDDLE_TOLERANCE);
 		endPID.setTolerance(END_TOLERANCE);
     }
 
-	public int toGrabPosition() {
-		if (endAbsoluteEncoder.getPosition() > 3.85 || endAbsoluteEncoder.getPosition() < 1) {
-			endMotor.set(0.3);
-			return Robot.CONT;
+	public void hold(int joint) {
+		if (joint == 1) {
+			double torque = torqueJoint1(getActualBaseAngle(), getActualMiddleAngle(), getActualEndAngle());
+			baseMotor.set(torque * BASE_TORQUE_TO_POWER);
 		}
-		else {
-			endMotor.set(0);
-			return Robot.DONE;
+		else if (joint == 2) {
+			double torque = torqueJoint2(getActualBaseAngle(), getActualMiddleAngle(), getActualEndAngle());
+			middleMotor.set(torque * MIDDLE_TORQUE_TO_POWER);
+		}
+		else if (joint == 3) {
+			double torque = torqueJoint3(getActualBaseAngle(), getActualMiddleAngle(), getActualEndAngle());
+			endMotor.set(torque * END_TORQUE_TO_POWER);
 		}
 	}
 
-	public int toRestPosition() {
-
-		if (firstTime) {
-			step = 1;
-			firstTime = false;
-		}
-
-		if (step == 1) {
-			boolean done = true;
-
-			if (endAbsoluteEncoder.getPosition() < 5.8 && endAbsoluteEncoder.getPosition() > 1) {
-				done = false;
-				endMotor.set(-0.4);
-			}
-			else {
-				endMotor.set(0);
-			}
-
-			if (done) {
-				step = 2;
-			}
-		}
-
-		if (step == 2) {
-			boolean done = true;
-
-			if (!(middleAbsoluteEncoder.getPosition() > 5.8 || middleAbsoluteEncoder.getPosition() < 0.5)) {
-				middleMotor.set(-0.75);
-				done = false;
-			}
-			else {
-				middleMotor.set(0);
-			}
-	
-			if (!(baseAbsoluteEncoder.getPosition() > 6.0 || baseAbsoluteEncoder.getPosition() < 0.5)) {
-				baseMotor.set(-0.5);
-				done = false;
-			}
-			else {
-				baseMotor.set(0);
-			}
-
-			if (done) {
-				return Robot.DONE;
-			}
-		}
-
-		return Robot.CONT;
+	public void stopArm() {
+		baseMotor.set(0);
+		middleMotor.set(0);
+		endMotor.set(0);
 	}
 
-	public int toMidCone() {
-		if (firstTime) {
-			step = 1;
-			firstTime = false;
-		}
-
-		if (step == 1) {
-			boolean done = true;
-
-			if (middleAbsoluteEncoder.getPosition() > 4.55 || middleAbsoluteEncoder.getPosition() < 1) {
-				middleMotor.set(0.75);
-				done = false;
-			}
-			else {
-				middleMotor.set(0);
-			}
-	
-			if (baseAbsoluteEncoder.getPosition() < 0.52 || baseAbsoluteEncoder.getPosition() > 5.5) {
-				baseMotor.set(0.5);
-				done = false;
-			}
-			else {
-				baseMotor.set(0);
-			}
-
-			if (done) {
-				step = 2;
-			}
-		}
-
-		if (step == 2) {
-			if (endAbsoluteEncoder.getPosition() > 2.84 || endAbsoluteEncoder.getPosition() < 1) {
-				endMotor.set(0.4);
-			}
-			else {
-				endMotor.set(0);
-				return Robot.DONE;
-			}
-		}
-
-		return Robot.CONT;
+	/**
+	 * Moves joint to a target angle.
+	 * PID powers are currently multiplied by rotational inertia.
+	 * Optional parameter for speed multiplier.
+	 * @param joint
+	 * @param radians
+	 * @return
+	 */
+	public AngleStates jointToAngle(int joint, double radians) {
+		return jointToAngle(joint, radians, 1);
 	}
 
-	public int toMidCube() {
-		if (firstTime) {
-			step = 1;
-			firstTime = false;
+	public AngleStates jointToAngle(int joint, double radians, double speedMult) {
+		if (joint < 1 || joint > 3) {
+			System.out.println("Joint should be 1-3");
+			return AngleStates.DONE;
 		}
 
-		if (step == 1) {
-			if (middleAbsoluteEncoder.getPosition() > 5.3 || middleAbsoluteEncoder.getPosition() < 1) {
-				middleMotor.set(0.75);
+		double q1 = getActualBaseAngle();
+		double q2 = getActualMiddleAngle();
+		double q3 = getActualEndAngle();
+
+		if (joint == 1) {
+			// Clamping angle to set limits
+			radians = MathUtil.clamp(radians, ANGLE_1_MIN, ANGLE_1_MAX);
+
+			// Movement with torque and PID
+			double torquePower = torqueJoint1(q1, q2, q3) * BASE_TORQUE_TO_POWER;
+			double pidPower    = basePID.calculate(q1, radians) * rotationalInertiaJoint1(q1, q2, q3) * speedMult;
+			baseMotor.set(torquePower + pidPower);
+
+			basePID.setSetpoint(radians);
+			// Checking tolerances for DONE
+			basePID.setTolerance(BASE_TOLERANCE);
+			if (basePID.atSetpoint()) {
+				return AngleStates.DONE;
 			}
-			else {
-				middleMotor.set(0);
-				step = 2;
+
+			// Checking tolerances for CLOSE
+			basePID.setTolerance(BASE_TOLERANCE * 3);
+			if (basePID.atSetpoint()) {
+				return AngleStates.CLOSE;
 			}
+
+			return AngleStates.CONT;
+		}
+		else if (joint == 2) {
+			// Clamping angle to set limits
+			radians = MathUtil.clamp(radians, ANGLE_2_MIN, ANGLE_2_MAX);
+
+			// Movement with torque and PID
+			double torquePower = torqueJoint2(q1, q2, q3) * MIDDLE_TORQUE_TO_POWER;
+			double pidPower    = middlePID.calculate(q2, radians) * rotationalInertiaJoint2(q1, q2, q3) * speedMult;
+			middleMotor.set(torquePower + pidPower);
+
+			// Checking tolerances for DONE
+			middlePID.setTolerance(MIDDLE_TOLERANCE);
+			if (middlePID.atSetpoint()) {
+				return AngleStates.DONE;
+			}
+
+			// Checking tolerances for CLOSE
+			middlePID.setTolerance(MIDDLE_TOLERANCE * 3);
+			if (middlePID.atSetpoint()) {
+				return AngleStates.CLOSE;
+			}
+
+			return AngleStates.CONT;
+		}
+		else if (joint == 3) {
+			// Clamping angle to set limits
+			radians = MathUtil.clamp(radians, ANGLE_3_MIN, ANGLE_3_MAX);
+
+			// Movement with torque and PID
+			double torquePower = torqueJoint3(q1, q2, q3) * END_TORQUE_TO_POWER;
+			double pidPower    = endPID.calculate(q3, radians) * rotationalInertiaJoint3(q1, q2, q3) * speedMult;
+			double totalPower  = MathUtil.clamp(torquePower + pidPower, -MAX_END_POWER, MAX_END_POWER);
+			endMotor.set(totalPower);
+
+			// Checking tolerances for DONE
+			endPID.setTolerance(END_TOLERANCE);
+			if (endPID.atSetpoint()) {
+				return AngleStates.DONE;
+			}
+
+			// Checking tolerances for CLOSE
+			endPID.setTolerance(END_TOLERANCE * 3);
+			if (endPID.atSetpoint()) {
+				return AngleStates.CLOSE;
+			}
+
+			return AngleStates.CONT;
 		}
 
-		if (step == 2) {
-			if (endAbsoluteEncoder.getPosition() > 3.02 || endAbsoluteEncoder.getPosition() < 1) {
-				endMotor.set(0.4);
-			}
-			else {
-				endMotor.set(0);
-				return Robot.DONE;
-			}
-		}
-
-		return Robot.CONT;
-	}
-
-	public int toTopCone() {
-		if (firstTime) {
-			step = 1;
-			firstTime = false;
-		}
-
-		if (step == 1) {
-			boolean done = true;
-
-			if (middleAbsoluteEncoder.getPosition() > 3.32 || middleAbsoluteEncoder.getPosition() < 1) {
-				middleMotor.set(0.75);
-				done = false;
-			}
-			else {
-				middleMotor.set(0);
-			}
-	
-			if (baseAbsoluteEncoder.getPosition() < 1.61 || baseAbsoluteEncoder.getPosition() > 5.5) {
-				baseMotor.set(0.5);
-				done = false;
-			}
-			else {
-				baseMotor.set(0);
-			}
-
-			if (done) {
-				step = 2;
-			}
-		}
-
-		if (step == 2) {
-			if (endAbsoluteEncoder.getPosition() > 3.35 || endAbsoluteEncoder.getPosition() < 1) {
-				endMotor.set(0.4);
-			}
-			else {
-				endMotor.set(0);
-				return Robot.DONE;
-			}
-		}
-
-		return Robot.CONT;
-	}
-
-	public int toTopCube() {
-		if (firstTime) {
-			step = 1;
-			firstTime = false;
-		}
-
-		if (step == 1) {
-			boolean done = true;
-
-			if (middleAbsoluteEncoder.getPosition() > 4.62 || middleAbsoluteEncoder.getPosition() < 1) {
-				middleMotor.set(0.75);
-				done = false;
-			}
-			else {
-				middleMotor.set(0);
-			}
-	
-			if (baseAbsoluteEncoder.getPosition() < 0.83 || baseAbsoluteEncoder.getPosition() > 5.5) {
-				baseMotor.set(0.5);
-				done = false;
-			}
-			else {
-				baseMotor.set(0);
-			}
-
-			if (done) {
-				step = 2;
-			}
-		}
-
-		if (step == 2) {
-			if (endAbsoluteEncoder.getPosition() > 3.57 || endAbsoluteEncoder.getPosition() < 1) {
-				endMotor.set(0.4);
-			}
-			else {
-				endMotor.set(0);
-				return Robot.DONE;
-			}
-		}
-
-		return Robot.CONT;
-	}
-
-	public void resetArmState() {
-		firstTime = true;
-		step = 1;
+		// Should not get here
+		return AngleStates.DONE;
 	}
 
 	public void powerEnd(double power) {
@@ -340,45 +250,10 @@ public class Arm {
 			setEndPower(0);
 		}
 		else {
-			setMiddlePower(restArmPowers[1]);
-			setEndPower(restArmPowers[2]);
+			hold(1);
+			hold(2);
 		}
 		setEndPower(power + restArmPowers[3]);
-	}
-
-	public int setArmAngles(double baseAngle, double middleAngle, double endAngle) {
-		// Target joint angles
-		double[] targetJointAngles  = {baseAngle, middleAngle, endAngle};
-		for (int i = 0; i < 3; i++) {
-			targetJointAngles[i] = MathUtil.angleModulus(targetJointAngles[i]);
-		}
-		
-		basePID.setSetpoint(targetJointAngles[0]);
-		middlePID.setSetpoint(targetJointAngles[1]);
-		endPID.setSetpoint(targetJointAngles[2]);
-
-		// Using current joint angles to get PID powers
-		double[] currentJointAngles = {
-			getAdjustedBaseAngle(),
-			getAdjustedMiddleAngle(),
-			getAdjustedEndAngle()
-		};
-		double basePower   = basePID.calculate(currentJointAngles[0], targetJointAngles[0]);
-		double middlePower = middlePID.calculate(currentJointAngles[1], targetJointAngles[1]);
-		double endPower    = endPID.calculate(currentJointAngles[2], targetJointAngles[2]);
-
-		// Combining PID power and feed forward to set motor powers
-		double[] feedForward = restArmPowers();
-
-		setBasePower(basePower + feedForward[0]);
-		setMiddlePower(middlePower + feedForward[1]);
-		setEndPower(endPower + feedForward[2]);
-
-		// Checking if all joints are at setpoint
-		if (basePID.atSetpoint() && middlePID.atSetpoint() && endPID.atSetpoint()) {
-			return Robot.DONE;
-		}
-		return Robot.CONT;
 	}
 
 	public double[] restArmPowers() {
@@ -478,6 +353,7 @@ public class Arm {
 	}
 	
 	// kg * m^2
+	// Maxes out ~5.5 with a cone at full reach
 	public double rotationalInertiaJoint1(double q1, double q2, double q3) {
 		// Integral representation of inertia of horinzontal line is m * integral from r1 to r2 of r^2
 		// Solving integral results in m/3 * ((r2)^3 - (r1)^3)
@@ -493,17 +369,71 @@ public class Arm {
 		double endY          = joint3Y + LENGTH_END * Math.sin(q1 + q2 + q3);	
 		double endR          = Math.hypot(endX, endY);
 		
-		// Torque of point is mr^2
+		// Intertia of point is mr^2
 		double joint2Inertia = JOINT_2_MASS * Math.pow(joint2R, 2);
 		double joint3Inertia = JOINT_3_MASS * Math.pow(joint3R, 2);
-		double clawInertia    = 0 * Math.pow(endR, 2); // Implement cone/cube mass
+		double clawInertia = 0;
+		if (Controls.currentObject == Objects.CUBE) {
+			clawInertia  = CUBE_MASS * Math.pow(endR, 2); 
+		}
+		else if (Controls.currentObject == Objects.CONE) {
+			clawInertia  = CONE_MASS * Math.pow(endR, 2);
+		}
 
-		// Torque of line uses integral
+		// Intertia of line uses integral
 		double baseInertia   = BASE_MASS   * 1/3 * (Math.pow(joint2R, 3) - 0);
 		double middleInertia = MIDDLE_MASS * 1/3 * (Math.pow(joint3R, 3) - Math.pow(joint2R, 3));
 		double endInertia    = END_MASS    * 1/3 * (Math.pow(endR, 3)    - Math.pow(joint3R, 3));
 		
 		return joint2Inertia + joint3Inertia + clawInertia + baseInertia + middleInertia + endInertia;
+	}
+
+	// Maxes out ~1.8 with a cone at full reach
+	public double rotationalInertiaJoint2(double q1, double q2, double q3) {
+		// All distances are relative to Joint 2
+		double joint3X       = LENGTH_MIDDLE * Math.cos(q1 + q2);
+		double joint3Y       = LENGTH_MIDDLE * Math.sin(q1 + q2);
+		double joint3R       = LENGTH_MIDDLE;
+		
+		double endX          = joint3X + LENGTH_END * Math.cos(q1 + q2 + q3);
+		double endY          = joint3Y + LENGTH_END * Math.sin(q1 + q2 + q3);	
+		double endR          = Math.hypot(endX, endY);
+		
+		// Intertia of point is mr^2
+		double joint3Inertia = JOINT_3_MASS * Math.pow(joint3R, 2);
+		double clawInertia = 0;
+		if (Controls.currentObject == Objects.CUBE) {
+			clawInertia  = CUBE_MASS * Math.pow(endR, 2); 
+		}
+		else if (Controls.currentObject == Objects.CONE) {
+			clawInertia  = CONE_MASS * Math.pow(endR, 2);
+		}
+
+		// Inertia of line uses integral
+		double middleInertia = MIDDLE_MASS * 1/3 * (Math.pow(joint3R, 3) - 0);
+		double endInertia    = END_MASS    * 1/3 * (Math.pow(endR, 3)    - Math.pow(joint3R, 3));
+		
+		return joint3Inertia + clawInertia + middleInertia + endInertia;
+	}
+
+	// 0.196 when empty, 0.232 when holding cube, 0.526 when holding cone
+	public double rotationalInertiaJoint3(double q1, double q2, double q3) {
+		// All distances are relative to Joint 3
+		double endR          = LENGTH_END;
+		
+		// Intertia of point is mr^2
+		double clawInertia = 0;
+		if (Controls.currentObject == Objects.CUBE) {
+			clawInertia  = CUBE_MASS * Math.pow(endR, 2); 
+		}
+		else if (Controls.currentObject == Objects.CONE) {
+			clawInertia  = CONE_MASS * Math.pow(endR, 2);
+		}
+
+		// Inertia of line uses integral
+		double endInertia    = END_MASS    * 1/3 * (Math.pow(endR, 3) - 0);
+		
+		return clawInertia + endInertia;
 	}
 
 	public void setBasePower(double power) {
@@ -550,8 +480,12 @@ public class Arm {
         return MathUtil.angleModulus(-1 * endAbsoluteEncoder.getPosition() + -3.010);
     }
 
-
+	/*
+	 * Pneumatics control
+	 */
 	public void openClaw() {
+		// Some routines automatically open the claw. This ensures that controls tracks the claw being open.
+		Controls.currentObject = Controls.Objects.EMPTY;
 		claw.set(Value.kReverse);
 	}
 
@@ -559,52 +493,14 @@ public class Arm {
 		claw.set(Value.kForward);
 	}
 
-	// Test functions
+	/*
+	 * Test functions
+	 */
 	public void testAbsEncoders() {
 		if (printCount % 15 == 0) {
 			System.out.println("Base:" + getActualBaseAngle() + " Middle:" + getActualMiddleAngle() + " End:" + getActualEndAngle());
 		}
 		printCount++;
-	}
-
-	public void testMiddlePower() {
-		if (firstTime) {
-			step = 1;
-			firstTime = false;
-		}
-
-		if (step == 1) {
-			boolean done = true;
-
-			if (middleAbsoluteEncoder.getPosition() > 4.55 || middleAbsoluteEncoder.getPosition() < 1) {
-				middleMotor.set(0.75);
-				done = false;
-			}
-			else {
-				middleMotor.set(0);
-			}
-	
-			if (baseAbsoluteEncoder.getPosition() < 0.52 || baseAbsoluteEncoder.getPosition() > 5.5) {
-				baseMotor.set(0.5);
-				done = false;
-			}
-			else {
-				baseMotor.set(0);
-			}
-
-			if (done) {
-				step = 2;
-			}
-		}
-		if (step == 2) {
-			if (endAbsoluteEncoder.getPosition() > 2.84 || endAbsoluteEncoder.getPosition() < 1) {
-				endMotor.set(0.4);
-			}
-			else {
-				endMotor.set(0);
-			}
-		}
-		
 	}
 
 	public void testTorque() {
@@ -613,11 +509,30 @@ public class Arm {
 		double q3 = getActualEndAngle();
 
 		if (printCount % 15 == 0) {
-			System.out.println(" Base:" + torqueJoint1(q1, q2, q3) + " Total angle:" + (q1+q2+q3));
+			System.out.println("Base:" + torqueJoint1(q1, q2, q3) + " Total angle:" + (q1+q2+q3));
 			//System.out.println(q1 + ", " + q2 + ", " + q3);
 		}
 		printCount++;
 	}
+
+	public void testRotInertia() {
+		double q1 = getActualBaseAngle();
+		double q2 = getActualMiddleAngle();
+		double q3 = getActualEndAngle();
+
+		if (printCount % 15 == 0) {
+			System.out.println("End:" + rotationalInertiaJoint3(q1, q2, q3));
+		}
+		printCount++;
+
+		// Trying to go to angle of 0
+		double torquePower = torqueJoint1(q1, q2, q3) * BASE_TORQUE_TO_POWER;
+		double pidPower    = basePID.calculate(q1, 1) * rotationalInertiaJoint1(q1, q2, q3);
+		baseMotor.set(torquePower + pidPower);
+		middleMotor.set(torqueJoint2(q1, q2, q3) * MIDDLE_TORQUE_TO_POWER);
+		endMotor.set(torqueJoint3(q1, q2, q3) * END_TORQUE_TO_POWER);
+	}
+
 
 	public void testHoldPosition() {
 		double q1 = getActualBaseAngle();

@@ -45,8 +45,6 @@ public class Controls {
 		TOP_CUBE,
 		MID_CONE,
 		MID_CUBE,
-		BOT_CONE,
-		BOT_CUBE,
 		REST,
 		GRAB
 	};
@@ -257,6 +255,30 @@ public class Controls {
 	}
 
 	/**
+	 * Returns the inputted arm state based on controller input and the current object we are holding
+	 * This state is only accepted under certain conditions (we must pass through rest between any 2 positions)
+	 * @return armState
+	 */
+	public ArmStates getArmState() {
+		if (armController.getAButton()) {
+			//armState = (getClawState() == Objects.CONE)? ArmStates.BOT_CONE : ArmStates.BOT_CUBE;
+		}
+		else if (armController.getBButton()) {
+			armState = (getClawState() == Objects.CONE)? ArmStates.MID_CONE : ArmStates.MID_CUBE;
+		}
+		else if (armController.getYButton()) {
+			armState = (getClawState() == Objects.CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
+		}
+		else if (armController.getPOV() == 90) {
+			armState = ArmStates.REST;
+		}
+		else if (armController.getPOV() == 270) {
+			armState = ArmStates.GRAB;
+		}
+		return armState;
+	}
+
+	/**
 	 * D-pad controls manual movement of wrist
 	 * Up on D-pad is positive power (toward front of robot), down on D-pad is negative power
 	 * @return manualPower
@@ -293,7 +315,7 @@ public class Controls {
     * 
     ******************************************************************************************/
 	/**
-	 * Checks if the X button is pressed.
+	 * Checks if the L bumper is pressed.
 	 * 
 	 * @return
 	 */
@@ -301,33 +323,8 @@ public class Controls {
 		return driveController.getLeftBumper();
 	}
 
-	public ArmStates getArmState() {
-		if (armController.getAButton()) {
-			armState = (getClawState() == Objects.CONE)? ArmStates.BOT_CONE : ArmStates.BOT_CUBE;
-		}
-		else if (armController.getBButton()) {
-			armState = (getClawState() == Objects.CONE)? ArmStates.MID_CONE : ArmStates.MID_CUBE;
-		}
-		else if (armController.getYButton()) {
-			armState = (getClawState() == Objects.CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
-		}
-		else if (armController.getPOV() == 90) {
-			armState = ArmStates.REST;
-		}
-		else if (armController.getPOV() == 270) {
-			armState = ArmStates.GRAB;
-		}
-		return armState;
-	}
-
-	
-	/****************************************************************************************** 
-    *
-    *    MISC FUNCTIONS
-    * 
-    ******************************************************************************************/
 	/**
-	 * Checks if the Y button is pressed.
+	 * Checks if the R bumper is pressed.
 	 * 
 	 * @return
 	 */
