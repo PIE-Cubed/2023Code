@@ -8,6 +8,7 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.math.MathUtil;
 import com.revrobotics.CANSparkMax.IdleMode;
 import frc.robot.Controls.ArmStates;
@@ -31,31 +32,31 @@ public class Arm {
 	private boolean firstTime  = false;
 
 
-    // Constants - need to verify joint limits
-    private final double LENGTH_BASE   = 0.5588;
-    private final double LENGTH_MIDDLE = 0.53848;
-    private final double LENGTH_END    = 0.6096; //0.4318
+    // Constants
+    private final double LENGTH_BASE   = 0.5545;
+    private final double LENGTH_MIDDLE = 0.4498;
+    private final double LENGTH_END    = 0.7112; // Center of mass may be closer to joint because claw is lighter than arm
 	
-	private final double ANGLE_1_MIN   = Math.PI / 6;
-	private final double ANGLE_1_MAX   = Math.PI;
-	private final double ANGLE_2_MIN   = -5 * Math.PI / 6;
-	private final double ANGLE_2_MAX   = 5  * Math.PI / 6;
-	private final double ANGLE_3_MIN   = -5 * Math.PI / 6;
+	// Joint limits use same angle measurements that are used to calculate physics and kinematics
+	private final double ANGLE_1_MIN   = 0.817;
+	private final double ANGLE_1_MAX   = Math.PI; // Need to consider if it goes to -pi
+	private final double ANGLE_2_MIN   = -Math.PI/2;
+	private final double ANGLE_2_MAX   = 2.844;
+	private final double ANGLE_3_MIN   = -2.985;
 	private final double ANGLE_3_MAX   = Math.PI / 2;
 	
-	// Masses in kg
-	private final double BASE_MASS    = 1.9912705;
-	private final double MIDDLE_MASS  = 1.44695966;
-	private final double END_MASS     = 0.94800805;
-	private final double JOINT_2_MASS = 0.48080791;
-	private final double JOINT_3_MASS = 0.48080791;
-	private final double CONE_MASS    = 0.65203903;
-	private final double CUBE_MASS    = 0.07087381;
+	// Masses in kg - updated for new arm
+	private final double BASE_MASS    = 3.175;
+	private final double MIDDLE_MASS  = 1.814;
+	private final double END_MASS     = 1.633;
+	private final double JOINT_2_MASS = 0.395;
+	private final double JOINT_3_MASS = 0.671;
+	private final double CONE_MASS    = 0.652;
+	private final double CUBE_MASS    = 0.071;
 
-	// Negative ratio to counter the force of gravity
 	private final double BASE_TORQUE_TO_POWER   = -0.01;
-	private final double MIDDLE_TORQUE_TO_POWER = -0.0175;
-	private final double END_TORQUE_TO_POWER    = -0.5;
+	private final double MIDDLE_TORQUE_TO_POWER = 0.015;
+	private final double END_TORQUE_TO_POWER    = -0.035;
 
 	// PIDs
 	private final double p1 = 0.4; //0.16 without cone
@@ -519,7 +520,6 @@ public class Arm {
 
 	/*
 	 * Methods to get angles of arms
-	 * Offset so 0 is backwards on base, and straight on the middle and end
 	 * Wrapped to -pi to pi
 	 */
     public double getAdjustedBaseAngle() {
@@ -534,6 +534,22 @@ public class Arm {
         return MathUtil.angleModulus(endAbsoluteEncoder.getPosition() + 0);
     }
 
+	/*
+	 * Methods to get angles of arms where 0 is straight back
+	 * For physics calculations
+	 */
+	public double getActualBaseAngle() {
+        return MathUtil.angleModulus(baseAbsoluteEncoder.getPosition() + 0.810);
+    }
+
+    public double getActualMiddleAngle() {
+        return MathUtil.angleModulus(middleAbsoluteEncoder.getPosition() + 2.881);
+    }
+
+    public double getActualEndAngle() {
+        return MathUtil.angleModulus(-1 * endAbsoluteEncoder.getPosition() + -3.010);
+    }
+
 
 	public void openClaw() {
 		claw.set(Value.kReverse);
@@ -546,7 +562,7 @@ public class Arm {
 	// Test functions
 	public void testAbsEncoders() {
 		if (printCount % 15 == 0) {
-			System.out.println("Base:" + baseAbsoluteEncoder.getPosition() + " Middle:" + middleAbsoluteEncoder.getPosition() + " End:" + endAbsoluteEncoder.getPosition());
+			System.out.println("Base:" + getActualBaseAngle() + " Middle:" + getActualMiddleAngle() + " End:" + getActualEndAngle());
 		}
 		printCount++;
 	}
@@ -592,13 +608,29 @@ public class Arm {
 	}
 
 	public void testTorque() {
-		double q1 = baseAbsoluteEncoder.getPosition();
-		double q2 = middleAbsoluteEncoder.getPosition();
-		double q3 = endAbsoluteEncoder.getPosition();
+		double q1 = getActualBaseAngle();
+		double q2 = getActualMiddleAngle();
+		double q3 = getActualEndAngle();
 
 		if (printCount % 15 == 0) {
-			System.out.println(" End:" + torqueJoint3(q1, q2, q3) + " Total angle:" + (q1+q2+q3));
+			System.out.println(" Base:" + torqueJoint1(q1, q2, q3) + " Total angle:" + (q1+q2+q3));
+			//System.out.println(q1 + ", " + q2 + ", " + q3);
 		}
 		printCount++;
+	}
+
+	public void testHoldPosition() {
+		double q1 = getActualBaseAngle();
+		double q2 = getActualMiddleAngle();
+		double q3 = getActualEndAngle();
+
+		double endTorque = torqueJoint3(q1, q2, q3);
+		endMotor.set(endTorque * -0.035);
+
+		double middleTorque = torqueJoint2(q1, q2, q3);
+		middleMotor.set(middleTorque * 0.015);
+
+		double baseTorque = torqueJoint1(q1, q2, q3);
+		baseMotor.set(baseTorque * -0.01);
 	}
 }

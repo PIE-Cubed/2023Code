@@ -211,6 +211,7 @@ public class Robot extends TimedRobot {
 		armControl();
 		wheelControl();
 		ledControl();
+		arm.testTorque();
 	}
 
 	@Override
@@ -255,7 +256,7 @@ public class Robot extends TimedRobot {
 		//drive.balanceRamp();
 		//drive.testGyro();
 		//arm.testMiddlePower();
-		arm.testAbsEncoders();
+		arm.testHoldPosition();
 	}
 
 	/**
