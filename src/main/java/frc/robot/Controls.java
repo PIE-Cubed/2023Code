@@ -261,19 +261,16 @@ public class Controls {
 	 */
 	public ArmStates getArmState() {
 		if (armController.getAButton()) {
-			//armState = (getClawState() == Objects.CONE)? ArmStates.BOT_CONE : ArmStates.BOT_CUBE;
+			armState = ArmStates.GRAB;
+		}
+		else if (armController.getXButtom()) {
+			armState = ArmStates.REST;
 		}
 		else if (armController.getBButton()) {
 			armState = (getClawState() == Objects.CONE)? ArmStates.MID_CONE : ArmStates.MID_CUBE;
 		}
 		else if (armController.getYButton()) {
 			armState = (getClawState() == Objects.CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
-		}
-		else if (armController.getPOV() == 90) {
-			armState = ArmStates.REST;
-		}
-		else if (armController.getPOV() == 270) {
-			armState = ArmStates.GRAB;
 		}
 		return armState;
 	}
