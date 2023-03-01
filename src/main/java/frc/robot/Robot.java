@@ -266,19 +266,25 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Gets Joystick Values
-		Pose2d currentLocation   = position.getVisionPose();
-		double forwardSpeed      = controls.getForwardSpeed();
-		double strafeSpeed       = controls.getStrafeSpeed();
-		double rotateSpeed       = controls.getRotateSpeed();
-		Pose2d placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
+		Pose2d  currentLocation   = position.getVisionPose();
+		double  forwardSpeed      = controls.getForwardSpeed();
+		double  strafeSpeed       = controls.getStrafeSpeed();
+		double  rotateSpeed       = controls.getRotateSpeed();
+		Pose2d  placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
+		boolean autoKill          = controls.autoKill();
 
 		if (placementLocation == null) {
 			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+		}
+		else if (autoKill) {
+			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+			drive.resetDriveToPoints();
 		}
 		else {
 			// Resets placement location if we change locations
 			if (!placementLocation.equals(previousPlacementLocation))	{
 				placementStatus = Robot.CONT;
+				drive.resetDriveToPoints();
 			}	
 			previousPlacementLocation = placementLocation;
 
@@ -294,6 +300,7 @@ public class Robot extends TimedRobot {
 		Objects   currentObject    = controls.getClawState();
 		double    manualWristPower = 0; //controls.getManualWristPower();
 		ArmStates inputArmState    = controls.getArmState();
+		boolean   autoKill         = controls.autoKill();
 
 		// Manual wrist control overrides automatic control
 		if (manualWristPower != 0) {
@@ -339,8 +346,8 @@ public class Robot extends TimedRobot {
 					auto.resetArmRoutines();
 				}
 
-				// Conditions to change to rest state - receive rest input or finish placing object
-				if (inputArmState == ArmStates.REST || placeStatus == DONE) {
+				// Conditions to change to rest state - receive rest input or finish placing object or autoKill
+				if (inputArmState == ArmStates.REST || placeStatus == DONE || autoKill) {
 					Controls.armState = ArmStates.REST;
 					acceptedArmState = ArmStates.REST;
 					auto.resetArmRoutines();

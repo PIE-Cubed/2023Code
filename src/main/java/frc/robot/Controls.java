@@ -263,7 +263,7 @@ public class Controls {
 		if (armController.getAButton()) {
 			armState = ArmStates.GRAB;
 		}
-		else if (armController.getXButtom()) {
+		else if (armController.getXButton()) {
 			armState = ArmStates.REST;
 		}
 		else if (armController.getBButton()) {
