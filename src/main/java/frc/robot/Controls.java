@@ -45,6 +45,7 @@ public class Controls {
 		TOP_CUBE,
 		MID_CONE,
 		MID_CUBE,
+		SHELF,
 		REST,
 		GRAB
 	};
@@ -271,6 +272,9 @@ public class Controls {
 		}
 		else if (armController.getYButton()) {
 			armState = (getClawState() == Objects.CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
+		}
+		else if (armController.getPOV() == 90) {
+			armState = ArmStates.SHELF;
 		}
 		return armState;
 	}

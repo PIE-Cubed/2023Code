@@ -256,9 +256,9 @@ public class Robot extends TimedRobot {
 		//drive.balanceRamp();
 		//drive.testGyro();
 		//arm.testMiddlePower();
-		//arm.testHoldPosition();
-		AngleStates status = arm.jointToAngle(1, Math.PI/2);
-		System.out.println(status);
+		arm.testAbsEncoders();
+		//AngleStates status = arm.jointToAngle(1, Math.PI/2);
+		//System.out.println(status);
 	}
 
 	/**
@@ -338,6 +338,11 @@ public class Robot extends TimedRobot {
 				}
 				else if (acceptedArmState == ArmStates.TOP_CUBE) {
 					placeStatus = auto.armToTopCube();
+				}
+				else if (acceptedArmState == ArmStates.SHELF) {
+					auto.armToShelf();
+					// Wait for driver to bring arm back
+					placeStatus = CONT;
 				}
 				// No valid arm state - go to rest
 				else {

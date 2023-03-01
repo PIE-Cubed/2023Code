@@ -366,7 +366,7 @@ public class Auto {
                 // Middle out
                 AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6);
                 arm.hold(1);
-                arm.jointToAngle(3, 2.4);
+                arm.jointToAngle(3, -2.4);
 
                 // If base and middle are close to or at target position, go to next step
                 if ((middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
@@ -460,6 +460,49 @@ public class Auto {
                 arm.jointToAngle(3, armAngles[2]);
                 arm.openClaw();
                 Controls.currentObject = Controls.Objects.EMPTY;
+                return Robot.DONE;
+        }
+        
+        return Robot.CONT;
+    }
+
+    public int armToShelf() { 
+        double[] armAngles = Arm.SHELF_ANGLES;
+
+		if (armFirstTime == true) {
+			armFirstTime = false;
+			armStep = 1;
+		}
+
+        switch(armStep) {
+            case 1:
+                // Base and middle out
+                AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0]);
+                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 2);
+                arm.hold(3);
+
+                // If base and middle are close to or at target position, go to next step
+                if ((baseStatus   == AngleStates.DONE || baseStatus   == AngleStates.CLOSE) &&
+                    (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
+                        armStep++;
+                }
+                break;
+            case 2:
+                // Wrist out
+                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
+                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
+                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
+                if ((baseStatusEnd   == AngleStates.DONE || baseStatusEnd   == AngleStates.CLOSE) &&
+                    (middleStatusEnd == AngleStates.DONE || middleStatusEnd == AngleStates.CLOSE) &&
+                    (endStatusEnd    == AngleStates.DONE || endStatusEnd    == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            default:
+                // Finished routine - does not move claw
+                arm.jointToAngle(1, armAngles[0]);
+                arm.jointToAngle(2, armAngles[1]);
+                arm.jointToAngle(3, armAngles[2]);
                 return Robot.DONE;
         }
         
