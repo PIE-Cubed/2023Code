@@ -68,7 +68,7 @@ public class PoseEstimation {
         // Creates the odometry tracker
         odometry = new SwerveDriveOdometry(
             drive.swerveDriveKinematics,
-            new Rotation2d( drive.getYawTranslational() ),
+            new Rotation2d( drive.getYawAdjusted() ),
             moduleStartPosition,
             new Pose2d(0, 0, new Rotation2d(-Math.PI))
         );
@@ -80,7 +80,7 @@ public class PoseEstimation {
         // Creates the vision pose tracker
         visionEstimator = new SwerveDrivePoseEstimator(
             drive.swerveDriveKinematics,
-            new Rotation2d( drive.getYawTranslational() ),
+            new Rotation2d( drive.getYawAdjusted() ),
             moduleStartPosition,
             new Pose2d(0, 0, new Rotation2d(-Math.PI)),
             odometryTrust,
@@ -128,7 +128,7 @@ public class PoseEstimation {
 
         // Updates odometry
         odometry.update(
-            new Rotation2d( MathUtil.angleModulus(drive.getYawTranslational()) ),
+            new Rotation2d( MathUtil.angleModulus(drive.getYawAdjusted()) ),
             allModulePosition
         );
     }
@@ -147,7 +147,7 @@ public class PoseEstimation {
 
         // Updates the pose estimator (without vision)
         visionEstimator.update(
-            new Rotation2d( drive.getYawTranslational() ),
+            new Rotation2d( drive.getYawAdjusted() ),
             allModulePosition
         );
 
@@ -220,7 +220,7 @@ public class PoseEstimation {
 
         // Resets the SwerveOdometry
         odometry.resetPosition(
-            new Rotation2d(MathUtil.angleModulus(drive.getYawTranslational())),
+            new Rotation2d(MathUtil.angleModulus(drive.getYawAdjusted())),
             allPositiions,
             pose
         );
