@@ -126,26 +126,26 @@ public class Robot extends TimedRobot {
 		switch (m_autoSelected) {
 			case wallAuto:
 				if (isRed == true) {
-					startPose = new Pose2d(auto.WALL_RED_START, new Rotation2d(-Math.PI/2));
+					startPose = new Pose2d(auto.WALL_RED_START, new Rotation2d(Math.PI));
 				}
 				else {
-					startPose = new Pose2d(auto.WALL_BLUE_START, new Rotation2d(-Math.PI/2));
+					startPose = new Pose2d(auto.WALL_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
 			case rampAuto:
 				if (isRed == true) {
-					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(-Math.PI/2));
+					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
 				else {
-					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(-Math.PI/2));
+					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
 			case centerAuto:
 				if (isRed == true) {
-					startPose = new Pose2d(auto.CENTER_RED_START, new Rotation2d(-Math.PI/2));
+					startPose = new Pose2d(auto.CENTER_RED_START, new Rotation2d(Math.PI));
 				}
 				else {
-					startPose = new Pose2d(auto.CENTER_BLUE_START, new Rotation2d(-Math.PI/2));
+					startPose = new Pose2d(auto.CENTER_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
 			default:

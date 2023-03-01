@@ -121,12 +121,12 @@ public class Auto {
                 Pose2d pose3;
 
                 if (isRed == true) {
-                    pose1 = new Pose2d(3, 7.4, new Rotation2d(Math.PI/2));
+                    pose1 = new Pose2d(3, 7.4, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(3, 7.4, new Rotation2d(0));
                     pose3 = new Pose2d(6.9, 7.4, new Rotation2d(0));
                 }
                 else {
-                    pose1 = new Pose2d(3, 0.6, new Rotation2d(Math.PI/2));
+                    pose1 = new Pose2d(3, 0.6, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(3, 0.6, new Rotation2d(0));
                     pose3 = new Pose2d(6.9, 0.6, new Rotation2d(0));
                 }
@@ -145,13 +145,13 @@ public class Auto {
                 // Approach community
                 if (isRed == true) {
                     pose1 = new Pose2d(3, 7.2, new Rotation2d(0));
-                    pose2 = new Pose2d(3, 7.2, new Rotation2d(Math.PI/2));
-                    pose3 = new Pose2d(WALL_RED_START, new Rotation2d(Math.PI/2));
+                    pose2 = new Pose2d(3, 7.2, new Rotation2d(Math.PI));
+                    pose3 = new Pose2d(WALL_RED_START, new Rotation2d(Math.PI));
                 }
                 else {
                     pose1 = new Pose2d(3, 0.6, new Rotation2d(0));
-                    pose2 = new Pose2d(3, 0.6, new Rotation2d(Math.PI/2));
-                    pose3 = new Pose2d(WALL_BLUE_START, new Rotation2d(Math.PI/2));
+                    pose2 = new Pose2d(3, 0.6, new Rotation2d(Math.PI));
+                    pose3 = new Pose2d(WALL_BLUE_START, new Rotation2d(Math.PI));
                 }
                 
                 status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getVisionPose());
