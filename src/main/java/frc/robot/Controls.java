@@ -14,7 +14,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
  */
 public class Controls {
 	// CONSTANTS
-	private final int    DRIVE_ID       = 0;
+	private final int DRIVE_ID = 0;
+	private final int ARM_ID   = 1;
 
 	// Values in meters, field-based pose Y coords
 	private final double GRID_DIVIDER_1 = 1.905;
@@ -23,12 +24,31 @@ public class Controls {
 
 	// Controller object declaration
 	private XboxController driveController;
-	private XboxController xboxController;
+	private XboxController armController;
 
 	// Rate limiters
 	private SlewRateLimiter xLimiter;
 	private SlewRateLimiter yLimiter;
 	private SlewRateLimiter rotateLimiter;
+
+	// Enumeration for which object the claw is holding
+	public enum Objects {
+		CONE,
+		CUBE,
+		EMPTY
+	};
+	public static Objects currentObject;
+
+	// Enumeration for which position the arm is at
+	public enum ArmStates {
+		TOP_CONE,
+		TOP_CUBE,
+		MID_CONE,
+		MID_CUBE,
+		REST,
+		GRAB
+	};
+	public static ArmStates armState;
 
 	/**
 	 * The constructor for the Controls class
@@ -36,11 +56,15 @@ public class Controls {
 	public Controls() {
 		// Instance Creation
 		driveController = new XboxController(DRIVE_ID);
+		armController   = new XboxController(ARM_ID);
 
 		// Create the rate limiters
 		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
 		yLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
 		rotateLimiter = new SlewRateLimiter(6 * Math.PI);
+
+		currentObject = Objects.EMPTY;
+		armState      = ArmStates.REST;
 	}
 
 	/****************************************************************************************** 
@@ -198,13 +222,88 @@ public class Controls {
 		}
 	}
 
-
+	
 	/****************************************************************************************** 
     *
     *    ARM FUNCTIONS
     * 
     ******************************************************************************************/
+	/**
+	 * Finds which object the claw should be holding.
+	 * If the state is not empty, the arm class should close the claw.
+	 * Cone and cube have different weight, so the arm should know which one we are holding.
+	 * @return currentObject
+	 */
+	public Objects getClawState() {
+		// If claw is empty, pressing a bumper will grab an object
+		if (currentObject == Objects.EMPTY) {
+			if (armController.getRightBumperPressed()) {
+				currentObject = Objects.CONE;
+			}
+			else if (armController.getLeftBumperPressed()) {
+				currentObject = Objects.CUBE;
+			}
+		}
+		// If claw is not empty, pressing a bumper will release the object
+		else {
+			if (armController.getLeftBumperPressed() || armController.getRightBumperPressed()) {
+				currentObject = Objects.EMPTY;
+			}
+		}
 
+		return currentObject;
+	}
+
+	/**
+	 * Returns the inputted arm state based on controller input and the current object we are holding
+	 * This state is only accepted under certain conditions (we must pass through rest between any 2 positions)
+	 * @return armState
+	 */
+	public ArmStates getArmState() {
+		if (armController.getAButton()) {
+			armState = ArmStates.GRAB;
+		}
+		else if (armController.getXButton()) {
+			armState = ArmStates.REST;
+		}
+		else if (armController.getBButton()) {
+			armState = (getClawState() == Objects.CONE)? ArmStates.MID_CONE : ArmStates.MID_CUBE;
+		}
+		else if (armController.getYButton()) {
+			armState = (getClawState() == Objects.CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
+		}
+		return armState;
+	}
+
+	/**
+	 * D-pad controls manual movement of wrist
+	 * Up on D-pad is positive power (toward front of robot), down on D-pad is negative power
+	 * @return manualPower
+	 */
+	public double getManualWristPower() {
+		// Higher power if we are grabbing heavier object
+		double manualPower;
+		if (getClawState() == Objects.EMPTY) {
+			manualPower = 0.06;
+		}
+		else if (getClawState() == Objects.CONE) {
+			manualPower = 0.18;
+		}
+		else {
+			manualPower = 0.12;
+		}
+
+		// Up on D-pad
+		if (armController.getPOV() == 0) {
+			return manualPower;
+		}
+		else if (armController.getPOV() == 180) {
+			return -1 * manualPower;
+		}
+		else {
+			return 0;
+		}
+	}
 
 
 	/****************************************************************************************** 
@@ -213,7 +312,7 @@ public class Controls {
     * 
     ******************************************************************************************/
 	/**
-	 * Checks if the X button is pressed.
+	 * Checks if the L bumper is pressed.
 	 * 
 	 * @return
 	 */
@@ -222,7 +321,7 @@ public class Controls {
 	}
 
 	/**
-	 * Checks if the Y button is pressed.
+	 * Checks if the R bumper is pressed.
 	 * 
 	 * @return
 	 */
@@ -242,7 +341,7 @@ public class Controls {
 	 * @return startButtonPressed
 	 */
 	public boolean autoKill() {
-		return xboxController.getStartButtonPressed();
+		return driveController.getStartButtonPressed();
 	}
 }
 // End of the Controls class

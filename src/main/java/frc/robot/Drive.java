@@ -266,6 +266,14 @@ public class Drive {
         return Robot.CONT;
     }
 
+    /*
+     * Resets all instance variables used in driveToPoints
+     */
+    public void resetDriveToPoints() {
+        autoPointFirstTime = true;
+        autoPointIndex = 0;
+    }
+
     /**
      * 
      * @param frontEndFirst

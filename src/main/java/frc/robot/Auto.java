@@ -7,6 +7,7 @@ package frc.robot;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import frc.robot.Arm.AngleStates;
 
 public class Auto {
     // State tracking variables - each variable can only be used in one function at any time
@@ -14,12 +15,16 @@ public class Auto {
     private boolean firstTime = true;
     private int step;
 
+    private boolean armFirstTime = true;
+    private int armStep;
+
     private boolean delayFirstTime = true;
     private long delayEnd = 0; // Stores when delay() should return Robot.DONE
 
     // Object Creation
     private Drive drive;
     private PoseEstimation position;
+    private Arm arm;
 
     // Constants for starting poses for each auto
     public final Translation2d RAMP_RED_START    = new Translation2d(0, 0);
@@ -40,7 +45,7 @@ public class Auto {
     private Pose2d[] listOfPoints = new Pose2d[autoCoordinates.length];
 
     // Constructor
-    public Auto(Drive drive, PoseEstimation position) {
+    public Auto(Drive drive, PoseEstimation position, Arm arm) {
         // Iterating through array of poses
         for (int i = 0; i < autoCoordinates.length; i++) {
             // Passing each item of the inner array as an argument for a Pose object
@@ -50,39 +55,9 @@ public class Auto {
                 new Rotation2d(autoCoordinates[i][2]));
         }
 
-        this.drive = drive;
+        this.drive    = drive;
         this.position = position;
-    }
-
-    public int testDriveToPoints() {
-        int status = Robot.CONT;
-    
-		if (firstTime == true) {
-			firstTime = false;
-			step = 1;
-            System.out.println("Starting Wall Auto");
-		}
-
-        switch(step) {
-            case 1:
-                status = drive.autoDriveToPoints(listOfPoints, position.getOdometryPose());
-                break;
-            default:
-                // Finished routine
-                step = 1;
-                firstTime = true;
-
-                // Stops applicable motors
-                drive.stopWheels();
-                return Robot.DONE;
-        }
-
-        // If we are done with a step, we go on to the next one and continue the routine
-        if (status == Robot.DONE) {
-            step++;
-        }
-        
-        return Robot.CONT;
+        this.arm      = arm;
     }
 
     /**
@@ -276,6 +251,221 @@ public class Auto {
         return Robot.DONE;
     }
 
+    /*
+     * Arm functions
+     */
+    public AngleStates armToRestPosition() {    
+		if (armFirstTime == true) {
+			armFirstTime = false;
+			armStep = 1;
+		}
+
+        switch(armStep) {
+            case 1:
+                // Wrist in
+                AngleStates status = arm.jointToAngle(3, Arm.REST_ANGLES[2]);
+                arm.hold(1);
+                arm.hold(2);
+
+                if (status == AngleStates.CLOSE || status == AngleStates.DONE) {
+                    armStep++;
+                }
+                break;
+            case 2:
+                // Rest of arm in
+                AngleStates baseStatus   = arm.jointToAngle(1, Arm.REST_ANGLES[0]);
+                AngleStates middleStatus = arm.jointToAngle(2, Arm.REST_ANGLES[1], 2);
+                AngleStates endStatus    = arm.jointToAngle(3, Arm.REST_ANGLES[2]);
+
+                // If all joints are done, robot goes to resting step, then returns DONE
+                if (baseStatus   == AngleStates.DONE &&
+                    middleStatus == AngleStates.DONE &&
+                    endStatus    == AngleStates.DONE) {
+                        armStep++;
+                }
+                // If all joints are close or done, robot stays on this step and returns CLOSE
+                else if ((baseStatus  == AngleStates.DONE || baseStatus == AngleStates.CLOSE) &&
+                    (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
+                    (endStatus    == AngleStates.DONE || endStatus    == AngleStates.CLOSE)) {
+                        return AngleStates.CLOSE;
+                }
+                break;
+            default:
+                // Finished routine
+                arm.stopArm();
+                return AngleStates.DONE;
+        }
+        
+        return AngleStates.CONT;
+    }
+
+    public int armToGrabPosition() {    
+		AngleStates status = arm.jointToAngle(3, -0.4);
+        arm.jointToAngle(1, Arm.REST_ANGLES[0]);
+        arm.jointToAngle(2, Arm.REST_ANGLES[1], 2);
+
+        if (status == AngleStates.DONE) {
+            return Robot.DONE;
+        }
+        return Robot.CONT;
+    }
+
+    public int armToMidPosition(double[] armAngles) {    
+		if (armFirstTime == true) {
+			armFirstTime = false;
+			armStep = 1;
+		}
+
+        switch(armStep) {
+            case 1:
+                // Base and middle out
+                AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 2);
+                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 2);
+                arm.hold(3);
+
+                // If base and middle are close to or at target position, go to next step
+                if ((baseStatus   == AngleStates.DONE || baseStatus   == AngleStates.CLOSE) &&
+                    (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
+                        armStep++;
+                }
+                break;
+            case 2:
+                // Wrist out
+                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
+                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
+                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
+                if ((baseStatusEnd   == AngleStates.DONE || baseStatusEnd   == AngleStates.CLOSE) &&
+                    (middleStatusEnd == AngleStates.DONE || middleStatusEnd == AngleStates.CLOSE) &&
+                    (endStatusEnd    == AngleStates.DONE || endStatusEnd    == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            default:
+                // Finished routine
+                arm.jointToAngle(1, armAngles[0]);
+                arm.jointToAngle(2, armAngles[1]);
+                arm.jointToAngle(3, armAngles[2]);
+                arm.openClaw();
+                Controls.currentObject = Controls.Objects.EMPTY;
+                return Robot.DONE;
+        }
+        
+        return Robot.CONT;
+    }
+
+    public int armToTopCone() {    
+        double[] armAngles = Arm.TOP_CONE_ANGLES;
+
+		if (armFirstTime == true) {
+			armFirstTime = false;
+			armStep = 1;
+		}
+
+        switch(armStep) {
+            case 1:
+                // Middle out
+                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6);
+                arm.hold(1);
+                arm.jointToAngle(3, 2.4);
+
+                // If base and middle are close to or at target position, go to next step
+                if ((middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            case 2:
+                // Base and middle out
+                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0]);
+                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1]);
+                arm.hold(3);
+
+                // If base and middle are close to or at target position, go to next step
+                if ((baseStatus2   == AngleStates.DONE || baseStatus2   == AngleStates.CLOSE) &&
+                    (middleStatus2 == AngleStates.DONE || middleStatus2 == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            case 3:
+                // Wrist out
+                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
+                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
+                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
+                if (baseStatusEnd   == AngleStates.DONE &&
+                    middleStatusEnd == AngleStates.DONE &&
+                    endStatusEnd    == AngleStates.DONE) {
+                        armStep++;
+                }
+                break;
+            case 4:
+                // Finished routine
+                arm.jointToAngle(1, armAngles[0]);
+                arm.jointToAngle(2, armAngles[1]);
+                arm.jointToAngle(3, armAngles[2]);
+                arm.openClaw();
+                Controls.currentObject = Controls.Objects.EMPTY;
+                return Robot.DONE;
+        }
+        
+        return Robot.CONT;
+    }
+
+    public int armToTopCube() {    
+        double[] armAngles = Arm.TOP_CUBE_ANGLES;
+        
+		if (armFirstTime == true) {
+			armFirstTime = false;
+			armStep = 1;
+		}
+
+        switch(armStep) {
+            case 1:
+                // Middle out
+                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6);
+                arm.hold(1);
+                //arm.hold(3);
+                arm.jointToAngle(3, -2.2);
+
+                // If base and middle are close to or at target position, go to next step
+                if ((middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            case 2:
+                // Base and middle out
+                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0]);
+                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1]);
+                arm.hold(3);
+
+                // If base and middle are close to or at target position, go to next step
+                if ((baseStatus2   == AngleStates.DONE || baseStatus2   == AngleStates.CLOSE) &&
+                    (middleStatus2 == AngleStates.DONE || middleStatus2 == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            case 3:
+                // Wrist out
+                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
+                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
+                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
+                if (baseStatusEnd   == AngleStates.DONE &&
+                    middleStatusEnd == AngleStates.DONE &&
+                    endStatusEnd    == AngleStates.DONE) {
+                        armStep++;
+                }
+                break;
+            case 4:
+                // Finished routine
+                arm.jointToAngle(1, armAngles[0]);
+                arm.jointToAngle(2, armAngles[1]);
+                arm.jointToAngle(3, armAngles[2]);
+                arm.openClaw();
+                Controls.currentObject = Controls.Objects.EMPTY;
+                return Robot.DONE;
+        }
+        
+        return Robot.CONT;
+    }
+
 
     /****************************************************************************************** 
     *
@@ -301,6 +491,12 @@ public class Auto {
             return Robot.DONE;
         }
         return Robot.CONT;
+    }
+
+    public void resetArmRoutines() {
+        armFirstTime = true;
+        armStep = 1;
+        delayFirstTime = true;
     }
 
 

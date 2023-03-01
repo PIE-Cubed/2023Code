@@ -6,8 +6,11 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.Arm.AngleStates;
+import frc.robot.Controls.ArmStates;
+import frc.robot.Controls.Objects;
 
 /**
  * Start of the Robot class
@@ -20,6 +23,7 @@ public class Robot extends TimedRobot {
 	public static final int CONT =  3;
 
 	// Object creation
+	Arm            arm;
 	PoseEstimation position;
 	CustomTables   nTables;
 	Controls       controls;
@@ -30,10 +34,11 @@ public class Robot extends TimedRobot {
 	// Variables
 	private int status = CONT;
 
-	private long   coneFlashEnd = 0;
-	private long   cubeFlashEnd = 0;
-	private Pose2d previousPlacementLocation;
-	private int    placementStatus = Robot.CONT;
+	private long      coneFlashEnd = 0;
+	private long      cubeFlashEnd = 0;
+	private Pose2d    previousPlacementLocation;
+	private int       placementStatus = Robot.CONT;
+	private ArmStates acceptedArmState;
 
 	// Auto path
 	private static final String wallAuto   = "Wall";
@@ -55,15 +60,18 @@ public class Robot extends TimedRobot {
 	public Robot() {
 		// Instance creation
 		drive    = new Drive();
-		controls = new Controls();
 		position = new PoseEstimation(drive);
-		auto     = new Auto(drive, position);
+
+		controls = new Controls();
+		arm      = new Arm();
+		auto     = new Auto(drive, position, arm);
 
 		// Instance getters
 		led      = LED.getInstance();
 		nTables  = CustomTables.getInstance();
 
 		previousPlacementLocation = new Pose2d();
+		acceptedArmState          = ArmStates.REST;
 	}
 
 	@Override
@@ -201,6 +209,7 @@ public class Robot extends TimedRobot {
 	 * Runs ever 20 miliseconds during TeleOp.
 	 */
 	public void teleopPeriodic() {
+		armControl();
 		wheelControl();
 		ledControl();
 	}
@@ -246,6 +255,10 @@ public class Robot extends TimedRobot {
 		//drive.periodicTestDrivePower();
 		//drive.balanceRamp();
 		//drive.testGyro();
+		//arm.testMiddlePower();
+		//arm.testHoldPosition();
+		AngleStates status = arm.jointToAngle(1, Math.PI/2);
+		System.out.println(status);
 	}
 
 	/**
@@ -253,19 +266,25 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Gets Joystick Values
-		Pose2d currentLocation   = position.getVisionPose();
-		double forwardSpeed      = controls.getForwardSpeed();
-		double strafeSpeed       = controls.getStrafeSpeed();
-		double rotateSpeed       = controls.getRotateSpeed();
-		Pose2d placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
+		Pose2d  currentLocation   = position.getVisionPose();
+		double  forwardSpeed      = controls.getForwardSpeed();
+		double  strafeSpeed       = controls.getStrafeSpeed();
+		double  rotateSpeed       = controls.getRotateSpeed();
+		Pose2d  placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
+		boolean autoKill          = controls.autoKill();
 
 		if (placementLocation == null) {
 			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+		}
+		else if (autoKill) {
+			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+			drive.resetDriveToPoints();
 		}
 		else {
 			// Resets placement location if we change locations
 			if (!placementLocation.equals(previousPlacementLocation))	{
 				placementStatus = Robot.CONT;
+				drive.resetDriveToPoints();
 			}	
 			previousPlacementLocation = placementLocation;
 
@@ -274,7 +293,74 @@ public class Robot extends TimedRobot {
 				placementStatus = drive.autoDriveToPoints(new Pose2d[]{placementLocation}, currentLocation);
 			}	
 		}
+	}
 
+	private void armControl() {
+		// Add the grabber controls
+		Objects   currentObject    = controls.getClawState();
+		double    manualWristPower = 0; //controls.getManualWristPower();
+		ArmStates inputArmState    = controls.getArmState();
+		boolean   autoKill         = controls.autoKill();
+
+		// Manual wrist control overrides automatic control
+		if (manualWristPower != 0) {
+			arm.powerEnd(manualWristPower);
+		}
+		else {
+			AngleStates status;
+
+			// Bring arm through rest position to our target position
+			if (acceptedArmState == ArmStates.REST) {
+				// Movement
+				status = auto.armToRestPosition();
+
+				// Conditions to change arm state - close to resting and receives different target state
+				if ((status == AngleStates.DONE || status == AngleStates.CLOSE) && inputArmState != ArmStates.REST) {
+					acceptedArmState = inputArmState;
+					auto.resetArmRoutines();
+				}
+			}
+			else {
+				int placeStatus = CONT;
+
+				// Movement
+				if (acceptedArmState == ArmStates.GRAB) {
+					auto.armToGrabPosition();
+				}
+				else if (acceptedArmState == ArmStates.MID_CONE) {
+					placeStatus = auto.armToMidPosition(arm.MID_CONE_ANGLES);
+				}
+				else if (acceptedArmState == ArmStates.MID_CUBE) {
+					placeStatus = auto.armToMidPosition(arm.MID_CUBE_ANGLES);
+				}
+				else if (acceptedArmState == ArmStates.TOP_CONE) {
+					placeStatus = auto.armToTopCone();
+				}
+				else if (acceptedArmState == ArmStates.TOP_CUBE) {
+					placeStatus = auto.armToTopCube();
+				}
+				// No valid arm state - go to rest
+				else {
+					Controls.armState = ArmStates.REST;
+					acceptedArmState = ArmStates.REST;
+					auto.resetArmRoutines();
+				}
+
+				// Conditions to change to rest state - receive rest input or finish placing object or autoKill
+				if (inputArmState == ArmStates.REST || placeStatus == DONE || autoKill) {
+					Controls.armState = ArmStates.REST;
+					acceptedArmState = ArmStates.REST;
+					auto.resetArmRoutines();
+				}
+			}
+		}
+
+		if (currentObject == Objects.EMPTY) {
+			arm.openClaw();
+		}
+		else {
+			arm.closeClaw();
+		}
 	}
 
 	private void ledControl() {
@@ -316,5 +402,4 @@ public class Robot extends TimedRobot {
 		led.updateLED();
 	}
 }
-
 // End of the Robot class
