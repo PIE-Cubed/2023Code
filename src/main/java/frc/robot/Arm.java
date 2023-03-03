@@ -80,9 +80,9 @@ public class Arm {
 
 	// Angles for all positions
 	public static double[] REST_ANGLES     = {0.825, 2.95, -2.9};
-	public static double[] MID_CONE_ANGLES = {1.0, 1.7, 0};
-	public static double[] MID_CUBE_ANGLES = {1.0, 1.7, 0.4};
-	public static double[] TOP_CONE_ANGLES = {2.25, 0.2, 0.0};
+	public static double[] MID_CONE_ANGLES = {1.135, 1.86, -0.32};
+	public static double[] MID_CUBE_ANGLES = {1.068, 1.826, 0.123};
+	public static double[] TOP_CONE_ANGLES = {2.006, 0.564, 0.3};
 	public static double[] TOP_CUBE_ANGLES = {2.2, 0.4, 0.0};
 	public static double[] SHELF_ANGLES    = {1.0, 0.73, 1.31};
 
