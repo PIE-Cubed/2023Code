@@ -328,10 +328,10 @@ public class Robot extends TimedRobot {
 					auto.armToGrabPosition();
 				}
 				else if (acceptedArmState == ArmStates.MID_CONE) {
-					placeStatus = auto.armToMidPosition(arm.MID_CONE_ANGLES);
+					placeStatus = auto.armToMidPosition(Arm.MID_CONE_ANGLES);
 				}
 				else if (acceptedArmState == ArmStates.MID_CUBE) {
-					placeStatus = auto.armToMidPosition(arm.MID_CUBE_ANGLES);
+					placeStatus = auto.armToMidPosition(Arm.MID_CUBE_ANGLES);
 				}
 				else if (acceptedArmState == ArmStates.TOP_CONE) {
 					placeStatus = auto.armToTopCone();

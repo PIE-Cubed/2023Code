@@ -26,8 +26,8 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;;
 public class PoseEstimation {
     // CONSTANTS
     // Dimensions of the camera to robot transform (inches)
-    private double X_OFFSET_IN = -12 + 3/8;
-    private double Y_OFFSET_IN = -6  + 1/4;
+    private double X_OFFSET_IN = -12;
+    private double Y_OFFSET_IN = -6;
     private double Z_OFFSET_IN = 19 + 3/8;
 
     // Dimensions of the camera to robot transform (meters)
@@ -175,14 +175,14 @@ public class PoseEstimation {
                 // Creates the relative pose
                 Transform3d camToTarget = new Transform3d(
                     new Translation3d(x, y, z),
-                    new Rotation3d(roll, pitch, yaw)
+                    new Rotation3d(roll, pitch, Math.PI - yaw)
                 );
 
                 // Gets the camera's pose relative to the tag
                 Pose3d camPose = targetPose.transformBy(camToTarget);
 
                 // Tranforms the camera's pose to the robot's center
-                Pose3d measurement = camPose.transformBy(CAMERA_TO_ROBOT.inverse());
+                Pose3d measurement = camPose.transformBy(CAMERA_TO_ROBOT);
 
                 // Adds the vision measurement
                 visionEstimator.addVisionMeasurement(
