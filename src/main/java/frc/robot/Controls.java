@@ -273,7 +273,7 @@ public class Controls {
 		else if (armController.getYButton()) {
 			armState = (getClawState() == Objects.CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
 		}
-		else if (armController.getPOV() == 90) {
+		else if (armController.getPOV() == 270) {
 			armState = ArmStates.SHELF;
 		}
 		return armState;
