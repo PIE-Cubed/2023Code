@@ -321,7 +321,7 @@ public class Auto {
     }
 
     public int armToGrabPosition() {    
-		AngleStates status = arm.jointToAngle(3, -0.4);
+		AngleStates status = arm.jointToAngle(3, -0.2);
         arm.jointToAngle(1, Arm.REST_ANGLES[0]);
         arm.jointToAngle(2, Arm.REST_ANGLES[1], 2);
 
