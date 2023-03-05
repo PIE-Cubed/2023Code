@@ -37,7 +37,7 @@ public class Auto {
 
     // Variables
     private Pose2d[] rampAutoExitCommunity = new Pose2d[1]; // Stores location that will ensure we leave community
-    private double balancedPitch = 0;
+    private double balancedRoll = 0;
 
     // Coordinates to be used in routines
     private static final double[][] autoCoordinates = {
@@ -59,9 +59,6 @@ public class Auto {
         this.drive    = drive;
         this.position = position;
         this.arm      = arm;
-
-        arm.closeClaw();
-        Controls.currentObject = Objects.CONE;
     }
 
     /**
@@ -174,6 +171,9 @@ public class Auto {
 		if (firstTime == true) {
 			firstTime = false;
 			step = 1;
+
+            arm.closeClaw();
+            Controls.currentObject = Objects.CONE;
 		}
 
         // Vision pose not helpful for this auto
@@ -188,46 +188,59 @@ public class Auto {
                 // Place object we're holding
                 status = armToTopCone();
                 break;
-            /*
             case 3:
+                arm.openClaw();
+                Controls.currentObject = Objects.EMPTY;
+                status = Robot.DONE;
+                break;
+            case 4:
+                AngleStates intStatus = armToRestPosition();
+                if (intStatus == AngleStates.CLOSE || intStatus == AngleStates.DONE) {
+                    status = Robot.DONE;
+                }
+                else {
+                    status = Robot.CONT;
+                }
+                break;
+            case 5:
                 // Rotating wheels before driving
                 status = drive.rotateWheels(-1, 0, 0, false);
                 break;
-            case 4:
+            case 6:
                 // Charge toward ramp with back side
                 status = drive.chargeRamp(false);
                 break;
-            case 5:
+            case 7:
                 // Exit ramp with back side
                 status = drive.leaveRamp(false);
                 break;
-            case 6:
-                // Storing a pose 1.5 meter beyond ramp and straightened so we ensure we leave community
-                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.5, currPose.getY(), new Rotation2d(Math.PI));
-                status = Robot.DONE;
-                break;
-            case 7:
-                // Exiting community
-                status = drive.autoDriveToPoints(rampAutoExitCommunity, currPose);
-                break;
             case 8:
-                // Find drifted pitch of ground - ramp should be the same angle
-                balancedPitch = drive.getPitch();
+                // Storing a pose 1.25 meter beyond ramp and straightened so we ensure we leave community
+                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.25, currPose.getY(), new Rotation2d(Math.PI));
                 status = Robot.DONE;
                 break;
             case 9:
+                // Exiting community
+                status = drive.autoDriveToPoints(rampAutoExitCommunity, currPose);
+                break;
+            case 10:
+                // Find drifted roll of ground - ramp should be the same angle
+                balancedRoll = drive.getRoll();
+                status = Robot.DONE;
+                break;
+            case 11:
                 // Charge toward ramp with front side
                 status = drive.chargeRamp(true);
                 break;
-            case 10:
+            case 12:
                 // Balance on ramp
-                status = drive.balanceRamp(balancedPitch);
+                status = drive.balanceRamp(balancedRoll);
                 break;
-            case 11:
+            case 13:
                 // Lock wheels
                 status = autoDelay(1);
                 drive.crossWheels();
-                break;*/
+                break;
             default:
                 // Finished routine
                 step = 1;
@@ -299,6 +312,8 @@ public class Auto {
             default:
                 // Finished routine
                 arm.stopArm();
+                armFirstTime = true;
+                armStep = 1;
                 return AngleStates.DONE;
         }
         
@@ -351,8 +366,8 @@ public class Auto {
                 arm.jointToAngle(1, armAngles[0]);
                 arm.jointToAngle(2, armAngles[1]);
                 arm.jointToAngle(3, armAngles[2]);
-                arm.openClaw();
-                Controls.currentObject = Controls.Objects.EMPTY;
+                armFirstTime = true;
+                armStep = 1;
                 return Robot.DONE;
         }
         
@@ -407,8 +422,8 @@ public class Auto {
                 arm.jointToAngle(1, armAngles[0]);
                 arm.jointToAngle(2, armAngles[1]);
                 arm.jointToAngle(3, armAngles[2]);
-                arm.openClaw();
-                Controls.currentObject = Controls.Objects.EMPTY;
+                armFirstTime = true;
+                armStep = 1;
                 return Robot.DONE;
         }
         
@@ -464,8 +479,8 @@ public class Auto {
                 arm.jointToAngle(1, armAngles[0]);
                 arm.jointToAngle(2, armAngles[1]);
                 arm.jointToAngle(3, armAngles[2]);
-                arm.openClaw();
-                Controls.currentObject = Controls.Objects.EMPTY;
+                armFirstTime = true;
+                armStep = 1;
                 return Robot.DONE;
         }
         
@@ -509,6 +524,8 @@ public class Auto {
                 arm.jointToAngle(1, armAngles[0]);
                 arm.jointToAngle(2, armAngles[1]);
                 arm.jointToAngle(3, armAngles[2]);
+                armFirstTime = true;
+                armStep = 1;
                 return Robot.DONE;
         }
         

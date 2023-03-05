@@ -26,7 +26,7 @@ public class Drive {
 
     private final double AUTO_DRIVE_TOLERANCE        = 0.05; //0.01
     private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.05; //0.15
-    private final double RAMP_BALANCE_TOLERANCE      = 2;
+    private final double RAMP_BALANCE_TOLERANCE      = 6;
 
     // Instance Variables
     private int     printCount         = 0;
@@ -34,7 +34,7 @@ public class Drive {
     private boolean autoPointFirstTime = true;
     private boolean autoPointAngled    = false; // Tracks if wheels have been angled before driving
     private boolean rampFirstTime      = true;  // Used by all ramp-related functions b/c only 1 called at a time
-    private double  rampInitPitch      = 0;
+    private double  rampInitRoll       = 0;
     private double  initXVelocity      = 0;
     private double  initYVelocity      = 0;
     private double  initRotateVelocity = 0;
@@ -60,7 +60,7 @@ public class Drive {
     PIDController autoDriveRotateController;
 
     // Ramp balance controller
-    private static final double rbP = 0.06; //0.04 works, but slow
+    private static final double rbP = -0.06;
     private static final double rbI = 0.00;
     private static final double rbD = 0.00;
     PIDController rampBalanceController;
@@ -282,30 +282,30 @@ public class Drive {
     public int chargeRamp(boolean frontEndFirst) {
         int status = Robot.CONT;
 
-        double changeInPitch;
-        double targetPitch;
+        double changeInRoll;
+        double targetRoll;
 
         if (rampFirstTime == true) {
             rampFirstTime = false;
             rampStep = 1;
-            rampInitPitch = ahrs.getPitch();
+            rampInitRoll = ahrs.getRoll();
         }
 
         switch(rampStep) {
             // Step 1: charge ramp until we go up by 20 degrees
             case 1:
-                // Pitch should decrease by 20 if front end up, increase by 20 if back end up
-                changeInPitch = 20;
+                // Roll should increase by 20 if front end up, decrease by 20 if back end up
+                changeInRoll = -20;
                 if (frontEndFirst) {
-                    changeInPitch *= -1;
+                    changeInRoll *= -1;
                 }
-                targetPitch = rampInitPitch + changeInPitch;
+                targetRoll = rampInitRoll + changeInRoll;
 
-                // If frontEndFirst, decreasing pitch should pass below target
-                // If backEndFirst, increasing pitch should pass above target
-                System.out.println("Current pitch:" + ahrs.getPitch() + " target:>" + targetPitch);
+                // If frontEndFirst, increasing roll should pass above target
+                // If backEndFirst, decreasing roll should pass below target
                 if (frontEndFirst) {
-                    if (ahrs.getPitch() < targetPitch) {
+                    //System.out.println("Step 1 Current roll:" + ahrs.getRoll() + " target:>" + targetRoll);
+                    if (ahrs.getRoll() > targetRoll) {
                         status = Robot.DONE;
                     }
                     else {
@@ -314,8 +314,8 @@ public class Drive {
                     }
                 }
                 else {
-                    if (ahrs.getPitch() > targetPitch) {
-                        System.out.println("Status is DONE");
+                    //System.out.println("Step 1 Current roll:" + ahrs.getRoll() + " target:<" + targetRoll);
+                    if (ahrs.getRoll() < targetRoll) {
                         status = Robot.DONE;
                     }
                     else {
@@ -326,18 +326,18 @@ public class Drive {
                 break;
             // Step 2: keep charging ramp until our angle comes back below 8
             case 2:
-                // Pitch should increase from -20 to -15 if front end first, decrease from 20 to 15 if back end first
-                changeInPitch = 15;
+                // Roll should decrease from 20 to 15 if front end first, increase from -20 to -15 if back end first
+                changeInRoll = -15;
                 if (frontEndFirst) {
-                    changeInPitch *= -1;
+                    changeInRoll *= -1;
                 }
-                targetPitch = rampInitPitch + changeInPitch;
+                targetRoll = rampInitRoll + changeInRoll;
 
-                // If frontEndFirst, pitch should start increasing and pass above target
-                // If backEndFirst, pitch should start decreasing and pass below target
-                System.out.println("Current pitch:" + ahrs.getPitch() + " target:<" + targetPitch);
+                // If frontEndFirst, roll should start decreasing and pass below target
+                // If backEndFirst, roll should start increasing and pass above target
                 if (frontEndFirst) {
-                    if (ahrs.getPitch() > targetPitch) {
+                    //System.out.println("Step 2 Current roll:" + ahrs.getRoll() + " target:<" + targetRoll);
+                    if (ahrs.getRoll() < targetRoll) {
                         status = Robot.DONE;
                     }
                     else {
@@ -346,7 +346,7 @@ public class Drive {
                     }
                 }
                 else {
-                    if (ahrs.getPitch() < targetPitch) {
+                    if (ahrs.getRoll() > targetRoll) {
                         status = Robot.DONE;
                     }
                     else {
@@ -378,20 +378,20 @@ public class Drive {
     public int leaveRamp(boolean frontEndFirst) {
         if (rampFirstTime) {
             rampFirstTime = false;
-            rampInitPitch = ahrs.getPitch();
+            rampInitRoll = ahrs.getRoll();
         }
 
-        // Pitch should increase by 12 if front end up, decrease by 12 if back end up (opposite of going up ramp)
-        double changeInPitch = 12;
+        // Roll should decrease by 12 if front end up, increase by 12 if back end up (opposite of going up ramp)
+        double changeInRoll = -12;
         if (frontEndFirst == false) {
-            changeInPitch *= -1;
+            changeInRoll *= -1;
         }
-        double targetPitch = rampInitPitch + changeInPitch;
+        double targetRoll = rampInitRoll + changeInRoll;
 
-        // If frontEndFirst, increasing pitch should pass above target
-        // If backEndFirst, decreasing pitch should pass below target
+        // If frontEndFirst, decreasing roll should pass below target
+        // If backEndFirst, increasing roll should pass above target
         if (frontEndFirst) {
-            if (ahrs.getPitch() > targetPitch) {
+            if (ahrs.getRoll() < targetRoll) {
                 rampFirstTime = true;
                 return Robot.DONE;
             }
@@ -401,7 +401,7 @@ public class Drive {
             }
         }
         else {
-            if (ahrs.getPitch() < targetPitch) {
+            if (ahrs.getRoll() > targetRoll) {
                 rampFirstTime = true;
                 return Robot.DONE;
             }
@@ -414,14 +414,14 @@ public class Drive {
 
     /**
      * 
-     * @param targetPitch
+     * @param targetRoll
      * @return
      */
-    public int balanceRamp(double targetPitch) {
+    public int balanceRamp(double targetRoll) {
         // Calculating targetVelocity based on distance to targetPoint
-        rampBalanceController.setSetpoint(targetPitch);
+        rampBalanceController.setSetpoint(targetRoll);
 
-        double driveVelocity = rampBalanceController.calculate(ahrs.getPitch(), targetPitch);
+        double driveVelocity = rampBalanceController.calculate(ahrs.getRoll(), targetRoll);
         driveVelocity = MathUtil.clamp(driveVelocity, -1.5, 1.5);
 
         // Does movement until routine ends
@@ -430,7 +430,7 @@ public class Drive {
             return Robot.DONE;
         }
         else {
-            stopWheels();
+            teleopDrive(driveVelocity, 0, 0, false);
         }
 
         return Robot.CONT;
@@ -567,12 +567,12 @@ public class Drive {
     }
 
     /**
-     * Gets the pitch from the NavX.
+     * Gets the roll from the NavX.
      * 
-     * @return robotPitch
+     * @return robotRoll
      */
-    public double getPitch() {
-        return ahrs.getPitch();
+    public double getRoll() {
+        return ahrs.getRoll();
     }
 
 

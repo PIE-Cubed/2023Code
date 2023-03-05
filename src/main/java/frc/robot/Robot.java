@@ -254,11 +254,18 @@ public class Robot extends TimedRobot {
 		//drive.testWheelPower();
 		//drive.periodicTestDrivePower();
 		//drive.balanceRamp();
-		//drive.testGyro();
+		System.out.println(drive.getRoll());
 		//arm.testMiddlePower();
-		arm.testAbsEncoders();
+		//arm.testAbsEncoders();
 		//AngleStates status = arm.jointToAngle(1, Math.PI/2);
 		//System.out.println(status);
+		if (status == Robot.CONT) {
+			status = drive.balanceRamp(1);
+		}
+		else {
+			drive.crossWheels();
+		}
+
 	}
 
 	/**
