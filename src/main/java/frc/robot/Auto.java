@@ -254,53 +254,101 @@ public class Auto {
     /*
      * Arm functions
      */
-    public AngleStates armToRestPosition() {    
+    public AngleStates armToRestPosition(boolean fromTop) {    
 		if (armFirstTime == true) {
 			armFirstTime = false;
 			armStep = 1;
 		}
 
-        switch(armStep) {
-            case 1:
-                // Wrist in
-                AngleStates status = arm.jointToAngle(3, Arm.REST_ANGLES[2]);
-                arm.hold(1);
-                arm.hold(2);
-
-                if (status == AngleStates.CLOSE || status == AngleStates.DONE) {
-                    armStep++;
-                }
-                break;
-            case 2:
-                // Rest of arm in
-                AngleStates baseStatus   = arm.jointToAngle(1, Arm.REST_ANGLES[0]);
-                AngleStates middleStatus = arm.jointToAngle(2, Arm.REST_ANGLES[1], 2);
-                AngleStates endStatus    = arm.jointToAngle(3, Arm.REST_ANGLES[2]);
-
-                // If all joints are done, robot goes to resting step, then returns DONE
-                if (baseStatus   == AngleStates.DONE &&
-                    middleStatus == AngleStates.DONE &&
-                    endStatus    == AngleStates.DONE) {
+        if (fromTop) {
+            switch(armStep) {
+                case 1:
+                    // Wrist in
+                    AngleStates status = arm.jointToAngle(3, Arm.REST_ANGLES[2], 1.6);
+                    arm.hold(1);
+                    arm.hold(2);
+    
+                    if (status == AngleStates.CLOSE || status == AngleStates.DONE) {
                         armStep++;
-                }
-                // If all joints are close or done, robot stays on this step and returns CLOSE
-                else if ((baseStatus  == AngleStates.DONE || baseStatus == AngleStates.CLOSE) &&
-                    (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
-                    (endStatus    == AngleStates.DONE || endStatus    == AngleStates.CLOSE)) {
-                        return AngleStates.CLOSE;
-                }
-                break;
-            default:
-                // Finished routine
-                arm.stopArm();
-                return AngleStates.DONE;
+                    }
+                    break;
+                case 2:
+                    // Middle in
+                    AngleStates intermediateStatus = arm.jointToAngle(2, Arm.REST_ANGLES[1], 6);
+                   
+                    if (intermediateStatus == AngleStates.CLOSE || intermediateStatus == AngleStates.DONE) {
+                        armStep++;
+                    }
+                    break;
+                case 3:
+                    // All of arm in
+                    AngleStates baseStatus   = arm.jointToAngle(1, Arm.REST_ANGLES[0], 5);
+                    AngleStates middleStatus = arm.jointToAngle(2, Arm.REST_ANGLES[1], 6);
+                    AngleStates endStatus    = arm.jointToAngle(3, Arm.REST_ANGLES[2], 0.75);
+    
+                    // If all joints are done, robot goes to resting step, then returns DONE
+                    if (baseStatus   == AngleStates.DONE &&
+                        middleStatus == AngleStates.DONE &&
+                        endStatus    == AngleStates.DONE) {
+                            armStep++;
+                    }
+                    // If all joints are close or done, robot stays on this step and returns CLOSE
+                    else if ((baseStatus  == AngleStates.DONE || baseStatus == AngleStates.CLOSE) &&
+                        (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
+                        (endStatus    == AngleStates.DONE || endStatus    == AngleStates.CLOSE)) {
+                            return AngleStates.CLOSE;
+                    }
+                    break;
+                default:
+                    // Finished routine
+                    arm.stopArm();
+                    Robot.fromTop = false; // If we are already at rest, we don't want to do the more complex sequence on repeat
+                    return AngleStates.DONE;
+            }
+        }
+        else {
+            switch(armStep) {
+                case 1:
+                    // Wrist in
+                    AngleStates status = arm.jointToAngle(3, Arm.REST_ANGLES[2], 1.6);
+                    arm.hold(1);
+                    arm.hold(2);
+    
+                    if (status == AngleStates.CLOSE || status == AngleStates.DONE) {
+                        armStep++;
+                    }
+                    break;
+                case 2:
+                    // All of arm in
+                    AngleStates baseStatus   = arm.jointToAngle(1, Arm.REST_ANGLES[0], 3);
+                    AngleStates middleStatus = arm.jointToAngle(2, Arm.REST_ANGLES[1], 6);
+                    AngleStates endStatus    = arm.jointToAngle(3, Arm.REST_ANGLES[2], 0.75);
+    
+                    // If all joints are done, robot goes to resting step, then returns DONE
+                    if (baseStatus   == AngleStates.DONE &&
+                        middleStatus == AngleStates.DONE &&
+                        endStatus    == AngleStates.DONE) {
+                            armStep++;
+                    }
+                    // If all joints are close or done, robot stays on this step and returns CLOSE
+                    else if ((baseStatus  == AngleStates.DONE || baseStatus == AngleStates.CLOSE) &&
+                        (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
+                        (endStatus    == AngleStates.DONE || endStatus    == AngleStates.CLOSE)) {
+                            return AngleStates.CLOSE;
+                    }
+                    break;
+                default:
+                    // Finished routine
+                    arm.stopArm();
+                    return AngleStates.DONE;
+            }
         }
         
         return AngleStates.CONT;
     }
 
     public int armToGrabPosition() {    
-		AngleStates status = arm.jointToAngle(3, -0.2);
+		AngleStates status = arm.jointToAngle(3, -0.28, 2.5);
         arm.jointToAngle(1, Arm.REST_ANGLES[0]);
         arm.jointToAngle(2, Arm.REST_ANGLES[1], 2);
 
@@ -319,8 +367,8 @@ public class Auto {
         switch(armStep) {
             case 1:
                 // Base and middle out
-                AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 2);
-                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 2);
+                AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 6);
+                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 6);
                 arm.hold(3);
 
                 // If base and middle are close to or at target position, go to next step
@@ -331,8 +379,8 @@ public class Auto {
                 break;
             case 2:
                 // Wrist out
-                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
-                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
+                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0], 2);
+                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1], 2);
                 AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
                 if ((baseStatusEnd   == AngleStates.DONE || baseStatusEnd   == AngleStates.CLOSE) &&
                     (middleStatusEnd == AngleStates.DONE || middleStatusEnd == AngleStates.CLOSE) &&
@@ -361,9 +409,9 @@ public class Auto {
 
         switch(armStep) {
             case 1:
-                // Middle out
-                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6);
-                arm.hold(1);
+                // Middle out, base slightly
+                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6, 2.5);
+                arm.jointToAngle(1, 1.4, 3);
                 arm.jointToAngle(3, -2.4);
 
                 // If base and middle are close to or at target position, go to next step
@@ -373,8 +421,8 @@ public class Auto {
                 break;
             case 2:
                 // Base and middle out
-                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0]);
-                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1]);
+                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0], 1.5);
+                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 2);
                 arm.hold(3);
 
                 // If base and middle are close to or at target position, go to next step
@@ -385,7 +433,7 @@ public class Auto {
                 break;
             case 3:
                 // Wrist out
-                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
+                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0], 0.7);
                 AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
                 AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
                 if (baseStatusEnd   == AngleStates.DONE &&
@@ -416,9 +464,8 @@ public class Auto {
         switch(armStep) {
             case 1:
                 // Middle out
-                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6);
-                arm.hold(1);
-                //arm.hold(3);
+                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6, 3);
+                arm.jointToAngle(1, 1.25);
                 arm.jointToAngle(3, -2.2);
 
                 // If base and middle are close to or at target position, go to next step
@@ -428,8 +475,8 @@ public class Auto {
                 break;
             case 2:
                 // Base and middle out
-                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0]);
-                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1]);
+                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0], 1.2);
+                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 2);
                 arm.hold(3);
 
                 // If base and middle are close to or at target position, go to next step

@@ -39,6 +39,7 @@ public class Robot extends TimedRobot {
 	private Pose2d    previousPlacementLocation;
 	private int       placementStatus = Robot.CONT;
 	private ArmStates acceptedArmState;
+	public static boolean fromTop = false;
 
 	// Auto path
 	private static final String wallAuto   = "Wall";
@@ -241,7 +242,6 @@ public class Robot extends TimedRobot {
 	public void testInit() {
 		// Inits the sliders
 		status = Robot.CONT;
-		drive.initWheelPowerTests();
 	}
 
 	@Override
@@ -312,7 +312,7 @@ public class Robot extends TimedRobot {
 			// Bring arm through rest position to our target position
 			if (acceptedArmState == ArmStates.REST) {
 				// Movement
-				status = auto.armToRestPosition();
+				status = auto.armToRestPosition(fromTop);
 
 				// Conditions to change arm state - close to resting and receives different target state
 				if ((status == AngleStates.DONE || status == AngleStates.CLOSE) && inputArmState != ArmStates.REST) {
@@ -321,36 +321,34 @@ public class Robot extends TimedRobot {
 				}
 			}
 			else {
-				int placeStatus = CONT;
-
 				// Movement
 				if (acceptedArmState == ArmStates.GRAB) {
 					auto.armToGrabPosition();
+					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CONE) {
 					auto.armToMidPosition(arm.MID_CONE_ANGLES);
+					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CUBE) {
 					auto.armToMidPosition(arm.MID_CUBE_ANGLES);
+					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CONE) {
 					auto.armToTopCone();
+					fromTop = true;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CUBE) {
 					auto.armToTopCube();
+					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.SHELF) {
 					auto.armToShelf();
+					fromTop = false;
 				}
-				// No valid arm state - go to rest
-				else {
-					Controls.armState = ArmStates.REST;
-					acceptedArmState = ArmStates.REST;
-					auto.resetArmRoutines();
-				}
-
+				
 				// Conditions to change to rest state - receive rest input or finish placing object or autoKill
-				if (inputArmState == ArmStates.REST || placeStatus == DONE || autoKill) {
+				if (inputArmState == ArmStates.REST || autoKill) {
 					Controls.armState = ArmStates.REST;
 					acceptedArmState = ArmStates.REST;
 					auto.resetArmRoutines();
