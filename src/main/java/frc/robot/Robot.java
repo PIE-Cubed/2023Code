@@ -265,7 +265,6 @@ public class Robot extends TimedRobot {
 		else {
 			drive.crossWheels();
 		}
-
 	}
 
 	/**
@@ -341,21 +340,19 @@ public class Robot extends TimedRobot {
 					auto.armToGrabPosition();
 				}
 				else if (acceptedArmState == ArmStates.MID_CONE) {
-					placeStatus = auto.armToMidPosition(Arm.MID_CONE_ANGLES);
+					auto.armToMidPosition(Arm.MID_CONE_ANGLES);
 				}
 				else if (acceptedArmState == ArmStates.MID_CUBE) {
-					placeStatus = auto.armToMidPosition(Arm.MID_CUBE_ANGLES);
+					auto.armToMidPosition(arm.MID_CUBE_ANGLES);
 				}
 				else if (acceptedArmState == ArmStates.TOP_CONE) {
-					placeStatus = auto.armToTopCone();
+					auto.armToTopCone();
 				}
 				else if (acceptedArmState == ArmStates.TOP_CUBE) {
-					placeStatus = auto.armToTopCube();
+					auto.armToTopCube();
 				}
 				else if (acceptedArmState == ArmStates.SHELF) {
 					auto.armToShelf();
-					// Wait for driver to bring arm back
-					placeStatus = CONT;
 				}
 				// No valid arm state - go to rest
 				else {
