@@ -42,7 +42,7 @@ public class Arm {
 	private final double ANGLE_3_MAX   = Math.PI / 2;
 
 	// Max motor powers
-	private final double MAX_END_POWER = 0.4;
+	private final double MAX_END_POWER = 0.7; //0.4 is slow
 	
 	// Masses in kg - updated for new arm
 	private final double BASE_MASS    = 3.175;
@@ -82,8 +82,8 @@ public class Arm {
 	public static double[] REST_ANGLES     = {0.825, 2.95, -2.9};
 	public static double[] MID_CONE_ANGLES = {1.135, 1.86, -0.32};
 	public static double[] MID_CUBE_ANGLES = {1.068, 1.826, 0.123};
-	public static double[] TOP_CONE_ANGLES = {2.006, 0.564, 0.3};
-	public static double[] TOP_CUBE_ANGLES = {2.2, 0.4, 0.0};
+	public static double[] TOP_CONE_ANGLES = {2.10, 0.3, 0.1}; // Old base - 2.15, 3/4 and before
+	public static double[] TOP_CUBE_ANGLES = {2.1, 0.4, 0.0};
 	public static double[] SHELF_ANGLES    = {1.0, 0.73, 1.31};
 
 	// Constructor
@@ -229,7 +229,7 @@ public class Arm {
 			}
 
 			// Checking tolerances for CLOSE
-			endPID.setTolerance(END_TOLERANCE * 3);
+			endPID.setTolerance(END_TOLERANCE * 6);
 			if (endPID.atSetpoint()) {
 				return AngleStates.CLOSE;
 			}
@@ -446,22 +446,6 @@ public class Arm {
 
     public void setEndPower(double power) {
         endMotor.set(power);
-    }
-
-	/*
-	 * Methods to get angles of arms
-	 * Wrapped to -pi to pi
-	 */
-    public double getAdjustedBaseAngle() {
-        return MathUtil.angleModulus(baseAbsoluteEncoder.getPosition() + 0);
-    }
-
-    public double getAdjustedMiddleAngle() {
-        return MathUtil.angleModulus(middleAbsoluteEncoder.getPosition() + 0);
-    }
-
-    public double getAdjustedEndAngle() {
-        return MathUtil.angleModulus(endAbsoluteEncoder.getPosition() + 0);
     }
 
 	/*
