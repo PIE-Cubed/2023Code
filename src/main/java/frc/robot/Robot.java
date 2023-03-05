@@ -272,9 +272,15 @@ public class Robot extends TimedRobot {
 		double  rotateSpeed       = controls.getRotateSpeed();
 		Pose2d  placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
 		boolean autoKill          = controls.autoKill();
+		boolean lockWheels        = controls.lockWheels();
 
-		if (placementLocation == null) {
+		if (lockWheels) {
+			drive.crossWheels();
+		}
+		else if (placementLocation == null) {
 			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+			drive.resetDriveToPoints();
+			previousPlacementLocation = null;
 		}
 		else if (autoKill) {
 			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);

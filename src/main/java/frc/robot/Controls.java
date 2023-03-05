@@ -144,24 +144,24 @@ public class Controls {
 		if (driveController.getXButton()) {
 			if (redSide) {
 				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 1.626, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 1.626, new Rotation2d(Math.PI));
 				}
 				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 3.302, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 3.302, new Rotation2d(Math.PI));
 				}
 				else {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 4.978, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 4.978, new Rotation2d(Math.PI));
 				}
 			}
 			else {
 				if (yLocation < GRID_DIVIDER_1) {
-					return new Pose2d(1.767+0.150, 1.626, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 1.626, new Rotation2d(Math.PI));
 				}
 				else if (yLocation < GRID_DIVIDER_2) {
-					return new Pose2d(1.767+0.150, 3.302, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 3.302, new Rotation2d(Math.PI));
 				}
 				else {
-					return new Pose2d(1.767+0.150, 4.978, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 4.978, new Rotation2d(Math.PI));
 				}
 			}
 			
@@ -170,24 +170,24 @@ public class Controls {
 		else if (driveController.getAButton()) {
 			if (redSide) {
 				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 1.067, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 1.067, new Rotation2d(Math.PI));
 				}
 				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 2.743, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 2.743, new Rotation2d(Math.PI));
 				}
 				else {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 4.420, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 4.420, new Rotation2d(Math.PI));
 				}
 			}
 			else {
 				if (yLocation < GRID_DIVIDER_1) {
-					return new Pose2d(1.767+0.150, 1.067, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 1.067, new Rotation2d(Math.PI));
 				}
 				else if (yLocation < GRID_DIVIDER_2) {
-					return new Pose2d(1.767+0.150, 2.743, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 2.743, new Rotation2d(Math.PI));
 				}
 				else {
-					return new Pose2d(1.767+0.150, 4.420, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 4.420, new Rotation2d(Math.PI));
 				}
 			}
 			
@@ -196,30 +196,37 @@ public class Controls {
 		else if (driveController.getBButton()) {
 			if (redSide) {
 				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 0.508, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 0.508, new Rotation2d(Math.PI));
 				}
 				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 2.184, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 2.184, new Rotation2d(Math.PI));
 				}
 				else {
-					return new Pose2d(1.767+0.150, FIELD_WIDTH - 3.861, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, FIELD_WIDTH - 3.861, new Rotation2d(Math.PI));
 				}
 			}
 			else {
 				if (yLocation < GRID_DIVIDER_1) {
-					return new Pose2d(1.767+0.150, 0.508, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 0.508, new Rotation2d(Math.PI));
 				}
 				else if (yLocation < GRID_DIVIDER_2) {
-					return new Pose2d(1.767+0.150, 2.184, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 2.184, new Rotation2d(Math.PI));
 				}
 				else {
-					return new Pose2d(1.767+0.150, 3.861, new Rotation2d(Math.PI/2));
+					return new Pose2d(1.767+0.150, 3.861, new Rotation2d(Math.PI));
 				}
 			}
 		}
 		else {
 			return null;
 		}
+	}
+
+	/*
+	 * Any press on the d-pad will lock the wheels for balancing
+	 */
+	public boolean lockWheels() {
+		return (driveController.getPOV() != -1);
 	}
 
 	

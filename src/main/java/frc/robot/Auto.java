@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import frc.robot.Arm.AngleStates;
+import frc.robot.Controls.Objects;
 
 public class Auto {
     // State tracking variables - each variable can only be used in one function at any time
@@ -27,8 +28,8 @@ public class Auto {
     private Arm arm;
 
     // Constants for starting poses for each auto
-    public final Translation2d RAMP_RED_START    = new Translation2d(0, 0);
-    public final Translation2d RAMP_BLUE_START   = new Translation2d(0, 0);
+    public final Translation2d RAMP_RED_START    = new Translation2d(1.767, 4.699);
+    public final Translation2d RAMP_BLUE_START   = new Translation2d(1.767, 3.302);
     public final Translation2d WALL_RED_START    = new Translation2d(2.0, 7.5936);
     public final Translation2d WALL_BLUE_START   = new Translation2d(2.0, 0.4064);
     public final Translation2d CENTER_RED_START  = new Translation2d(0, 0);
@@ -58,6 +59,9 @@ public class Auto {
         this.drive    = drive;
         this.position = position;
         this.arm      = arm;
+
+        arm.closeClaw();
+        Controls.currentObject = Objects.CONE;
     }
 
     /**
@@ -172,7 +176,8 @@ public class Auto {
 			step = 1;
 		}
 
-        Pose2d currPose = position.getVisionPose();
+        // Vision pose not helpful for this auto
+        Pose2d currPose = position.getOdometryPose();
 
         switch(step) {
             case 1:
@@ -181,8 +186,9 @@ public class Auto {
                 break;
             case 2:
                 // Place object we're holding
-                status = Robot.DONE;
+                status = armToTopCone();
                 break;
+            /*
             case 3:
                 // Rotating wheels before driving
                 status = drive.rotateWheels(-1, 0, 0, false);
@@ -221,7 +227,7 @@ public class Auto {
                 // Lock wheels
                 status = autoDelay(1);
                 drive.crossWheels();
-                break;
+                break;*/
             default:
                 // Finished routine
                 step = 1;
