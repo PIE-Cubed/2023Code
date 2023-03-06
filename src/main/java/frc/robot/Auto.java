@@ -183,10 +183,12 @@ public class Auto {
             case 1:
                 // Delay
                 status = autoDelay(delaySeconds);
+                drive.rotateWheels(-1, 0, 0, false);
                 break;
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
+                drive.rotateWheels(-1, 0, 0, false);
                 break;
             case 3:
                 arm.openClaw();
@@ -194,49 +196,40 @@ public class Auto {
                 status = Robot.DONE;
                 break;
             case 4:
-                AngleStates intStatus = armToRestPosition(true);
-                if (intStatus == AngleStates.CLOSE || intStatus == AngleStates.DONE) {
-                    status = Robot.DONE;
-                }
-                else {
-                    status = Robot.CONT;
-                }
+                armToRestPosition(true);
+                status = autoDelay(1);
                 break;
             case 5:
-                // Rotating wheels before driving
-                status = drive.rotateWheels(-1, 0, 0, false);
-                break;
-            case 6:
-                // Charge toward ramp with back side
+                armToRestPosition(true);
                 status = drive.chargeRamp(false);
                 break;
-            case 7:
+            case 6:
                 // Exit ramp with back side
                 status = drive.leaveRamp(false);
                 break;
-            case 8:
+            case 7:
                 // Storing a pose 1.25 meter beyond ramp and straightened so we ensure we leave community
                 rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.25, currPose.getY(), new Rotation2d(Math.PI));
                 status = Robot.DONE;
                 break;
-            case 9:
+            case 8:
                 // Exiting community
                 status = drive.autoDriveToPoints(rampAutoExitCommunity, currPose);
                 break;
-            case 10:
+            case 9:
                 // Find drifted roll of ground - ramp should be the same angle
                 balancedRoll = drive.getRoll();
                 status = Robot.DONE;
                 break;
-            case 11:
+            case 10:
                 // Charge toward ramp with front side
                 status = drive.chargeRamp(true);
                 break;
-            case 12:
+            case 11:
                 // Balance on ramp
                 status = drive.balanceRamp(balancedRoll);
                 break;
-            case 13:
+            case 12:
                 // Lock wheels
                 status = autoDelay(1);
                 drive.crossWheels();
