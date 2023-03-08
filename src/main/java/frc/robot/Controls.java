@@ -47,6 +47,7 @@ public class Controls {
 		MID_CUBE,
 		SHELF,
 		REST,
+		CHUTE,
 		GRAB
 	};
 	public static ArmStates armState;
@@ -282,6 +283,9 @@ public class Controls {
 		}
 		else if (armController.getPOV() == 270) {
 			armState = ArmStates.SHELF;
+		}
+		else if (armController.getPOV() == 90) {
+			armState = ArmStates.CHUTE;
 		}
 		return armState;
 	}

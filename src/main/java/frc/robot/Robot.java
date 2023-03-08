@@ -40,6 +40,7 @@ public class Robot extends TimedRobot {
 	private int       placementStatus = Robot.CONT;
 	private ArmStates acceptedArmState;
 	public static boolean fromTop = false;
+	private AngleStates armStatus = AngleStates.CONT;
 
 	// Auto path
 	private static final String wallAuto   = "Wall";
@@ -254,17 +255,11 @@ public class Robot extends TimedRobot {
 		//drive.testWheelPower();
 		//drive.periodicTestDrivePower();
 		//drive.balanceRamp();
-		System.out.println(drive.getRoll());
+		//System.out.println(drive.getRoll());
 		//arm.testMiddlePower();
-		//arm.testAbsEncoders();
+		arm.testAbsEncoders();
 		//AngleStates status = arm.jointToAngle(1, Math.PI/2);
 		//System.out.println(status);
-		if (status == Robot.CONT) {
-			status = drive.balanceRamp(1);
-		}
-		else {
-			drive.crossWheels();
-		}
 	}
 
 	/**
@@ -319,15 +314,18 @@ public class Robot extends TimedRobot {
 			arm.powerEnd(manualWristPower);
 		}
 		else {
-			AngleStates status;
-
 			// Bring arm through rest position to our target position
 			if (acceptedArmState == ArmStates.REST) {
 				// Movement
-				status = auto.armToRestPosition(fromTop);
+				if (armStatus == AngleStates.DONE) {
+					arm.stopArm();
+				}
+				else {
+					armStatus = auto.armToRestPosition(fromTop);
+				}
 
 				// Conditions to change arm state - close to resting and receives different target state
-				if ((status == AngleStates.DONE || status == AngleStates.CLOSE) && inputArmState != ArmStates.REST) {
+				if ((armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) && inputArmState != ArmStates.REST) {
 					acceptedArmState = inputArmState;
 					auto.resetArmRoutines();
 				}
@@ -358,11 +356,16 @@ public class Robot extends TimedRobot {
 					auto.armToShelf();
 					fromTop = false;
 				}
+				else if (acceptedArmState == ArmStates.CHUTE) {
+					auto.armToChute();
+					fromTop = false;
+				}
 				
 				// Conditions to change to rest state - receive rest input or finish placing object or autoKill
 				if (inputArmState == ArmStates.REST || autoKill) {
 					Controls.armState = ArmStates.REST;
 					acceptedArmState = ArmStates.REST;
+					armStatus = AngleStates.CONT;
 					auto.resetArmRoutines();
 				}
 			}

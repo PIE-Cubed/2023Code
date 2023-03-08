@@ -70,26 +70,39 @@ public class Auto {
      */
     public int wallAuto(boolean isRed, int numObjects, long delaySeconds) {
         int status = Robot.CONT;
+        Pose2d currPose = position.getOdometryPose();
     
 		if (firstTime == true) {
 			firstTime = false;
 			step = 1;
             System.out.println("Starting Wall Auto");
+
+            arm.closeClaw();
+            Controls.currentObject = Objects.CONE;
 		}
 
         switch(step) {
             case 1:
                 // Delay
                 status = autoDelay(delaySeconds);
+                drive.rotateWheels(-1, 0, 0, false);
                 break;
             case 2:
                 // Place object we're holding
-                status = Robot.DONE;
+                status = armToTopCone();
+                drive.rotateWheels(-1, 0, 0, false);
                 break;
             case 3:
-                // Rotating wheels before driving
-                status = drive.rotateWheels(-1, 0, 0, false);
+                arm.openClaw();
+                Controls.currentObject = Objects.EMPTY;
+                status = Robot.DONE;
                 break;
+            case 4:
+                AngleStates armStatus = armToRestPosition(true);
+                if (armStatus == AngleStates.DONE) {
+                    status = Robot.DONE;
+                }
+                break;/*
             case 4:
                 // Approach 1st object
                 Pose2d pose1;
@@ -139,7 +152,7 @@ public class Auto {
             case 9:
                 // Open claw
                 status = Robot.DONE;
-                break;
+                break;*/
             default:
                 // Finished routine
                 step = 1;
@@ -200,8 +213,12 @@ public class Auto {
                 status = autoDelay(1);
                 break;
             case 5:
-                armToRestPosition(true);
-                status = drive.chargeRamp(false);
+                AngleStates armState    = armToRestPosition(true);
+                int         driveStatus = drive.chargeRamp(false);
+
+                if (armState == AngleStates.DONE && driveStatus == Robot.DONE) {
+                    status = Robot.DONE;
+                }
                 break;
             case 6:
                 // Exit ramp with back side
@@ -308,13 +325,16 @@ public class Auto {
                     else if ((baseStatus  == AngleStates.DONE || baseStatus == AngleStates.CLOSE) &&
                         (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
                         (endStatus    == AngleStates.DONE || endStatus    == AngleStates.CLOSE)) {
+                            arm.stopArm();
                             return AngleStates.CLOSE;
                     }
                     break;
                 default:
                     // Finished routine
                     arm.stopArm();
-                    Robot.fromTop = false; // If we are already at rest, we don't want to do the more complex sequence on repeat
+                    Robot.fromTop = false;
+                    armFirstTime = true;
+                    armStep = 1; 
                     return AngleStates.DONE;
             }
         }
@@ -352,6 +372,8 @@ public class Auto {
                 default:
                     // Finished routine
                     arm.stopArm();
+                    armFirstTime = true;
+                    armStep = 1;
                     return AngleStates.DONE;
             }
         }
@@ -368,6 +390,12 @@ public class Auto {
             return Robot.DONE;
         }
         return Robot.CONT;
+    }
+
+    public void armToChute() {    
+        arm.jointToAngle(1, Arm.CHUTE_ANGLES[0]);
+        arm.jointToAngle(2, Arm.CHUTE_ANGLES[1], 2);
+		arm.jointToAngle(3, Arm.CHUTE_ANGLES[2], 2);
     }
 
     public int armToMidPosition(double[] armAngles) {    
