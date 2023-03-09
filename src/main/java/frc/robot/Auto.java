@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import frc.robot.Arm.AngleStates;
+import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
 
 public class Auto {
@@ -30,8 +31,8 @@ public class Auto {
     // Constants for starting poses for each auto
     public final Translation2d RAMP_RED_START    = new Translation2d(1.767, 4.699);
     public final Translation2d RAMP_BLUE_START   = new Translation2d(1.767, 3.302);
-    public final Translation2d WALL_RED_START    = new Translation2d(2.0, 7.5936);
-    public final Translation2d WALL_BLUE_START   = new Translation2d(2.0, 0.4064);
+    public final Translation2d WALL_RED_START    = new Translation2d(1.767, 6.3754);
+    public final Translation2d WALL_BLUE_START   = new Translation2d(1.767, 1.6256);
     public final Translation2d CENTER_RED_START  = new Translation2d(0, 0);
     public final Translation2d CENTER_BLUE_START = new Translation2d(0, 0);
 
@@ -99,29 +100,32 @@ public class Auto {
                 break;
             case 4:
                 AngleStates armStatus = armToRestPosition(true);
-                if (armStatus == AngleStates.DONE) {
+                if (armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) {
                     status = Robot.DONE;
                 }
-                break;/*
-            case 4:
+                break;
+            case 5:
                 // Approach 1st object
                 Pose2d pose1;
                 Pose2d pose2;
                 Pose2d pose3;
 
                 if (isRed == true) {
-                    pose1 = new Pose2d(3, 7.4, new Rotation2d(Math.PI));
-                    pose2 = new Pose2d(3, 7.4, new Rotation2d(0));
-                    pose3 = new Pose2d(6.9, 7.4, new Rotation2d(0));
+                    pose1 = new Pose2d(2.6, 7.401, new Rotation2d(Math.PI));
+                    pose2 = new Pose2d(2.6, 7.401, new Rotation2d(0));
+                    pose3 = new Pose2d(6.0, 7.101, new Rotation2d(0));
                 }
                 else {
-                    pose1 = new Pose2d(3, 0.6, new Rotation2d(Math.PI));
-                    pose2 = new Pose2d(3, 0.6, new Rotation2d(0));
-                    pose3 = new Pose2d(6.9, 0.6, new Rotation2d(0));
+                    pose1 = new Pose2d(2.6, 0.8, new Rotation2d(Math.PI));
+                    pose2 = new Pose2d(2.6, 0.8, new Rotation2d(0));
+                    pose3 = new Pose2d(6.0, 1.0, new Rotation2d(0));
                 }
 
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getVisionPose());
+                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getOdometryPose());
                 break;
+            case 6:
+                status = armToGrabPosition();
+                break;/*
             case 5:
                 // Bring down wrist
                 status = autoDelay(2);
@@ -157,6 +161,9 @@ public class Auto {
                 // Finished routine
                 step = 1;
                 firstTime = true;
+
+                Controls.armState = ArmStates.GRAB;
+                Robot.acceptedArmState = ArmStates.GRAB;
 
                 // Stops applicable motors
                 drive.stopWheels();
@@ -387,6 +394,7 @@ public class Auto {
         arm.jointToAngle(2, Arm.REST_ANGLES[1], 2);
 
         if (status == AngleStates.DONE) {
+            arm.stopArm();
             return Robot.DONE;
         }
         return Robot.CONT;

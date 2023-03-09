@@ -38,7 +38,7 @@ public class Robot extends TimedRobot {
 	private long      cubeFlashEnd = 0;
 	private Pose2d    previousPlacementLocation;
 	private int       placementStatus = Robot.CONT;
-	private ArmStates acceptedArmState;
+	public static ArmStates acceptedArmState;
 	public static boolean fromTop = false;
 	private AngleStates armStatus = AngleStates.CONT;
 
