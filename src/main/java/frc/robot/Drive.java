@@ -513,6 +513,10 @@ public class Drive {
         ahrs.zeroYaw();
     }
 
+    public boolean gyroConnnected() {
+        return ahrs.isConnected();
+    }
+
 
     /****************************************************************************************** 
     *

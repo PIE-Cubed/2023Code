@@ -191,6 +191,10 @@ public class Robot extends TimedRobot {
 					break;
 			}
     	}
+
+		if (!drive.gyroConnnected()) {
+			System.out.println("Ahrs disconnected");
+		}
 	}
 
 	@Override

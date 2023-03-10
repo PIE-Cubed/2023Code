@@ -216,17 +216,21 @@ public class Auto {
                 status = Robot.DONE;
                 break;
             case 4:
-                armToRestPosition(true);
-                status = autoDelay(1);
-                break;
-            case 5:
-                AngleStates armState    = armToRestPosition(true);
-                int         driveStatus = drive.chargeRamp(false);
-
-                if (armState == AngleStates.DONE && driveStatus == Robot.DONE) {
+                AngleStates armStatus = armToRestPosition(true);
+                if (armStatus == AngleStates.CLOSE || armStatus == AngleStates.DONE) {
                     status = Robot.DONE;
                 }
+                balancedRoll = drive.getRoll();
                 break;
+            case 5:
+                arm.stopArm();
+                status = drive.chargeRamp(false);
+                break;
+            case 6:
+                // Balance on ramp
+                status = drive.balanceRamp(balancedRoll);
+                break;
+                /*
             case 6:
                 // Exit ramp with back side
                 status = drive.leaveRamp(false);
@@ -252,8 +256,8 @@ public class Auto {
             case 11:
                 // Balance on ramp
                 status = drive.balanceRamp(balancedRoll);
-                break;
-            case 12:
+                break;*/
+            case 7:
                 // Lock wheels
                 status = autoDelay(1);
                 drive.crossWheels();
