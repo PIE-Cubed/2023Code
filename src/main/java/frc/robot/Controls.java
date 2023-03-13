@@ -230,6 +230,20 @@ public class Controls {
 	public boolean lockWheels() {
 		return (driveController.getPOV() != -1);
 	}
+	
+	/*
+	 * Pressing left joystick will zero yaw in case of emergency
+	 */
+	public boolean zeroYaw() {
+		return driveController.getLeftStickButtonPressed();
+	}
+	
+	/*
+	 * Holding Y button will enable precision control
+	 */
+	public boolean enablePrecisionDrive() {
+		return driveController.getYButton();
+	}
 
 	
 	/****************************************************************************************** 
