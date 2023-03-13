@@ -41,7 +41,7 @@ public class SwerveModule {
     private final double ROTATE_D              = 0;
 
     private final double STATIC_GAIN           = 0;
-    private final double VELOCITY_GAIN         = 0.12 / 2;
+    private final double VELOCITY_GAIN         = 0.25 / 2;
 
     // Drive Motor Conversion Factors
     private final double WHEEL_DIAMETER_METERS       = Units.inchesToMeters(3);
