@@ -162,11 +162,13 @@ public class Drive {
         // Limits the max speed of the wheels
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
-        // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
-        frontLeft.setDesiredState(swerveModuleStates[0]);
-        frontRight.setDesiredState(swerveModuleStates[1]);
-        backLeft.setDesiredState(swerveModuleStates[2]);
-        backRight.setDesiredState(swerveModuleStates[3]);
+        if (forwardSpeed != 0 || strafeSpeed != 0 || rotationSpeed != 0) {
+            // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
+            frontLeft.setDesiredState(swerveModuleStates[0]);
+            frontRight.setDesiredState(swerveModuleStates[1]);
+            backLeft.setDesiredState(swerveModuleStates[2]);
+            backRight.setDesiredState(swerveModuleStates[3]);
+        }
     }
 
     /**
