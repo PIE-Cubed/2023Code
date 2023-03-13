@@ -41,12 +41,12 @@ public class SwerveModule {
     private final double ROTATE_D              = 0;
 
     private final double STATIC_GAIN           = 0;
-    private final double VELOCITY_GAIN         = 0.12;
+    private final double VELOCITY_GAIN         = 0.12 / 2;
 
     // Drive Motor Conversion Factors
     private final double WHEEL_DIAMETER_METERS       = Units.inchesToMeters(3);
     private final double WHEEL_ROTATION_METERS       = Math.PI * WHEEL_DIAMETER_METERS;
-    private final double ROTATIONS_PER_TICK          = 1 / 5.5;
+    private final double ROTATIONS_PER_TICK          = 1 / 5.5 / 2; // 1 / external gearing / gearbox
     private final double DRIVE_POS_CONVERSION_FACTOR = 0.96 * WHEEL_ROTATION_METERS * ROTATIONS_PER_TICK; // Meters per tick
     private final double DRIVE_VEL_CONVERSION_FACTOR = DRIVE_POS_CONVERSION_FACTOR / 60;           // Meters per second
 
