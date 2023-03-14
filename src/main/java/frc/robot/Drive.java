@@ -58,6 +58,12 @@ public class Drive {
     private static final double adri = 0; //adrp / 50;
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
+    
+    // Auto smooth drive to points Hyp controller
+    private static final double asdp = MAX_WHEEL_SPEED; // 1 meter away --> full power
+    private static final double asdi = 0.0;
+    private static final double asdd = 0;
+    PIDController autoSmoothDriveController;
 
     // Ramp balance controller
     private static final double rbP = -0.06;
@@ -138,6 +144,10 @@ public class Drive {
         autoDriveRotateController = new PIDController(adrp, adri, adrd);
         autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
         autoDriveRotateController.enableContinuousInput(Math.PI, -Math.PI);
+        
+        autoSmoothDriveController = new PIDController(asdp, asdi, asdd);
+        autoSmoothDriveController.setTolerance(AUTO_DRIVE_TOLERANCE);
+        autoSmoothDriveController.setSetpoint(0);
 
         rampBalanceController = new PIDController(rbP, rbI, rbD);
         rampBalanceController.setTolerance(RAMP_BALANCE_TOLERANCE);
@@ -253,6 +263,58 @@ public class Drive {
 
         // If X, Y, and Rotation are at target, moves on to next point
         if (autoDriveXController.atSetpoint() && autoDriveYController.atSetpoint() && autoDriveRotateController.atSetpoint()) {
+            autoPointIndex++;
+            autoPointFirstTime = true;
+        }
+
+        // Function ends once we pass the last point
+        if (autoPointIndex >= listOfPoints.length) {
+            autoPointIndex = 0;
+            autoPointFirstTime = true;
+            stopWheels();
+            return Robot.DONE;
+        }
+
+        return Robot.CONT;
+    }
+    
+    public int autoSmoothDriveToPoints(Translation2d[] listOfPoints, double endRadians, Pose2d currPose) {
+        // Grabs the target point
+        Translation2d targetPoint = listOfPoints[autoPointIndex];
+
+        // This runs once for each point in the list
+        if (autoPointFirstTime == true) {
+            autoPointFirstTime = false;
+            autoSmoothDriveController.reset();
+            autoDriveRotateController.reset();
+            autoDriveRotateController.setSetpoint(endRadians);
+
+            autoPointAngled = false;
+        } 
+        // Runs when it's not the first time for a point
+        else {
+            // Calculating targetVelocity based on distance to targetPoint
+            double targetVelocity = 0;
+            double xError = currPose.getX() - listOfPoints[listOfPoints.length-1].getX();
+            double yError = currPose.getY() - listOfPoints[listOfPoints.length-1].getY();
+            if (autoPointIndex == listOfPoints.length - 1) {
+                targetVelocity = autoSmoothDriveController.calculate(Math.hypot(xError, yError));
+            }
+            else {
+                targetVelocity = MAX_WHEEL_SPEED * 0.8;
+            }
+            double driveAngle = Math.atan2(yError, xError);
+            double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), endAngle);
+
+            targetXVelocity = Math.cos(driveAngle) * targetVelocity;
+            targetYVelocity = Math.sin(driveAngle) * targetVelocity;
+
+            // Actual movement
+            teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);
+        }
+
+        // If X, Y, and Rotation are at target, moves on to next point
+        if (autoSmoothDriveController.atSetpoint() && autoDriveRotateController.atSetpoint()) {
             autoPointIndex++;
             autoPointFirstTime = true;
         }
