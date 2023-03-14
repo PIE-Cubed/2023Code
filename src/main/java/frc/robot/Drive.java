@@ -20,9 +20,9 @@ public class Drive {
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
 
-    public  static final double MAX_DRIVE_SPEED      = 4 * 2; // Meters per second - velocity is generally 4x the power
+    public  static final double MAX_DRIVE_SPEED      = 4 * 1; // Meters per second - velocity is generally 4x the power
     public  static final double MAX_ROTATE_SPEED     = 4 * Math.PI; // Radians per second
-    private static final double MAX_WHEEL_SPEED      = 4 * 2; // Meters per second
+    private static final double MAX_WHEEL_SPEED      = 4 * 1; // Meters per second
 
     private final double AUTO_DRIVE_TOLERANCE        = 0.05; //0.01
     private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.05; //0.15
