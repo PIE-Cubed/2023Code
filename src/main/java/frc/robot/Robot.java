@@ -36,7 +36,10 @@ public class Robot extends TimedRobot {
 
 	private long      coneFlashEnd = 0;
 	private long      cubeFlashEnd = 0;
+	private long      aprilTagStart = 0;
+	private boolean   placementPositionError = false;
 	private Pose2d    previousPlacementLocation;
+	private boolean   previousRecentAprilTag = false;
 	private int       placementStatus = Robot.CONT;
 	public static ArmStates acceptedArmState;
 	public static boolean fromTop = false;
@@ -279,7 +282,8 @@ public class Robot extends TimedRobot {
 		boolean autoKill          = controls.autoKill();
 		boolean lockWheels        = controls.lockWheels();
 		boolean zeroYaw           = controls.zeroYaw();
-		boolean precisionDrive    = contorls.enablePrecisionDrive();
+		boolean precisionDrive    = controls.enablePrecisionDrive();
+		boolean recentAprilTag    = false; // Check in pose estimation if we read April Tag within last 5 seconds
 		
 		if (zeroYaw) {
 			drive.resetYaw();
@@ -287,8 +291,11 @@ public class Robot extends TimedRobot {
 
 		if (lockWheels) {
 			drive.crossWheels();
+			drive.resetDriveToPoints();
+			previousPlacementLocation = null;
+			placementPositionError = false;
 		}
-		else if (placementLocation == null || autoKill) {
+		else if (placementLocation == null || autoKill || (!recentAprilTag)) {
 			if (precisionDrive) {
 				drive.teleopDrive(Math.pow(forwardSpeed, 5), Math.pow(strafeSpeed, 5), Math.pow(rotateSpeed, 5));
 			else {
@@ -296,8 +303,18 @@ public class Robot extends TimedRobot {
 			}
 			drive.resetDriveToPoints();
 			previousPlacementLocation = null;
+				
+			// Red LED's if we tried to go to placement position without an April Tag reading
+			if (placementLocation != null && (!recentAprilTag)) {
+				placementPositionError = true;
+			}
+			else {
+				placementPositionError = false;
+			}
 		}
 		else {
+			placementPositionError = false;
+
 			// Resets placement location if we change locations
 			if (!placementLocation.equals(previousPlacementLocation))	{
 				placementStatus = Robot.CONT;
@@ -392,6 +409,8 @@ public class Robot extends TimedRobot {
 	private void ledControl() {
 		boolean cone = controls.getCone();
 		boolean cube = controls.getCube();
+		
+		boolean recentAprilTag = false; // Check in pose estimation if we read April Tag within last 5 seconds
 
 		long currentTime = System.currentTimeMillis();
 
@@ -404,9 +423,23 @@ public class Robot extends TimedRobot {
 			cubeFlashEnd = currentTime + (long) 5000;
 			coneFlashEnd = 0;
 		}
-
+		
+		// Resetting timer for April Tag
+		if (previousRecentAprilTag == false && recentAprilTag == true) {
+			aprilTagStart = currentTime;
+		}
+		
+		// Highest priority - tried to go to placement position without an April Tag reading
+		// Will only happen while holding button to go to position
+		if (placementPositionError) {
+			led.noAprilTag();
+		}
+		// LED's will flash green every 5 seconds if we had a recent April Tag reading
+		else if (recentAprilTag && (currentTime - aprilTagStart) % 5000 < 400) {
+			led.aprilTagVisible();
+		}
 		// If we signaled for object less than 5 seconds ago, turn LED on half the time to create a flash
-		if (currentTime < coneFlashEnd) {
+		else if (currentTime < coneFlashEnd) {
 			if ((coneFlashEnd - currentTime) % 400 < 200) {
 				led.flashConeOn();
 			}
