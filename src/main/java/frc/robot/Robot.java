@@ -297,7 +297,7 @@ public class Robot extends TimedRobot {
 		}
 		else if (placementLocation == null || autoKill || (!recentAprilTag)) {
 			if (precisionDrive) {
-				drive.teleopDrive(Math.pow(forwardSpeed, 5), Math.pow(strafeSpeed, 5), Math.pow(rotateSpeed, 5));
+				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3);
 			else {
 				drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
 			}
