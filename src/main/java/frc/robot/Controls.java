@@ -239,10 +239,10 @@ public class Controls {
 	}
 	
 	/*
-	 * Holding Y button will enable precision control
+	 * Holding right trigger will enable precision control
 	 */
 	public boolean enablePrecisionDrive() {
-		return driveController.getYButton();
+		return driveController.getRightTriggerAxis() > 0.05;
 	}
 
 	
