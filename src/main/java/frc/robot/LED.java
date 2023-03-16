@@ -103,6 +103,13 @@ public class LED {
     public void noAprilTag() {
         ledCode = 0.61;
     }
+
+    /**
+     * A function to change to LED's to party mode
+     */
+    public void party() {
+        ledCode = -0.97;
+    }
 }
 
 // End of the LED class

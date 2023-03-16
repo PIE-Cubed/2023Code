@@ -194,10 +194,6 @@ public class Robot extends TimedRobot {
 					break;
 			}
     	}
-
-		if (!drive.gyroConnnected()) {
-			System.out.println("Ahrs disconnected");
-		}
 	}
 
 	@Override
@@ -412,6 +408,7 @@ public class Robot extends TimedRobot {
 	private void ledControl() {
 		boolean cone = controls.getCone();
 		boolean cube = controls.getCube();
+		boolean lock = controls.lockWheels();
 		
 		boolean recentAprilTag = false; // Check in pose estimation if we read April Tag within last 5 seconds
 
@@ -436,6 +433,9 @@ public class Robot extends TimedRobot {
 		// Will only happen while holding button to go to position
 		if (placementPositionError) {
 			led.noAprilTag();
+		}
+		else if (lock) {
+			led.party();
 		}
 		// LED's will flash green every 5 seconds if we had a recent April Tag reading
 		else if (recentAprilTag && (currentTime - aprilTagStart) % 5000 < 400) {

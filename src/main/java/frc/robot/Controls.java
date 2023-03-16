@@ -81,7 +81,8 @@ public class Controls {
 	 * 
 	 * @return forwardSpeed
 	 */
-	public double getForwardSpeed() {
+	public double 
+	getForwardSpeed() {
 		double speed;
 		double power = -1 * driveController.getLeftY();
 		power = Math.pow(power, 3);
