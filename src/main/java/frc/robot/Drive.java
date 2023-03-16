@@ -306,7 +306,7 @@ public class Drive {
             double driveAngle = Math.atan2(yError, xError);
             //  TJM is this fix correct???
      //       double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), endAngle);
-            double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), driveAngle);
+            double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), endRadians);
 
             double targetXVelocity = Math.cos(driveAngle) * targetVelocity;
             double targetYVelocity = Math.sin(driveAngle) * targetVelocity;
