@@ -179,6 +179,9 @@ public class Drive {
             backLeft.setDesiredState(swerveModuleStates[2]);
             backRight.setDesiredState(swerveModuleStates[3]);
         }
+        else {
+            stopWheels();
+        }
     }
 
     /**
@@ -304,8 +307,7 @@ public class Drive {
                 targetVelocity = MAX_WHEEL_SPEED * 0.8;
             }
             double driveAngle = Math.atan2(yError, xError);
-            //  TJM is this fix correct???
-     //       double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), endAngle);
+            
             double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), endRadians);
 
             double targetXVelocity = Math.cos(driveAngle) * targetVelocity;
