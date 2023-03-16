@@ -47,15 +47,15 @@ public class Drive {
     private SlewRateLimiter rotateLimiter;
 
     // Auto drive to points X controller - need 2 controllers for X and Y for both setpoints
-    private static final double adp = MAX_WHEEL_SPEED; // 1 meter away --> full power
-    private static final double adi = 0.0;
+    private static final double adp = MAX_WHEEL_SPEED / 2; // 2 meter away --> full power
+    private static final double adi = 0;
     private static final double add = 0;
     PIDController autoDriveXController;
     PIDController autoDriveYController;
 
     // Auto drive to points rotate controller
-    private static final double adrp = MAX_ROTATE_SPEED * ((1.4) / Math.PI); // 1/1.4 Pi radians away --> full power
-    private static final double adri = 0; //adrp / 50;
+    private static final double adrp = MAX_ROTATE_SPEED * ((0.7) / Math.PI); // 1/0.7 Pi radians away --> full power
+    private static final double adri = 0;
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
     
@@ -66,7 +66,7 @@ public class Drive {
     PIDController autoSmoothDriveController;
 
     // Ramp balance controller
-    private static final double rbP = -0.06;
+    private static final double rbP = -0.03; // -0.06 with slow bug 
     private static final double rbI = 0.00;
     private static final double rbD = 0.00;
     PIDController rampBalanceController;
@@ -383,7 +383,7 @@ public class Drive {
                         status = Robot.DONE;
                     }
                     else {
-                        teleopDrive(3, 0, 0, false);
+                        teleopDrive(1.5, 0, 0, false);
                         status = Robot.CONT;  
                     }
                 }
@@ -393,7 +393,7 @@ public class Drive {
                         status = Robot.DONE;
                     }
                     else {
-                        teleopDrive(-3, 0, 0, false);
+                        teleopDrive(-1.5, 0, 0, false);
                         status = Robot.CONT;  
                     }
                 }
@@ -415,7 +415,7 @@ public class Drive {
                         status = Robot.DONE;
                     }
                     else {
-                        teleopDrive(3, 0, 0, false);
+                        teleopDrive(1.5, 0, 0, false);
                         status = Robot.CONT;  
                     }
                 }
@@ -424,7 +424,7 @@ public class Drive {
                         status = Robot.DONE;
                     }
                     else {
-                        teleopDrive(-3, 0, 0, false);
+                        teleopDrive(-1.5, 0, 0, false);
                         status = Robot.CONT;  
                     }
                 }
@@ -470,7 +470,7 @@ public class Drive {
                 return Robot.DONE;
             }
             else {
-                teleopDrive(3, 0, 0, false);
+                teleopDrive(1.5, 0, 0, false);
                 return Robot.CONT;  
             }
         }
@@ -480,7 +480,7 @@ public class Drive {
                 return Robot.DONE;
             }
             else {
-                teleopDrive(-3, 0, 0, false);
+                teleopDrive(-1.5, 0, 0, false);
                 return Robot.CONT;  
             }
         }
