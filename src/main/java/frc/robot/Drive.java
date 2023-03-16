@@ -304,10 +304,12 @@ public class Drive {
                 targetVelocity = MAX_WHEEL_SPEED * 0.8;
             }
             double driveAngle = Math.atan2(yError, xError);
-            double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), endAngle);
+            //  TJM is this fix correct???
+     //       double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), endAngle);
+            double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), driveAngle);
 
-            targetXVelocity = Math.cos(driveAngle) * targetVelocity;
-            targetYVelocity = Math.sin(driveAngle) * targetVelocity;
+            double targetXVelocity = Math.cos(driveAngle) * targetVelocity;
+            double targetYVelocity = Math.sin(driveAngle) * targetVelocity;
 
             // Actual movement
             teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);

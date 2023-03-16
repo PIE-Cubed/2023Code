@@ -296,8 +296,11 @@ public class Robot extends TimedRobot {
 			placementPositionError = false;
 		}
 		else if (placementLocation == null || autoKill || (!recentAprilTag)) {
-			if (precisionDrive) {
-				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3);
+			if (precisionDrive)  {
+				//  TJM is this fix correct???
+				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3, true);
+		//		drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3);
+			}
 			else {
 				drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
 			}
