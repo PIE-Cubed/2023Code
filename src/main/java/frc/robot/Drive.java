@@ -135,6 +135,7 @@ public class Drive {
         backLeft   = new SwerveModule(14, 15, true);
         backRight  = new SwerveModule(12, 13, false);
 
+        // PID instantiation
         autoDriveXController = new PIDController(adp, adi, add);
         autoDriveXController.setTolerance(AUTO_DRIVE_TOLERANCE);
 
@@ -172,6 +173,7 @@ public class Drive {
         // Limits the max speed of the wheels
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
+        // Only moves wheels when given command
         if (forwardSpeed != 0 || strafeSpeed != 0 || rotationSpeed != 0) {
             // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
             frontLeft.setDesiredState(swerveModuleStates[0]);
@@ -185,7 +187,7 @@ public class Drive {
     }
 
     /**
-     * 
+     * Drives wheels with direct power (-1 to 1), rather than velocity
      * @param forwardSpeed
      * @param strafeSpeed
      * @param rotationSpeed
@@ -281,6 +283,10 @@ public class Drive {
         return Robot.CONT;
     }
     
+    /*
+     * Test version of autoDriveToPoints that should move more quickly
+     * Uses hypotenuse of distance, rather than separate X and Y controllers
+     */
     public int autoSmoothDriveToPoints(Translation2d[] listOfPoints, double endRadians, Pose2d currPose) {
         // Grabs the target point
         Translation2d targetPoint = listOfPoints[autoPointIndex];
@@ -343,7 +349,7 @@ public class Drive {
     }
 
     /**
-     * 
+     * Drives toward ramp until it has been pressed down
      * @param frontEndFirst
      * @return
      */
@@ -392,7 +398,7 @@ public class Drive {
                     }
                 }
                 break;
-            // Step 2: keep charging ramp until our angle comes back below 8
+            // Step 2: keep charging ramp until our angle comes back below 15
             case 2:
                 // Roll should decrease from 20 to 15 if front end first, increase from -20 to -15 if back end first
                 changeInRoll = -15;
@@ -439,7 +445,7 @@ public class Drive {
     }
 
     /**
-     * 
+     * Drives off ramp until it has been pressed down
      * @param frontEndFirst
      * @return
      */
@@ -481,7 +487,7 @@ public class Drive {
     }
 
     /**
-     * 
+     * Drives forward until ramp levels, then immediately stops
      * @param targetRoll
      * @return
      */
@@ -505,7 +511,7 @@ public class Drive {
     }
 
     /**
-     * 
+     * Rotates wheels based on a drive command without giving the drive motors full power
      * @param driveX
      * @param driveY
      * @param driveZ
@@ -581,7 +587,7 @@ public class Drive {
         ahrs.zeroYaw();
     }
 
-    public boolean gyroConnnected() {
+    public boolean gyroConnected() {
         return ahrs.isConnected();
     }
 
