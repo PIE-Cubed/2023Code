@@ -61,9 +61,9 @@ public class Controls {
 		armController   = new XboxController(ARM_ID);
 
 		// Create the rate limiters
-		xLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
-		yLimiter      = new SlewRateLimiter(6); // -6 to 6 in two seconds
-		rotateLimiter = new SlewRateLimiter(6 * Math.PI);
+		xLimiter      = new SlewRateLimiter(24); // -6 to 6 in two seconds
+		yLimiter      = new SlewRateLimiter(24); // -6 to 6 in two seconds
+		rotateLimiter = new SlewRateLimiter(12 * Math.PI);
 
 		currentObject = Objects.EMPTY;
 		armState      = ArmStates.REST;

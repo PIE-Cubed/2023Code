@@ -20,9 +20,9 @@ public class Drive {
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
 
-    public  static final double MAX_DRIVE_SPEED      = 4 * 1; // Meters per second - velocity is generally 4x the power
-    public  static final double MAX_ROTATE_SPEED     = 4 * Math.PI; // Radians per second
-    private static final double MAX_WHEEL_SPEED      = 4 * 1; // Meters per second
+    public  static final double MAX_DRIVE_SPEED      = 4 * 1.168; // Meters per second - velocity is generally 4x the power
+    public  static final double MAX_ROTATE_SPEED     = 4 * 1.168 * Math.PI; // Radians per second
+    private static final double MAX_WHEEL_SPEED      = 4 * 1.168; // Meters per second
 
     private final double AUTO_DRIVE_TOLERANCE        = 0.05; //0.01
     private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.05; //0.15
@@ -47,14 +47,14 @@ public class Drive {
     private SlewRateLimiter rotateLimiter;
 
     // Auto drive to points X controller - need 2 controllers for X and Y for both setpoints
-    private static final double adp = MAX_WHEEL_SPEED / 2; // 2 meter away --> full power
+    private static final double adp = MAX_WHEEL_SPEED / (2 * 1.168); // 2 * 1.168 meter away --> full power
     private static final double adi = 0;
     private static final double add = 0;
     PIDController autoDriveXController;
     PIDController autoDriveYController;
 
     // Auto drive to points rotate controller
-    private static final double adrp = MAX_ROTATE_SPEED * ((0.7) / Math.PI); // 1/0.7 Pi radians away --> full power
+    private static final double adrp = MAX_ROTATE_SPEED * ((0.6) / Math.PI); // 1/0.6 Pi radians away --> full power
     private static final double adri = 0;
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
@@ -66,7 +66,7 @@ public class Drive {
     PIDController autoSmoothDriveController;
 
     // Ramp balance controller
-    private static final double rbP = -0.03; // -0.06 with slow bug 
+    private static final double rbP = -0.0259; // -0.06 with slow bug 
     private static final double rbI = 0.00;
     private static final double rbD = 0.00;
     PIDController rampBalanceController;
