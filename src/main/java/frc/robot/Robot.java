@@ -43,9 +43,10 @@ public class Robot extends TimedRobot {
 	private AngleStates armStatus = AngleStates.CONT;
 
 	// Auto path
-	private static final String wallAuto   = "Wall";
-	private static final String rampAuto   = "Ramp";
-	private static final String centerAuto = "Center";
+	private static final String wallAuto     = "Wall";
+	private static final String rampAuto     = "Ramp";
+	private static final String rampAutoFull = "Full Ramp";
+	private static final String centerAuto   = "Center";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -85,6 +86,7 @@ public class Robot extends TimedRobot {
 		// Auto start location
 		m_chooser.setDefaultOption(wallAuto, wallAuto);
 		m_chooser.addOption(rampAuto, rampAuto);
+		m_chooser.addOption(rampAutoFull, rampAutoFull);
 		m_chooser.addOption(centerAuto, centerAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
 
@@ -142,7 +144,7 @@ public class Robot extends TimedRobot {
 					startPose = new Pose2d(auto.WALL_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
-			case rampAuto:
+			case (rampAuto || rampAutoFull):
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -182,6 +184,9 @@ public class Robot extends TimedRobot {
 					break;
 				case "Ramp":
 					status = auto.rampAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
+					break;
+				case "Full Ramp":
+					status = auto.rampAutoFull(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
 					break;
 				case "Center":
 					status = auto.centerAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
