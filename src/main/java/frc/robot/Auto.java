@@ -92,6 +92,7 @@ public class Auto {
                 // Place object we're holding
                 status = armToTopCone();
                 drive.rotateWheels(-1, 0, 0, false);
+		Robot.acceptedArmState = ArmStates.TOP_CONE;
                 break;
             case 3:
                 arm.openClaw();
@@ -101,6 +102,7 @@ public class Auto {
             case 4:
                 AngleStates armStatus = armToRestPosition(true);
                 if (armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) {
+		    Robot.acceptedArmState = ArmStates.REST;
                     status = Robot.DONE;
                 }
                 break;
@@ -208,6 +210,7 @@ public class Auto {
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
+		Robot.acceptedArmState = ArmStates.TOP_CONE;
                 drive.rotateWheels(-1, 0, 0, false);
                 break;
             case 3:
@@ -217,6 +220,7 @@ public class Auto {
                 break;
             case 4:
                 AngleStates armStatus = armToRestPosition(true);
+		Robot.acceptedArmState = ArmStates.REST;
                 if (armStatus == AngleStates.CLOSE || armStatus == AngleStates.DONE) {
                     status = Robot.DONE;
                 }
