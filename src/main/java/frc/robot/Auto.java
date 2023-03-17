@@ -181,7 +181,7 @@ public class Auto {
     }
 
     /**
-     * 
+     * Places cone and balances on ramp - safe choice
      * @param isRed
      * @param numObjects
      * @param delaySeconds
@@ -234,34 +234,110 @@ public class Auto {
                 // Balance on ramp
                 status = drive.balanceRamp(balancedRoll);
                 break;
-                /*
+            case 7:
+                // Lock wheels
+                status = autoDelay(1);
+                drive.crossWheels();
+                break;
+            default:
+                // Finished routine
+                step = 1;
+                firstTime = true;
+
+                // Stops applicable motors
+                drive.stopWheels();
+                return Robot.DONE;
+        }
+
+        //If we are done with a step, we go on to the next one and continue the routine
+        if (status == Robot.DONE) {
+            step++;
+        }
+        
+        return Robot.CONT;
+    }
+	
+	/**
+     * Places cone, leaves community, and balances on ramp
+     * @param isRed
+     * @param numObjects
+     * @param delaySeconds
+     * @return status
+     */
+    public int rampAutoFull(boolean isRed, double numObjects, long delaySeconds) {
+        int status = Robot.CONT;
+    
+		if (firstTime == true) {
+			firstTime = false;
+			step = 1;
+
+            arm.closeClaw();
+            Controls.currentObject = Objects.CONE;
+		}
+
+        // Vision pose not helpful for this auto
+        Pose2d currPose = position.getOdometryPose();
+
+        switch(step) {
+            case 1:
+                // Delay
+                status = autoDelay(delaySeconds);
+                drive.rotateWheels(-1, 0, 0, false);
+                break;
+            case 2:
+                // Place object we're holding
+                status = armToTopCone();
+		Robot.acceptedArmState = ArmStates.TOP_CONE;
+                drive.rotateWheels(-1, 0, 0, false);
+                break;
+            case 3:
+                arm.openClaw();
+                Controls.currentObject = Objects.EMPTY;
+                status = Robot.DONE;
+                break;
+            case 4:
+                AngleStates armStatus = armToRestPosition(true);
+		Robot.acceptedArmState = ArmStates.REST;
+                if (armStatus == AngleStates.CLOSE || armStatus == AngleStates.DONE) {
+                    status = Robot.DONE;
+                }
+                balancedRoll = drive.getRoll();
+                break;
+            case 5:
+                arm.stopArm();
+                status = drive.chargeRamp(false);
+                break;
             case 6:
+                // Balance on ramp
+                status = drive.balanceRamp(balancedRoll);
+                break;
+            case 7:
                 // Exit ramp with back side
                 status = drive.leaveRamp(false);
                 break;
-            case 7:
+            case 8:
                 // Storing a pose 1.25 meter beyond ramp and straightened so we ensure we leave community
                 rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.25, currPose.getY(), new Rotation2d(Math.PI));
                 status = Robot.DONE;
                 break;
-            case 8:
+            case 9:
                 // Exiting community
                 status = drive.autoDriveToPoints(rampAutoExitCommunity, currPose);
                 break;
-            case 9:
+            case 10:
                 // Find drifted roll of ground - ramp should be the same angle
                 balancedRoll = drive.getRoll();
                 status = Robot.DONE;
                 break;
-            case 10:
+            case 11:
                 // Charge toward ramp with front side
                 status = drive.chargeRamp(true);
                 break;
-            case 11:
+            case 12:
                 // Balance on ramp
                 status = drive.balanceRamp(balancedRoll);
                 break;*/
-            case 7:
+            case 13:
                 // Lock wheels
                 status = autoDelay(1);
                 drive.crossWheels();
