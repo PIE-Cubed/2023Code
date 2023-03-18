@@ -71,7 +71,7 @@ public class Auto {
      * @return status
      */
     public int wallAuto(boolean isRed, int numObjects, long delaySeconds) {
-        int status = Robot.CONT;
+        int    status   = Robot.CONT;
         Pose2d currPose = position.getOdometryPose();
     
 		if (firstTime == true) {
@@ -124,7 +124,7 @@ public class Auto {
                     pose3 = new Pose2d(6.0, 1.0, new Rotation2d(0));
                 }
 
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getOdometryPose());
+                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, currPose);
                 resetArmRoutines();
                 break;
             /*
@@ -201,9 +201,6 @@ public class Auto {
             Controls.currentObject = Objects.CONE;
 		}
 
-        // Vision pose not helpful for this auto
-        Pose2d currPose = position.getOdometryPose();
-
         switch(step) {
             case 1:
                 // Delay
@@ -268,7 +265,8 @@ public class Auto {
      * @return status
      */
     public int rampAutoFull(boolean isRed, double numObjects, long delaySeconds) {
-        int status = Robot.CONT;
+        int    status   = Robot.CONT;
+        Pose2d currPose = position.getOdometryPose();
     
 		if (firstTime == true) {
 			firstTime = false;
@@ -277,9 +275,6 @@ public class Auto {
             arm.closeClaw();
             Controls.currentObject = Objects.CONE;
 		}
-
-        // Vision pose not helpful for this auto
-        Pose2d currPose = position.getOdometryPose();
 
         switch(step) {
             case 1:
@@ -316,7 +311,7 @@ public class Auto {
                 break;
             case 7:
                 // Storing a pose 1.25 meter beyond ramp and straightened so we ensure we leave community
-                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.25, currPose.getY(), new Rotation2d(Math.PI));
+                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.25, currPose.getY(), currPose.getRotation());
                 status = Robot.DONE;
                 break;
             case 8:
@@ -367,7 +362,8 @@ public class Auto {
      * @return status
      */
     public int centerAuto(boolean isRed, int numObjects, long delaySeconds) {
-        int status = Robot.CONT;
+        int    status   = Robot.CONT;
+        Pose2d currPose = position.getOdometryPose();
     
 		if (firstTime == true) {
 			firstTime = false;
@@ -419,7 +415,7 @@ public class Auto {
                     pose3 = new Pose2d(6.3, 1.05, new Rotation2d(0));
                 }
 
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getOdometryPose());
+                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, currPose);
                 resetArmRoutines();
                 break;
             /*
@@ -503,8 +499,15 @@ public class Auto {
     }
 
 
-    /*
-     * Arm functions
+    /****************************************************************************************** 
+    *
+    *    ARM FUNCTIONS
+    * 
+    ******************************************************************************************/
+    /**
+     * 
+     * @param fromTop
+     * @return
      */
     public AngleStates armToRestPosition(boolean fromTop) {    
 		if (armFirstTime == true) {
@@ -606,6 +609,10 @@ public class Auto {
         return AngleStates.CONT;
     }
 
+    /**
+     * 
+     * @return
+     */
     public int armToGrabPosition() {    
 		AngleStates status = arm.jointToAngle(3, -0.28, 2.5);
         arm.jointToAngle(1, Arm.REST_ANGLES[0]);
@@ -667,6 +674,10 @@ public class Auto {
         return Robot.CONT;
     }
 
+    /**
+     * 
+     * @return
+     */
     public int armToTopCone() {    
         double[] armAngles = Arm.TOP_CONE_ANGLES;
 
@@ -727,6 +738,10 @@ public class Auto {
         return Robot.CONT;
     }
 
+    /**
+     * 
+     * @return
+     */
     public int armToTopCube() {    
         double[] armAngles = Arm.TOP_CUBE_ANGLES;
         
@@ -783,6 +798,10 @@ public class Auto {
         return Robot.CONT;
     }
 
+    /**
+     * 
+     * @return
+     */
     public int armToShelf() { 
         double[] armAngles = Arm.SHELF_ANGLES;
 

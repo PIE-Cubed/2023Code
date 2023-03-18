@@ -35,7 +35,7 @@ public class Robot extends TimedRobot {
 	Arm            arm;
 
 	// Variables
-	private int count = 0;
+	private int count  = 0;
 	private int status = CONT;
 	private boolean firstTime = true;
 
@@ -124,13 +124,10 @@ public class Robot extends TimedRobot {
 		// Updates the PoseTrackers constantly
 		position.updatePoseTrackers();
 
-		// Resets the odometry to match the vision estimate
-		if (nTables.getTargetValid() == true) {
-			//position.resetPoseTrackers(position.getVisionPose());
-		}
-
-		if (count % 10 == 0) {
-			//System.out.println("tv:" + nTables.getTargetValid() + " X: " + Units.metersToInches(pose.getX()) +" Y: " + Units.metersToInches(pose.getY()) +" Yaw: " + pose.getRotation().getDegrees());
+		// Prints the pose
+		var pose = position.getPose();
+		if (count % 25 == 0) {
+			System.out.println("X: " + Units.metersToInches(pose.getX()) + " Y: " + Units.metersToInches(pose.getY()) + " Yaw: " + pose.getRotation().getDegrees());
 		}
 		count++;
 	}
@@ -276,8 +273,8 @@ public class Robot extends TimedRobot {
 	 * Runs once when the robot enters Test mode.
 	 */
 	public void testInit() {
-
-
+		// Reset status
+		status = Robot.CONT;
 	}
 
 	@Override
@@ -286,15 +283,17 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		Pose2d pose = position.getVisionPose();
+		Pose2d pose = position.getPose();
  
 		Pose2d[] points = {
-			new Pose2d(new Translation2d(Units.inchesToMeters(90), Units.inchesToMeters(110)), new Rotation2d(Math.PI)),
-			new Pose2d(new Translation2d(Units.inchesToMeters(140), Units.inchesToMeters(112)), new Rotation2d(Math.PI))
+			new Pose2d(new Translation2d(Units.inchesToMeters(110), Units.inchesToMeters(85)), new Rotation2d(Math.PI))
 		};
 
 		if (status == Robot.CONT) {
 			status = drive.autoDriveToPoints(points, pose);
+		}
+		else {
+			drive.stopWheels();
 		}
 	}
 
