@@ -145,6 +145,13 @@ public class PoseEstimation {
         double                 sysTime           = Timer.getFPGATimestamp();
         SwerveModulePosition[] allModulePosition = getAllModulePositions();
 
+        // Updates the pose estimator (without vision)
+        visionEstimator.updateWithTime(
+            sysTime,
+            new Rotation2d( drive.getYawAdjusted() ),
+            allModulePosition
+        );
+
         // Adds the vision measurement if it hasn't been calculated and a target is visible
         //if ((prevTime != detTime) && (prevPose != detPose) && (tv == true)) {
         if (tv == true) {
@@ -189,13 +196,6 @@ public class PoseEstimation {
                 );
             }
         }
-
-        // Updates the pose estimator (without vision)
-        visionEstimator.updateWithTime(
-            sysTime,
-            new Rotation2d( drive.getYawAdjusted() ),
-            allModulePosition
-        );
     }
 
 
@@ -269,48 +269,6 @@ public class PoseEstimation {
      * @return The robot's floor pose
      */
     public Pose2d getVisionPose() {
-        /*
-        // Gets current values
-        int     id      = nTables.getBestResultID();
-        boolean tv      = nTables.getTargetValid();
-
-        // Adds the vision measurement if it hasn't been calculated and a target is visible
-        if (tv == true) {
-
-            // Adds the vision measurement if the tag id is valid
-            if ((id != -1) && ((id > 0) && (id <= 8))) {
-                // Gets the target's pose on the field
-                Pose3d targetPose = field.getTagPose(id).get();
-
-                // Extracts the x, y, and z distances
-                double x = detPose.getTranslation().getX();
-                double y = detPose.getTranslation().getY();
-                double z = detPose.getTranslation().getZ();
-
-                // Extracts the roll, pitch, and yaw angles
-                double roll  = detPose.getRotation().getX();
-                double pitch = detPose.getRotation().getY();
-                double yaw   = detPose.getRotation().getZ();
-
-                // Creates the relative pose
-                Transform3d camToTarget = new Transform3d(
-                    new Translation3d(x, y, z),
-                    new Rotation3d(roll, pitch, Math.PI - yaw)
-                );
-
-                // Gets the camera's pose relative to the tag
-                Pose3d camPose = targetPose.transformBy(camToTarget);
-
-                // Tranforms the camera's pose to the robot's center
-                Pose3d measurement = camPose.transformBy(CAMERA_TO_ROBOT);
-
-                // Gets the vision estimate
-                return measurement.toPose2d();
-            }
-        }
-
-        return getOdometryPose();
-        */
         return visionEstimator.getEstimatedPosition();
     }
 

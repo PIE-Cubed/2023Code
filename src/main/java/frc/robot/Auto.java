@@ -336,7 +336,7 @@ public class Auto {
             case 12:
                 // Balance on ramp
                 status = drive.balanceRamp(balancedRoll);
-                break;*/
+                break;
             case 13:
                 // Lock wheels
                 status = autoDelay(1);

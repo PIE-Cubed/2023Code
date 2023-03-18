@@ -4,22 +4,17 @@
 
 package frc.robot;
 
-import java.util.List;
-
-import frc.robot.commands.*;
 import frc.robot.Arm.AngleStates;
 import frc.robot.Controls.Objects;
 import frc.robot.Controls.ArmStates;
 
 import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * Start of the Robot class
@@ -43,8 +38,8 @@ public class Robot extends TimedRobot {
 	Field2d field;
 
 	// Variables
+	private int count = 0;
 	private int status = CONT;
-	private Command testCommand;
 	private boolean firstTime = true;
 
 	private long      coneFlashEnd = 0;
@@ -146,8 +141,10 @@ public class Robot extends TimedRobot {
 		}
 		field.setRobotPose(pose);
 
-		// Runs the CommandScheduler
-		CommandScheduler.getInstance().run();
+		if (count % 10 == 0) {
+			System.out.println("tv:" + nTables.getTargetValid() + " X: " + Units.metersToInches(pose.getX()) +" Y: " + Units.metersToInches(pose.getY()) +" Yaw: " + pose.getRotation().getDegrees());
+		}
+		count++;
 	}
 
 	@Override
@@ -184,7 +181,15 @@ public class Robot extends TimedRobot {
 					startPose = new Pose2d(auto.WALL_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
-			case (rampAuto || rampAutoFull):
+			case rampAuto:
+				if (isRed == true) {
+					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
+				}
+				else {
+					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
+				}
+				break;
+			case rampAutoFull:
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -283,17 +288,8 @@ public class Robot extends TimedRobot {
 	 * Runs once when the robot enters Test mode.
 	 */
 	public void testInit() {
-		// Defines the points to drive to
-		var points = List.of(
-			new Pose2d(),
-			new Pose2d()
-		);
-
-		// Sets the command
-		testCommand = new AutoDrive(drive, position, field, points);
-
-		// Schedules the test command
-		testCommand.schedule();
+		// Resets status
+		status = Robot.CONT;
 	}
 
 	@Override
@@ -302,7 +298,16 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		// Nothing yet...
+		Pose2d pose = position.getVisionPose();
+ 
+		Pose2d[] points = {
+			new Pose2d(new Translation2d(Units.inchesToMeters(90), Units.inchesToMeters(110)), new Rotation2d(Math.PI)),
+			new Pose2d(new Translation2d(Units.inchesToMeters(140), Units.inchesToMeters(112)), new Rotation2d(Math.PI))
+		};
+
+		if (status == Robot.CONT) {
+			status = drive.autoDriveToPoints(points, pose);
+		}
 	}
 
 	/**
