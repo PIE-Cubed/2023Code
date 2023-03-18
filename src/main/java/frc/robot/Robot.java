@@ -4,13 +4,22 @@
 
 package frc.robot;
 
+import frc.robot.Arm.AngleStates;
+import frc.robot.Controls.Objects;
+import frc.robot.commands.AutoDrive;
+import frc.robot.Controls.ArmStates;
+
+import java.util.List;
+
 import edu.wpi.first.math.geometry.*;
+
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.Arm.AngleStates;
-import frc.robot.Controls.ArmStates;
-import frc.robot.Controls.Objects;
+
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * Start of the Robot class
@@ -23,16 +32,18 @@ public class Robot extends TimedRobot {
 	public static final int CONT =  3;
 
 	// Object creation
-	Arm            arm;
 	PoseEstimation position;
 	CustomTables   nTables;
 	Controls       controls;
 	Drive          drive;
 	Auto           auto;
 	LED            led;
+	Arm            arm;
 
 	// Variables
 	private int status = CONT;
+	private Command testCommand;
+	private boolean firstTime = true;
 
 	private long      coneFlashEnd = 0;
 	private long      cubeFlashEnd = 0;
@@ -99,6 +110,12 @@ public class Robot extends TimedRobot {
 
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
+
+		// Sets the time for the Jetson
+		if (firstTime == true) {
+			firstTime = false;
+			nTables.setTime(Timer.getFPGATimestamp());
+		}
 	}
 
 	@Override
@@ -202,10 +219,7 @@ public class Robot extends TimedRobot {
 	 * Runs once at the start of TeleOp.
 	 */
 	public void teleopInit() {
-		// Resets the pose to the vision estimator's reading
-		//drive.resetYaw();
-		//drive.setGyroAngleZero(90);
-		//position.resetPoseTrackers(new Pose2d(1.767, 1.067, new Rotation2d(Math.PI)) );
+		// Nothing yet...
 	}
 
 	@Override
@@ -254,15 +268,7 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		//drive.testEncoders();
-		//drive.testWheelPower();
-		//drive.periodicTestDrivePower();
-		//drive.balanceRamp();
-		//System.out.println(drive.getRoll());
-		//arm.testMiddlePower();
-		arm.testAbsEncoders();
-		//AngleStates status = arm.jointToAngle(1, Math.PI/2);
-		//System.out.println(status);
+		// Nothing yet...
 	}
 
 	/**
@@ -363,11 +369,11 @@ public class Robot extends TimedRobot {
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CONE) {
-					auto.armToMidPosition(arm.MID_CONE_ANGLES);
+					auto.armToMidPosition(Arm.MID_CONE_ANGLES);
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CUBE) {
-					auto.armToMidPosition(arm.MID_CUBE_ANGLES);
+					auto.armToMidPosition(Arm.MID_CUBE_ANGLES);
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CONE) {
