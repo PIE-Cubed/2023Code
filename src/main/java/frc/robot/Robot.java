@@ -133,7 +133,7 @@ public class Robot extends TimedRobot {
 		// Resets the odometry to match the vision estimate
 		Pose2d pose;
 		if (nTables.getTargetValid() == true) {
-			position.resetPoseTrackers(position.getVisionPose());
+			//position.resetPoseTrackers(position.getVisionPose());
 			pose = position.getVisionPose();
 		}
 		else {
@@ -142,7 +142,7 @@ public class Robot extends TimedRobot {
 		field.setRobotPose(pose);
 
 		if (count % 10 == 0) {
-			System.out.println("tv:" + nTables.getTargetValid() + " X: " + Units.metersToInches(pose.getX()) +" Y: " + Units.metersToInches(pose.getY()) +" Yaw: " + pose.getRotation().getDegrees());
+			//System.out.println("tv:" + nTables.getTargetValid() + " X: " + Units.metersToInches(pose.getX()) +" Y: " + Units.metersToInches(pose.getY()) +" Yaw: " + pose.getRotation().getDegrees());
 		}
 		count++;
 	}

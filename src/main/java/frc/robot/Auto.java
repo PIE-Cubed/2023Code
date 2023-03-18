@@ -287,7 +287,7 @@ public class Auto {
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
-		Robot.acceptedArmState = ArmStates.TOP_CONE;
+		        Robot.acceptedArmState = ArmStates.TOP_CONE;
                 drive.rotateWheels(-1, 0, 0, false);
                 break;
             case 3:
@@ -297,7 +297,7 @@ public class Auto {
                 break;
             case 4:
                 AngleStates armStatus = armToRestPosition(true);
-		Robot.acceptedArmState = ArmStates.REST;
+		        Robot.acceptedArmState = ArmStates.REST;
                 if (armStatus == AngleStates.CLOSE || armStatus == AngleStates.DONE) {
                     status = Robot.DONE;
                 }
@@ -308,36 +308,32 @@ public class Auto {
                 status = drive.chargeRamp(false);
                 break;
             case 6:
-                // Balance on ramp
-                status = drive.balanceRamp(balancedRoll);
-                break;
-            case 7:
                 // Exit ramp with back side
                 status = drive.leaveRamp(false);
                 break;
-            case 8:
+            case 7:
                 // Storing a pose 1.25 meter beyond ramp and straightened so we ensure we leave community
                 rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.25, currPose.getY(), new Rotation2d(Math.PI));
                 status = Robot.DONE;
                 break;
-            case 9:
+            case 8:
                 // Exiting community
                 status = drive.autoDriveToPoints(rampAutoExitCommunity, currPose);
                 break;
-            case 10:
+            case 9:
                 // Find drifted roll of ground - ramp should be the same angle
                 balancedRoll = drive.getRoll();
                 status = Robot.DONE;
                 break;
-            case 11:
+            case 10:
                 // Charge toward ramp with front side
                 status = drive.chargeRamp(true);
                 break;
-            case 12:
+            case 11:
                 // Balance on ramp
                 status = drive.balanceRamp(balancedRoll);
                 break;
-            case 13:
+            case 12:
                 // Lock wheels
                 status = autoDelay(1);
                 drive.crossWheels();
