@@ -174,7 +174,7 @@ public class Drive {
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
         // Only moves wheels when given command
-        if (forwardSpeed != 0 || strafeSpeed != 0 || rotationSpeed != 0) {
+        if (Math.abs(forwardSpeed) > 0.04 || Math.abs(strafeSpeed) > 0.04 || Math.abs(rotationSpeed) > 0.04) {
             // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
             frontLeft.setDesiredState(swerveModuleStates[0]);
             frontRight.setDesiredState(swerveModuleStates[1]);
@@ -244,7 +244,7 @@ public class Drive {
         else {
             // Angles the wheels if they are not aligned before driving
             if (autoPointAngled == false) {
-                int rotateStatus = rotateWheels(initXVelocity, initYVelocity, initRotateVelocity, true);
+                int rotateStatus = rotateWheels(initXVelocity, initYVelocity, initRotateVelocity);
                 if (rotateStatus == Robot.DONE) {
                     autoPointAngled = true;
                 }
@@ -260,8 +260,7 @@ public class Drive {
                 targetYVelocity = yLimiter.calculate(targetYVelocity);
                 targetRotateVelocity = rotateLimiter.calculate(targetRotateVelocity);
 
-
-                // Actual movement -  only if wheels are rotated
+                // Actual movement - only if wheels are rotated
                 teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);
             }
         }
@@ -518,8 +517,16 @@ public class Drive {
      * @param fieldDrive
      * @return
      */
-    public int rotateWheels(double driveX, double driveY, double driveZ, boolean fieldDrive) {
-        teleopDrive(driveX / 100, driveY / 100, driveZ / 100, fieldDrive);
+    public int rotateWheels(double driveX, double driveY, double driveZ) {
+        SwerveModuleState[] swerveModuleStates = 
+            swerveDriveKinematics.toSwerveModuleStates( ChassisSpeeds.fromFieldRelativeSpeeds(driveX, driveY, driveZ, new Rotation2d( getYawAdjusted() )));
+            
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, 0);
+        
+        frontLeft.setDesiredState(swerveModuleStates[0]);
+        frontRight.setDesiredState(swerveModuleStates[1]);
+        backLeft.setDesiredState(swerveModuleStates[2]);
+        backRight.setDesiredState(swerveModuleStates[3]);
 
         if (frontLeft.rotateControllerAtSetpoint() && frontRight.rotateControllerAtSetpoint() &&
             backLeft.rotateControllerAtSetpoint() && backRight.rotateControllerAtSetpoint()) {

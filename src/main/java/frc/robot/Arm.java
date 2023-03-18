@@ -84,7 +84,7 @@ public class Arm {
 	public static double[] MID_CUBE_ANGLES = {1.068, 1.826, 0.123};
 	public static double[] TOP_CONE_ANGLES = {2.10, 0.3, 0.1}; // Old base - 2.15, 3/4 and before
 	public static double[] TOP_CUBE_ANGLES = {2.1, 0.4, 0.0};
-	public static double[] SHELF_ANGLES    = {1.0, 0.73, 1.31};
+	public static double[] SHELF_ANGLES    = {0.825, 1.28, 1.31};
 	public static double[] CHUTE_ANGLES    = {0.767, 2.556, -1.288};
 
 	// Constructor

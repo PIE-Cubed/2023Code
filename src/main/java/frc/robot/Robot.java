@@ -12,7 +12,6 @@ import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 
@@ -35,23 +34,22 @@ public class Robot extends TimedRobot {
 	LED            led;
 	Arm            arm;
 
-	Field2d field;
-
 	// Variables
 	private int count = 0;
 	private int status = CONT;
 	private boolean firstTime = true;
 
-	private long      coneFlashEnd = 0;
-	private long      cubeFlashEnd = 0;
-	private long      aprilTagStart = 0;
-	private boolean   placementPositionError = false;
-	private Pose2d    previousPlacementLocation;
-	private boolean   previousRecentAprilTag = false;
-	private int       placementStatus = Robot.CONT;
+	private long            coneFlashEnd              = 0;
+	private long            cubeFlashEnd              = 0;
+	private long            aprilTagStart             = 0;
+	private boolean         placementPositionError    = false;
+	private Pose2d          previousPlacementLocation;
+	private boolean         previousRecentAprilTag    = false;
+	private int             placementStatus           = Robot.CONT;
 	public static ArmStates acceptedArmState;
-	public static boolean fromTop = false;
-	private AngleStates armStatus = AngleStates.CONT;
+	public static boolean   fromTop                   = false;
+	private AngleStates     restStatus                = AngleStates.CONT;
+	private int             armStatus                 = CONT;
 
 	// Auto path
 	private static final String wallAuto     = "Wall";
@@ -74,7 +72,6 @@ public class Robot extends TimedRobot {
 	public Robot() {
 		// Instance creation
 		arm      = new Arm();
-		field    = new Field2d();
 		drive    = new Drive();
 		controls = new Controls();
 		position = new PoseEstimation(drive);
@@ -96,9 +93,9 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// Auto start location
-		m_chooser.setDefaultOption(wallAuto, wallAuto);
-		m_chooser.addOption(rampAuto, rampAuto);
+		m_chooser.setDefaultOption(rampAuto, rampAuto);
 		m_chooser.addOption(rampAutoFull, rampAutoFull);
+		m_chooser.addOption(wallAuto, wallAuto);
 		m_chooser.addOption(centerAuto, centerAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
 
@@ -110,9 +107,6 @@ public class Robot extends TimedRobot {
 
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
-
-		// The field
-		SmartDashboard.putData("Field", field);
 
 		// Sets the time for the Jetson
 		if (firstTime == true) {
@@ -131,15 +125,9 @@ public class Robot extends TimedRobot {
 		position.updatePoseTrackers();
 
 		// Resets the odometry to match the vision estimate
-		Pose2d pose;
 		if (nTables.getTargetValid() == true) {
 			//position.resetPoseTrackers(position.getVisionPose());
-			pose = position.getVisionPose();
 		}
-		else {
-			pose = position.getOdometryPose();
-		}
-		field.setRobotPose(pose);
 
 		if (count % 10 == 0) {
 			//System.out.println("tv:" + nTables.getTargetValid() + " X: " + Units.metersToInches(pose.getX()) +" Y: " + Units.metersToInches(pose.getY()) +" Yaw: " + pose.getRotation().getDegrees());
@@ -340,7 +328,7 @@ public class Robot extends TimedRobot {
 			if (precisionDrive)  {
 				//  TJM is this fix correct???
 				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3, true);
-		//		drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3);
+				//drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3);
 			}
 			else {
 				drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
@@ -388,46 +376,54 @@ public class Robot extends TimedRobot {
 			// Bring arm through rest position to our target position
 			if (acceptedArmState == ArmStates.REST) {
 				// Movement
-				if (armStatus == AngleStates.DONE) {
+				if (restStatus == AngleStates.DONE) {
 					arm.stopArm();
 				}
 				else {
-					armStatus = auto.armToRestPosition(fromTop);
+					restStatus = auto.armToRestPosition(fromTop);
 				}
 
 				// Conditions to change arm state - close to resting and receives different target state
-				if ((armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) && inputArmState != ArmStates.REST) {
+				if ((restStatus == AngleStates.DONE || restStatus == AngleStates.CLOSE) && inputArmState != ArmStates.REST) {
 					acceptedArmState = inputArmState;
+					armStatus = CONT;
 					auto.resetArmRoutines();
 				}
 			}
 			else {
 				// Movement
-				if (acceptedArmState == ArmStates.GRAB) {
+				if (armStatus == DONE) {
+					arm.hold(1);
+					arm.hold(2);
+					arm.hold(3);
+				}
+				else if (acceptedArmState == ArmStates.GRAB) {
+					// armStatus stays at CONT because PID can stay on when we are close
 					auto.armToGrabPosition();
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CONE) {
-					auto.armToMidPosition(Arm.MID_CONE_ANGLES);
+					armStatus = auto.armToMidPosition(Arm.MID_CONE_ANGLES);
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CUBE) {
-					auto.armToMidPosition(Arm.MID_CUBE_ANGLES);
+					armStatus = auto.armToMidPosition(Arm.MID_CUBE_ANGLES);
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CONE) {
-					auto.armToTopCone();
+					armStatus = auto.armToTopCone();
 					fromTop = true;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CUBE) {
-					auto.armToTopCube();
+					armStatus = auto.armToTopCube();
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.SHELF) {
-					auto.armToShelf();
+					armStatus = auto.armToShelf();
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.CHUTE) {
+					// armStatus stays at CONT because PID can stay on when we are close
 					auto.armToChute();
 					fromTop = false;
 				}
@@ -436,7 +432,7 @@ public class Robot extends TimedRobot {
 				if (inputArmState == ArmStates.REST || autoKill) {
 					Controls.armState = ArmStates.REST;
 					acceptedArmState = ArmStates.REST;
-					armStatus = AngleStates.CONT;
+					restStatus = AngleStates.CONT;
 					auto.resetArmRoutines();
 				}
 			}
