@@ -73,9 +73,9 @@ public class PoseEstimation {
             new Pose2d(0, 0, new Rotation2d(-Math.PI))
         );
 
-        // Defines the vision pose estimator's trust values (higher means less trusted)
-        Matrix<N3, N1> odometryTrust = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(100.00, 100.00, 100.00); // x, y, theta
-        Matrix<N3, N1> visionTrust   = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.01, 0.01, 0.01); // x, y, theta
+        // Defines the vision pose estimator's trust values (greater means less trusted)
+        Matrix<N3, N1> odometryTrust = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.05, 0.05, Units.degreesToRadians(5 )); // x, y, theta
+        Matrix<N3, N1> visionTrust   = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.50, 0.50, Units.degreesToRadians(10)); // x, y, theta
 
         // Creates the vision pose tracker
         visionEstimator = new SwerveDrivePoseEstimator(
@@ -91,7 +91,7 @@ public class PoseEstimation {
         try {
             field = new AprilTagFieldLayout("/home/lvuser/2023-chargedup.json");
         } catch (IOException ex) {
-            System.out.println("Unable to open trajectory: " + ex.getStackTrace());
+            System.out.println("Unable to open field json: " + ex.getStackTrace());
         }
 
         // Sets the origin depending on alliance color
@@ -145,17 +145,15 @@ public class PoseEstimation {
         double                 sysTime           = Timer.getFPGATimestamp();
         SwerveModulePosition[] allModulePosition = getAllModulePositions();
 
-        // Updates the pose estimator (without vision)
-        visionEstimator.update(
-            new Rotation2d( drive.getYawAdjusted() ),
-            allModulePosition
-        );
-
         // Adds the vision measurement if it hasn't been calculated and a target is visible
-        if ((prevTime != detTime) && (prevPose != detPose) && (tv == true)) {
+        //if ((prevTime != detTime) && (prevPose != detPose) && (tv == true)) {
+        if (tv == true) {
             // Sets the prev variables
             prevTime = detTime;
             prevPose = detPose;
+
+            // To make VSCode stop complaining
+            if ((prevTime != detTime) && (prevPose != detPose)) {}
 
             // Adds the vision measurement if the tag id is valid
             if ((id != -1) && ((id > 0) && (id <= 8))) {
@@ -191,6 +189,13 @@ public class PoseEstimation {
                 );
             }
         }
+
+        // Updates the pose estimator (without vision)
+        visionEstimator.updateWithTime(
+            sysTime,
+            new Rotation2d( drive.getYawAdjusted() ),
+            allModulePosition
+        );
     }
 
 
@@ -264,6 +269,48 @@ public class PoseEstimation {
      * @return The robot's floor pose
      */
     public Pose2d getVisionPose() {
+        /*
+        // Gets current values
+        int     id      = nTables.getBestResultID();
+        boolean tv      = nTables.getTargetValid();
+
+        // Adds the vision measurement if it hasn't been calculated and a target is visible
+        if (tv == true) {
+
+            // Adds the vision measurement if the tag id is valid
+            if ((id != -1) && ((id > 0) && (id <= 8))) {
+                // Gets the target's pose on the field
+                Pose3d targetPose = field.getTagPose(id).get();
+
+                // Extracts the x, y, and z distances
+                double x = detPose.getTranslation().getX();
+                double y = detPose.getTranslation().getY();
+                double z = detPose.getTranslation().getZ();
+
+                // Extracts the roll, pitch, and yaw angles
+                double roll  = detPose.getRotation().getX();
+                double pitch = detPose.getRotation().getY();
+                double yaw   = detPose.getRotation().getZ();
+
+                // Creates the relative pose
+                Transform3d camToTarget = new Transform3d(
+                    new Translation3d(x, y, z),
+                    new Rotation3d(roll, pitch, Math.PI - yaw)
+                );
+
+                // Gets the camera's pose relative to the tag
+                Pose3d camPose = targetPose.transformBy(camToTarget);
+
+                // Tranforms the camera's pose to the robot's center
+                Pose3d measurement = camPose.transformBy(CAMERA_TO_ROBOT);
+
+                // Gets the vision estimate
+                return measurement.toPose2d();
+            }
+        }
+
+        return getOdometryPose();
+        */
         return visionEstimator.getEstimatedPosition();
     }
 

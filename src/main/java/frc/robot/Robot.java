@@ -4,19 +4,19 @@
 
 package frc.robot;
 
-import frc.robot.Arm.AngleStates;
-import frc.robot.Controls.Objects;
-import frc.robot.commands.AutoDrive;
-import frc.robot.Controls.ArmStates;
-
 import java.util.List;
 
-import edu.wpi.first.math.geometry.*;
+import frc.robot.commands.*;
+import frc.robot.Arm.AngleStates;
+import frc.robot.Controls.Objects;
+import frc.robot.Controls.ArmStates;
 
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -39,6 +39,8 @@ public class Robot extends TimedRobot {
 	Auto           auto;
 	LED            led;
 	Arm            arm;
+
+	Field2d field;
 
 	// Variables
 	private int status = CONT;
@@ -75,17 +77,18 @@ public class Robot extends TimedRobot {
 	 */
 	public Robot() {
 		// Instance creation
-		drive    = new Drive();
-		position = new PoseEstimation(drive);
-
-		controls = new Controls();
 		arm      = new Arm();
+		field    = new Field2d();
+		drive    = new Drive();
+		controls = new Controls();
+		position = new PoseEstimation(drive);
 		auto     = new Auto(drive, position, arm);
 
 		// Instance getters
 		led      = LED.getInstance();
 		nTables  = CustomTables.getInstance();
 
+		// Variables
 		previousPlacementLocation = new Pose2d();
 		acceptedArmState          = ArmStates.REST;
 	}
@@ -111,6 +114,9 @@ public class Robot extends TimedRobot {
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
 
+		// The field
+		SmartDashboard.putData("Field", field);
+
 		// Sets the time for the Jetson
 		if (firstTime == true) {
 			firstTime = false;
@@ -126,6 +132,20 @@ public class Robot extends TimedRobot {
 	public void robotPeriodic() {
 		// Updates the PoseTrackers constantly
 		position.updatePoseTrackers();
+
+		// Resets the odometry to match the vision estimate
+		Pose2d pose;
+		if (nTables.getTargetValid() == true) {
+			position.resetPoseTrackers(position.getVisionPose());
+			pose = position.getVisionPose();
+		}
+		else {
+			pose = position.getOdometryPose();
+		}
+		field.setRobotPose(pose);
+
+		// Runs the CommandScheduler
+		CommandScheduler.getInstance().run();
 	}
 
 	@Override
@@ -258,8 +278,17 @@ public class Robot extends TimedRobot {
 	 * Runs once when the robot enters Test mode.
 	 */
 	public void testInit() {
-		// Inits the sliders
-		status = Robot.CONT;
+		// Defines the points to drive to
+		var points = List.of(
+			new Pose2d(),
+			new Pose2d()
+		);
+
+		// Sets the command
+		testCommand = new AutoDrive(drive, position, field, points);
+
+		// Schedules the test command
+		testCommand.schedule();
 	}
 
 	@Override
