@@ -278,17 +278,6 @@ public class Robot extends TimedRobot {
 	 * Runs once when the robot enters Test mode.
 	 */
 	public void testInit() {
-		// Defines the points to drive to
-		var points = List.of(
-			new Pose2d(),
-			new Pose2d()
-		);
-
-		// Sets the command
-		testCommand = new AutoDrive(drive, position, field, points);
-
-		// Schedules the test command
-		testCommand.schedule();
 	}
 
 	@Override
