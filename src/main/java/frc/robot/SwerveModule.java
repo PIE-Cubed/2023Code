@@ -32,21 +32,21 @@ public class SwerveModule {
     private final int MOTOR_CURRENT_LIMIT = 80;
     
     // Controller Parameters
-    private final double DRIVE_P               = 0.01;
-    private final double DRIVE_I               = 0;
-    private final double DRIVE_D               = 0;
+    private final double DRIVE_P       = 0.01;
+    private final double DRIVE_I       = 0;
+    private final double DRIVE_D       = 0;
 
-    private final double ROTATE_P              = 0.2;
-    private final double ROTATE_I              = 0;
-    private final double ROTATE_D              = 0;
+    private final double ROTATE_P      = 0.2;
+    private final double ROTATE_I      = 0;
+    private final double ROTATE_D      = 0;
 
-    private final double STATIC_GAIN           = 0;
-    private final double VELOCITY_GAIN         = 0.12;
+    private final double STATIC_GAIN   = 0;
+    private final double VELOCITY_GAIN = 0.25 / 1;
 
     // Drive Motor Conversion Factors
     private final double WHEEL_DIAMETER_METERS       = Units.inchesToMeters(3);
     private final double WHEEL_ROTATION_METERS       = Math.PI * WHEEL_DIAMETER_METERS;
-    private final double ROTATIONS_PER_TICK          = 1 / 5.5;
+    private final double ROTATIONS_PER_TICK          = 1 / 5.5 / 1; // 1 / external gearing / gearbox
     private final double DRIVE_POS_CONVERSION_FACTOR = 0.96 * WHEEL_ROTATION_METERS * ROTATIONS_PER_TICK; // Meters per tick
     private final double DRIVE_VEL_CONVERSION_FACTOR = DRIVE_POS_CONVERSION_FACTOR / 60;           // Meters per second
 
@@ -115,7 +115,6 @@ public class SwerveModule {
 
     /**
      * Sets the desired state for the module.
-     *
      * @param desiredState Desired state with speed and angle.
      */
     public void setDesiredState(SwerveModuleState desiredState) {
@@ -134,12 +133,13 @@ public class SwerveModule {
         double pidError     = driveMotorController.calculate(currentSpeed, targetSpeed);
 
         // Sets motor powers
+        prevPower = feedForward + pidError;
         driveMotor .set(feedForward + pidError);
         rotateMotor.set(rotatePower);
     }
 
     /**
-     * 
+     * Sets the desired state of the module, using power instead of velocity
      * @param desiredState
      */
     public void directMove(SwerveModuleState desiredState) {
@@ -152,6 +152,7 @@ public class SwerveModule {
         rotateMotor.set(rotatePower);
 
         // Drive motor
+        prevPower = desiredState.speedMetersPerSecond;
         driveMotor.set(desiredState.speedMetersPerSecond);
     }
 
@@ -162,8 +163,7 @@ public class SwerveModule {
     * 
     ******************************************************************************************/
     /**
-     * Returns the current position of the module.
-     *
+     * Gets the current position of the module.
      * @return The current position of the module.
      */
     public SwerveModulePosition getModulePosition() {
@@ -174,8 +174,7 @@ public class SwerveModule {
     }
 
     /**
-     * Returns the current state of the module.
-     *
+     * Gets the current state of the module.
      * @return The current state of the module.
      */
     public SwerveModuleState getModuleState() {
@@ -186,8 +185,7 @@ public class SwerveModule {
     }
 
     /**
-     * Gets the drive motor's position.
-     * 
+     * Gets the drive motor position.
      * @return The drive motor's position in meters
      */
     public double getDrivePosition() {
@@ -195,8 +193,7 @@ public class SwerveModule {
     }
 
     /**
-     * Gets the drive motor's velocity.
-     * 
+     * Gets the drive motor velocity.
      * @return The drive motor's velocity in meters/second
      */
     public double getDriveVelocity() {
@@ -204,8 +201,7 @@ public class SwerveModule {
     }
 
     /**
-     * Gets the absolute encoder's position.
-     * 
+     * Gets the absolute encoder position.
      * @return The absolute encoder's position in radians
      */
     private double getAbsPosition() {
@@ -213,8 +209,7 @@ public class SwerveModule {
     }
 
     /**
-     * Gets if the rotate controller is at the setpoint.
-     * 
+     * Checks if the rotate controller is at the setpoint.
      * @return atSetpoint
      */
     public boolean rotateControllerAtSetpoint() {
@@ -228,8 +223,7 @@ public class SwerveModule {
     * 
     ******************************************************************************************/
     /**
-     * Powers individual drive motors.
-     * 
+     * Powers individual drive motor.
      * @param power
      */
     public void setDriveMotorPower(double power) {
@@ -238,8 +232,7 @@ public class SwerveModule {
     }
 
     /**
-     * Powers individual rotate motors.
-     * 
+     * Powers individual rotate motor.
      * @param power
      */
     public void setRotateMotorPower(double power) {
@@ -264,7 +257,7 @@ public class SwerveModule {
     }
 
     /**
-     * Makes the motors drive.
+     * Powers module through SmartDashboard sliders.
      */
     public void updateMotorPowers() {
         setDriveMotorPower (SmartDashboard.getNumber("Drive Motor Power", 0));
@@ -272,19 +265,17 @@ public class SwerveModule {
     }
 
     /**
-     * Zeros the position of the drive and rotate encoders.
+     * Zeros the position of the drive encoder.
      */
     public void zeroMotorEncoders() {
         driveEncoder .setPosition(0.00);
-        //rotateEncoder.setPosition(0.00);
     }
 
     /**
-     * Displays the power and velocity of a module.
+     * Displays the power and velocity of the drive motor.
      */
     public void displayPowerAndVelocity() {
         System.out.println(driveMotor.getDeviceId() + " Power " + prevPower + " Velocity " + getDriveVelocity() + " Ratio " + prevPower/getDriveVelocity());
     }
 }
-
 // End of the SwerveModule class

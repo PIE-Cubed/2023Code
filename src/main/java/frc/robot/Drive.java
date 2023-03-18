@@ -20,9 +20,9 @@ public class Drive {
     private final Translation2d BACK_LEFT_LOCATION;
     private final Translation2d BACK_RIGHT_LOCATION;
 
-    public  static final double MAX_DRIVE_SPEED      = 4; // Meters per second - velocity is generally 4x the power
+    public  static final double MAX_DRIVE_SPEED      = 4 * 1; // Meters per second - velocity is generally 4x the power
     public  static final double MAX_ROTATE_SPEED     = 4 * Math.PI; // Radians per second
-    private static final double MAX_WHEEL_SPEED      = 4; // Meters per second
+    private static final double MAX_WHEEL_SPEED      = 4 * 1; // Meters per second
 
     private final double AUTO_DRIVE_TOLERANCE        = 0.05; //0.01
     private final double AUTO_DRIVE_ROTATE_TOLERANCE = 0.05; //0.15
@@ -47,20 +47,26 @@ public class Drive {
     private SlewRateLimiter rotateLimiter;
 
     // Auto drive to points X controller - need 2 controllers for X and Y for both setpoints
-    private static final double adp = MAX_WHEEL_SPEED; // 1 meter away --> full power
-    private static final double adi = 0.0;
+    private static final double adp = MAX_WHEEL_SPEED / 2; // 2 meter away --> full power
+    private static final double adi = 0;
     private static final double add = 0;
     PIDController autoDriveXController;
     PIDController autoDriveYController;
 
     // Auto drive to points rotate controller
-    private static final double adrp = MAX_ROTATE_SPEED * ((1.4) / Math.PI); // 1/1.4 Pi radians away --> full power
-    private static final double adri = 0; //adrp / 50;
+    private static final double adrp = MAX_ROTATE_SPEED * ((0.7) / Math.PI); // 1/0.7 Pi radians away --> full power
+    private static final double adri = 0;
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
+    
+    // Auto smooth drive to points Hyp controller
+    private static final double asdp = MAX_WHEEL_SPEED; // 1 meter away --> full power
+    private static final double asdi = 0.0;
+    private static final double asdd = 0;
+    PIDController autoSmoothDriveController;
 
     // Ramp balance controller
-    private static final double rbP = -0.06;
+    private static final double rbP = -0.03; // -0.06 with slow bug 
     private static final double rbI = 0.00;
     private static final double rbD = 0.00;
     PIDController rampBalanceController;
@@ -129,6 +135,7 @@ public class Drive {
         backLeft   = new SwerveModule(14, 15, true);
         backRight  = new SwerveModule(12, 13, false);
 
+        // PID instantiation
         autoDriveXController = new PIDController(adp, adi, add);
         autoDriveXController.setTolerance(AUTO_DRIVE_TOLERANCE);
 
@@ -138,6 +145,10 @@ public class Drive {
         autoDriveRotateController = new PIDController(adrp, adri, adrd);
         autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
         autoDriveRotateController.enableContinuousInput(Math.PI, -Math.PI);
+        
+        autoSmoothDriveController = new PIDController(asdp, asdi, asdd);
+        autoSmoothDriveController.setTolerance(AUTO_DRIVE_TOLERANCE);
+        autoSmoothDriveController.setSetpoint(0);
 
         rampBalanceController = new PIDController(rbP, rbI, rbD);
         rampBalanceController.setTolerance(RAMP_BALANCE_TOLERANCE);
@@ -162,15 +173,21 @@ public class Drive {
         // Limits the max speed of the wheels
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_WHEEL_SPEED);
 
-        // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
-        frontLeft.setDesiredState(swerveModuleStates[0]);
-        frontRight.setDesiredState(swerveModuleStates[1]);
-        backLeft.setDesiredState(swerveModuleStates[2]);
-        backRight.setDesiredState(swerveModuleStates[3]);
+        // Only moves wheels when given command
+        if (forwardSpeed != 0 || strafeSpeed != 0 || rotationSpeed != 0) {
+            // The SwerveModuleStates array index used must match the order from the SwerveDriveKinematics instantiation
+            frontLeft.setDesiredState(swerveModuleStates[0]);
+            frontRight.setDesiredState(swerveModuleStates[1]);
+            backLeft.setDesiredState(swerveModuleStates[2]);
+            backRight.setDesiredState(swerveModuleStates[3]);
+        }
+        else {
+            stopWheels();
+        }
     }
 
     /**
-     * 
+     * Drives wheels with direct power (-1 to 1), rather than velocity
      * @param forwardSpeed
      * @param strafeSpeed
      * @param rotationSpeed
@@ -265,6 +282,63 @@ public class Drive {
 
         return Robot.CONT;
     }
+    
+    /*
+     * Test version of autoDriveToPoints that should move more quickly
+     * Uses hypotenuse of distance, rather than separate X and Y controllers
+     */
+    public int autoSmoothDriveToPoints(Translation2d[] listOfPoints, double endRadians, Pose2d currPose) {
+        // Grabs the target point
+        Translation2d targetPoint = listOfPoints[autoPointIndex];
+
+        // This runs once for each point in the list
+        if (autoPointFirstTime == true) {
+            autoPointFirstTime = false;
+            autoSmoothDriveController.reset();
+            autoDriveRotateController.reset();
+            autoDriveRotateController.setSetpoint(endRadians);
+
+            autoPointAngled = false;
+        } 
+        // Runs when it's not the first time for a point
+        else {
+            // Calculating targetVelocity based on distance to targetPoint
+            double targetVelocity = 0;
+            double xError = currPose.getX() - listOfPoints[listOfPoints.length-1].getX();
+            double yError = currPose.getY() - listOfPoints[listOfPoints.length-1].getY();
+            if (autoPointIndex == listOfPoints.length - 1) {
+                targetVelocity = autoSmoothDriveController.calculate(Math.hypot(xError, yError));
+            }
+            else {
+                targetVelocity = MAX_WHEEL_SPEED * 0.8;
+            }
+            double driveAngle = Math.atan2(yError, xError);
+            
+            double targetRotateVelocity = autoDriveRotateController.calculate(getYawAdjusted(), endRadians);
+
+            double targetXVelocity = Math.cos(driveAngle) * targetVelocity;
+            double targetYVelocity = Math.sin(driveAngle) * targetVelocity;
+
+            // Actual movement
+            teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);
+        }
+
+        // If X, Y, and Rotation are at target, moves on to next point
+        if (autoSmoothDriveController.atSetpoint() && autoDriveRotateController.atSetpoint()) {
+            autoPointIndex++;
+            autoPointFirstTime = true;
+        }
+
+        // Function ends once we pass the last point
+        if (autoPointIndex >= listOfPoints.length) {
+            autoPointIndex = 0;
+            autoPointFirstTime = true;
+            stopWheels();
+            return Robot.DONE;
+        }
+
+        return Robot.CONT;
+    }
 
     /*
      * Resets all instance variables used in driveToPoints
@@ -275,7 +349,7 @@ public class Drive {
     }
 
     /**
-     * 
+     * Drives toward ramp until it has been pressed down
      * @param frontEndFirst
      * @return
      */
@@ -309,7 +383,7 @@ public class Drive {
                         status = Robot.DONE;
                     }
                     else {
-                        teleopDrive(3, 0, 0, false);
+                        teleopDrive(1.5, 0, 0, false);
                         status = Robot.CONT;  
                     }
                 }
@@ -319,12 +393,12 @@ public class Drive {
                         status = Robot.DONE;
                     }
                     else {
-                        teleopDrive(-3, 0, 0, false);
+                        teleopDrive(-1.5, 0, 0, false);
                         status = Robot.CONT;  
                     }
                 }
                 break;
-            // Step 2: keep charging ramp until our angle comes back below 8
+            // Step 2: keep charging ramp until our angle comes back below 15
             case 2:
                 // Roll should decrease from 20 to 15 if front end first, increase from -20 to -15 if back end first
                 changeInRoll = -15;
@@ -341,7 +415,7 @@ public class Drive {
                         status = Robot.DONE;
                     }
                     else {
-                        teleopDrive(3, 0, 0, false);
+                        teleopDrive(1.5, 0, 0, false);
                         status = Robot.CONT;  
                     }
                 }
@@ -350,7 +424,7 @@ public class Drive {
                         status = Robot.DONE;
                     }
                     else {
-                        teleopDrive(-3, 0, 0, false);
+                        teleopDrive(-1.5, 0, 0, false);
                         status = Robot.CONT;  
                     }
                 }
@@ -371,7 +445,7 @@ public class Drive {
     }
 
     /**
-     * 
+     * Drives off ramp until it has been pressed down
      * @param frontEndFirst
      * @return
      */
@@ -396,7 +470,7 @@ public class Drive {
                 return Robot.DONE;
             }
             else {
-                teleopDrive(3, 0, 0, false);
+                teleopDrive(1.5, 0, 0, false);
                 return Robot.CONT;  
             }
         }
@@ -406,14 +480,14 @@ public class Drive {
                 return Robot.DONE;
             }
             else {
-                teleopDrive(-3, 0, 0, false);
+                teleopDrive(-1.5, 0, 0, false);
                 return Robot.CONT;  
             }
         }
     }
 
     /**
-     * 
+     * Drives forward until ramp levels, then immediately stops
      * @param targetRoll
      * @return
      */
@@ -437,7 +511,7 @@ public class Drive {
     }
 
     /**
-     * 
+     * Rotates wheels based on a drive command without giving the drive motors full power
      * @param driveX
      * @param driveY
      * @param driveZ
@@ -513,7 +587,7 @@ public class Drive {
         ahrs.zeroYaw();
     }
 
-    public boolean gyroConnnected() {
+    public boolean gyroConnected() {
         return ahrs.isConnected();
     }
 

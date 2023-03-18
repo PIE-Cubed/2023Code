@@ -4,13 +4,22 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.geometry.*;
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import java.util.List;
+
+import frc.robot.commands.*;
 import frc.robot.Arm.AngleStates;
-import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
+import frc.robot.Controls.ArmStates;
+
+import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * Start of the Robot class
@@ -23,20 +32,27 @@ public class Robot extends TimedRobot {
 	public static final int CONT =  3;
 
 	// Object creation
-	Arm            arm;
 	PoseEstimation position;
 	CustomTables   nTables;
 	Controls       controls;
 	Drive          drive;
 	Auto           auto;
 	LED            led;
+	Arm            arm;
+
+	Field2d field;
 
 	// Variables
 	private int status = CONT;
+	private Command testCommand;
+	private boolean firstTime = true;
 
 	private long      coneFlashEnd = 0;
 	private long      cubeFlashEnd = 0;
+	private long      aprilTagStart = 0;
+	private boolean   placementPositionError = false;
 	private Pose2d    previousPlacementLocation;
+	private boolean   previousRecentAprilTag = false;
 	private int       placementStatus = Robot.CONT;
 	public static ArmStates acceptedArmState;
 	public static boolean fromTop = false;
@@ -61,17 +77,18 @@ public class Robot extends TimedRobot {
 	 */
 	public Robot() {
 		// Instance creation
-		drive    = new Drive();
-		position = new PoseEstimation(drive);
-
-		controls = new Controls();
 		arm      = new Arm();
+		field    = new Field2d();
+		drive    = new Drive();
+		controls = new Controls();
+		position = new PoseEstimation(drive);
 		auto     = new Auto(drive, position, arm);
 
 		// Instance getters
 		led      = LED.getInstance();
 		nTables  = CustomTables.getInstance();
 
+		// Variables
 		previousPlacementLocation = new Pose2d();
 		acceptedArmState          = ArmStates.REST;
 	}
@@ -96,6 +113,15 @@ public class Robot extends TimedRobot {
 
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
+
+		// The field
+		SmartDashboard.putData("Field", field);
+
+		// Sets the time for the Jetson
+		if (firstTime == true) {
+			firstTime = false;
+			nTables.setTime(Timer.getFPGATimestamp());
+		}
 	}
 
 	@Override
@@ -106,6 +132,20 @@ public class Robot extends TimedRobot {
 	public void robotPeriodic() {
 		// Updates the PoseTrackers constantly
 		position.updatePoseTrackers();
+
+		// Resets the odometry to match the vision estimate
+		Pose2d pose;
+		if (nTables.getTargetValid() == true) {
+			position.resetPoseTrackers(position.getVisionPose());
+			pose = position.getVisionPose();
+		}
+		else {
+			pose = position.getOdometryPose();
+		}
+		field.setRobotPose(pose);
+
+		// Runs the CommandScheduler
+		CommandScheduler.getInstance().run();
 	}
 
 	@Override
@@ -191,10 +231,6 @@ public class Robot extends TimedRobot {
 					break;
 			}
     	}
-
-		if (!drive.gyroConnnected()) {
-			System.out.println("Ahrs disconnected");
-		}
 	}
 
 	@Override
@@ -203,10 +239,7 @@ public class Robot extends TimedRobot {
 	 * Runs once at the start of TeleOp.
 	 */
 	public void teleopInit() {
-		// Resets the pose to the vision estimator's reading
-		//drive.resetYaw();
-		//drive.setGyroAngleZero(90);
-		//position.resetPoseTrackers(new Pose2d(1.767, 1.067, new Rotation2d(Math.PI)) );
+		// Nothing yet...
 	}
 
 	@Override
@@ -245,8 +278,17 @@ public class Robot extends TimedRobot {
 	 * Runs once when the robot enters Test mode.
 	 */
 	public void testInit() {
-		// Inits the sliders
-		status = Robot.CONT;
+		// Defines the points to drive to
+		var points = List.of(
+			new Pose2d(),
+			new Pose2d()
+		);
+
+		// Sets the command
+		testCommand = new AutoDrive(drive, position, field, points);
+
+		// Schedules the test command
+		testCommand.schedule();
 	}
 
 	@Override
@@ -255,15 +297,7 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		//drive.testEncoders();
-		//drive.testWheelPower();
-		//drive.periodicTestDrivePower();
-		//drive.balanceRamp();
-		//System.out.println(drive.getRoll());
-		//arm.testMiddlePower();
-		arm.testAbsEncoders();
-		//AngleStates status = arm.jointToAngle(1, Math.PI/2);
-		//System.out.println(status);
+		// Nothing yet...
 	}
 
 	/**
@@ -278,20 +312,43 @@ public class Robot extends TimedRobot {
 		Pose2d  placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
 		boolean autoKill          = controls.autoKill();
 		boolean lockWheels        = controls.lockWheels();
+		boolean zeroYaw           = controls.zeroYaw();
+		boolean precisionDrive    = controls.enablePrecisionDrive();
+		boolean recentAprilTag    = false; // Check in pose estimation if we read April Tag within last 5 seconds
+		
+		if (zeroYaw) {
+			drive.resetYaw();
+		}
 
 		if (lockWheels) {
 			drive.crossWheels();
-		}
-		else if (placementLocation == null) {
-			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
 			drive.resetDriveToPoints();
 			previousPlacementLocation = null;
+			placementPositionError = false;
 		}
-		else if (autoKill) {
-			drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+		else if (placementLocation == null || autoKill || (!recentAprilTag)) {
+			if (precisionDrive)  {
+				//  TJM is this fix correct???
+				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3, true);
+		//		drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3);
+			}
+			else {
+				drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+			}
 			drive.resetDriveToPoints();
+			previousPlacementLocation = null;
+				
+			// Red LED's if we tried to go to placement position without an April Tag reading
+			if (placementLocation != null && (!recentAprilTag)) {
+				placementPositionError = true;
+			}
+			else {
+				placementPositionError = false;
+			}
 		}
 		else {
+			placementPositionError = false;
+
 			// Resets placement location if we change locations
 			if (!placementLocation.equals(previousPlacementLocation))	{
 				placementStatus = Robot.CONT;
@@ -341,11 +398,11 @@ public class Robot extends TimedRobot {
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CONE) {
-					auto.armToMidPosition(arm.MID_CONE_ANGLES);
+					auto.armToMidPosition(Arm.MID_CONE_ANGLES);
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CUBE) {
-					auto.armToMidPosition(arm.MID_CUBE_ANGLES);
+					auto.armToMidPosition(Arm.MID_CUBE_ANGLES);
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CONE) {
@@ -386,6 +443,9 @@ public class Robot extends TimedRobot {
 	private void ledControl() {
 		boolean cone = controls.getCone();
 		boolean cube = controls.getCube();
+		boolean lock = controls.lockWheels();
+		
+		boolean recentAprilTag = false; // Check in pose estimation if we read April Tag within last 5 seconds
 
 		long currentTime = System.currentTimeMillis();
 
@@ -398,9 +458,26 @@ public class Robot extends TimedRobot {
 			cubeFlashEnd = currentTime + (long) 5000;
 			coneFlashEnd = 0;
 		}
-
+		
+		// Resetting timer for April Tag
+		if (previousRecentAprilTag == false && recentAprilTag == true) {
+			aprilTagStart = currentTime;
+		}
+		
+		// Highest priority - tried to go to placement position without an April Tag reading
+		// Will only happen while holding button to go to position
+		if (placementPositionError) {
+			led.noAprilTag();
+		}
+		else if (lock) {
+			led.party();
+		}
+		// LED's will flash green every 5 seconds if we had a recent April Tag reading
+		else if (recentAprilTag && (currentTime - aprilTagStart) % 5000 < 400) {
+			led.aprilTagVisible();
+		}
 		// If we signaled for object less than 5 seconds ago, turn LED on half the time to create a flash
-		if (currentTime < coneFlashEnd) {
+		else if (currentTime < coneFlashEnd) {
 			if ((coneFlashEnd - currentTime) % 400 < 200) {
 				led.flashConeOn();
 			}
