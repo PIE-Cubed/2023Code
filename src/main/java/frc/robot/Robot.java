@@ -288,8 +288,8 @@ public class Robot extends TimedRobot {
 	 * Runs once when the robot enters Test mode.
 	 */
 	public void testInit() {
-		// Resets status
-		status = Robot.CONT;
+
+
 	}
 
 	@Override
