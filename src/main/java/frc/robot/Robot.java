@@ -5,6 +5,7 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import frc.robot.Controls.ClawState;
 
 /**
  * Start of the Robot class
@@ -130,11 +131,17 @@ public class Robot extends TimedRobot {
 	}
 
 	public void clawControl() {
-		boolean startIntake = controls.
-		double power = controls.intakePower();
-		claw.setIntake(power);
-		if (Math.abs(power) > 0) {
-			System.out.println(claw.resistance());
+		ClawState clawState = controls.getClawState();
+		controls.updateButton(claw.getButtonPressed());
+		
+		if (clawState == ClawState.INTAKE) {
+			claw.startIntake();
+		}
+		else if (clawState == ClawState.OUTPUT) {
+			claw.startOutput();
+		}
+		else if (clawState == ClawState.STOP) {
+			claw.endIntake();
 		}
 	}
 }

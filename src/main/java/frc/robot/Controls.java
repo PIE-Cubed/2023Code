@@ -12,6 +12,14 @@ import edu.wpi.first.wpilibj.XboxController;
 public class Controls {
 	// CONSTANTS
 	private final int CONTROLLER_ID = 0;
+	private long stopOutput = 0;
+
+	public enum ClawState {
+		INTAKE,
+		OUTPUT,
+		STOP
+	};
+	public static ClawState clawState = ClawState.STOP;
 
 	private XboxController controller;
 
@@ -89,22 +97,32 @@ public class Controls {
     *    ARM FUNCTIONS
     * 
     ******************************************************************************************/
-	// Left trigger intakes, right trigger outputs
-	public double intakePower() {
-		boolean output = controller.getLeftTriggerAxis() > 0;
-		boolean intake = controller.getRightTriggerAxis() > 0;
-
-		if (output) {
-			return -0.2;
+	public ClawState getClawState() {
+		if (controller.getAButtonPressed()) {
+			// If A button is pressed, switch between intake and stop
+			if (clawState == ClawState.INTAKE) {
+				clawState = ClawState.STOP;
+			}
+			else {
+				clawState = ClawState.INTAKE;
+			}
 		}
-		else if (intake) {
-			return 0.08;
+		else if (controller.getBButtonPressed()) {
+			// If B button is pressed, switch between output and stop
+			if (clawState == ClawState.OUTPUT) {
+				clawState = ClawState.STOP;
+			}
+			else {
+				clawState = ClawState.OUTPUT;
+			}
 		}
-		return 0;
+		return clawState;
 	}
 
-	public boolean startIntake() {
-		return controller.getAButtonPressed();
+	public void updateButton(boolean buttonPressed) {
+		if (buttonPressed && clawState == ClawState.INTAKE) {
+			clawState = ClawState.STOP;
+		}
 	}
 }
 // End of the Controls class
