@@ -82,6 +82,34 @@ public class LED {
     public void flashConeOff() {
         ledCode = 0.65;
     }
+	
+    /**
+     * A function to change the LED's to white
+     */
+    public void precisionMode() {
+        ledCode = 0.93;
+    }
+	
+    /**
+     * A function to change the LED's to green
+     */
+    public void aprilTagVisible() {
+        ledCode = 0.77;
+    }
+	
+    /**
+     * A function to change the LED's to red
+     */
+    public void noAprilTag() {
+        ledCode = 0.61;
+    }
+
+    /**
+     * A function to change to LED's to party mode
+     */
+    public void party() {
+        ledCode = -0.97;
+    }
 }
 
 // End of the LED class

@@ -18,6 +18,7 @@ public class CustomTables {
     
     // The TagInfo Table and its entries
     private NetworkTable TagInfo;
+    private NetworkTableEntry time;
     private NetworkTableEntry bestResult;
     private NetworkTableEntry targetValid;
     private NetworkTableEntry BestResultId;
@@ -47,6 +48,7 @@ public class CustomTables {
         // Creates the TagInfo table and its entries
 		TagInfo = ntInst.getTable("TagInfo");
 		targetValid   = TagInfo.getEntry("tv");            // boolean
+        time          = TagInfo.getEntry("time");          // double
         bestResult    = TagInfo.getEntry("BestResult");    // double[]
         BestResultId  = TagInfo.getEntry("BestResultId");  // double
         detectionTime = TagInfo.getEntry("DetectionTime"); // double
@@ -54,7 +56,7 @@ public class CustomTables {
 
     /****************************************************************************************** 
     *
-    *    GETS THE VALUES IN FMSINFO
+    *    GETS VALUES FROM FMSINFO
     * 
     ******************************************************************************************/
     /**
@@ -69,7 +71,7 @@ public class CustomTables {
 
     /****************************************************************************************** 
     *
-    *    GETS THE VALUES IN TAGINFO
+    *    GETS VALUES FROM TAGINFO
     * 
     ******************************************************************************************/
     /**
@@ -110,12 +112,26 @@ public class CustomTables {
         double[] info = bestResult.getDoubleArray(defaultValue);
 
         // Assembles a Pose3d object from the double array
-        Pose3d bestPose = new Pose3d(
+        Pose3d pose = new Pose3d(
             new Translation3d(info[1], info[2], info[3]),
             new Rotation3d(info[4], info[5], info[6])
         );
 
-        return bestPose;
+        return pose;
+    }
+
+    /****************************************************************************************** 
+    *
+    *    SETS VALUES IN TAGINFO
+    * 
+    ******************************************************************************************/
+    /**
+     * Sets the current time.
+     * 
+     * @param currTime
+     */
+    public void setTime(double currTime) {
+        time.setDouble(currTime);
     }
 }
 

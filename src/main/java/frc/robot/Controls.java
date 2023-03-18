@@ -81,9 +81,11 @@ public class Controls {
 	 * 
 	 * @return forwardSpeed
 	 */
-	public double getForwardSpeed() {
+	public double 
+	getForwardSpeed() {
 		double speed;
 		double power = -1 * driveController.getLeftY();
+		power = Math.pow(power, 3);
 
 		// Turns the power into a speed
 		speed = power * Drive.MAX_DRIVE_SPEED;
@@ -104,6 +106,7 @@ public class Controls {
 	public double getStrafeSpeed() {
 		double speed;
 		double power = -1 * driveController.getLeftX();
+		power = Math.pow(power, 3);
 
 		// Turns the power into a speed
 		speed = power * Drive.MAX_DRIVE_SPEED;
@@ -124,6 +127,7 @@ public class Controls {
 	public double getRotateSpeed() {
 		double speed;
 		double power = -1 * driveController.getRightX();
+		power = Math.pow(power, 3);
 
 		// Turns the power into a speed
 		speed = power * Drive.MAX_ROTATE_SPEED;
@@ -229,6 +233,20 @@ public class Controls {
 	 */
 	public boolean lockWheels() {
 		return (driveController.getPOV() != -1);
+	}
+	
+	/*
+	 * Pressing left joystick will zero yaw in case of emergency
+	 */
+	public boolean zeroYaw() {
+		return driveController.getLeftStickButtonPressed();
+	}
+	
+	/*
+	 * Holding right trigger will enable precision control
+	 */
+	public boolean enablePrecisionDrive() {
+		return driveController.getRightTriggerAxis() > 0.05;
 	}
 
 	
