@@ -44,12 +44,12 @@ public class Arm {
 	// Max motor powers
 	private final double MAX_END_POWER = 0.7; //0.4 is slow
 	
-	// Masses in kg - updated for new arm
+	// Masses in kg - updated for new arm/grabber
 	private final double BASE_MASS    = 3.175;
 	private final double MIDDLE_MASS  = 1.814;
 	private final double END_MASS     = 1.633;
 	private final double JOINT_2_MASS = 0.395;
-	private final double JOINT_3_MASS = 0.671;
+	private final double JOINT_3_MASS = 2.313;
 	private final double CONE_MASS    = 0.652;
 	private final double CUBE_MASS    = 0.071;
 
@@ -480,6 +480,24 @@ public class Arm {
 
 	public void closeClaw() {
 		claw.set(Value.kForward);
+	}
+
+	/*
+	 * Motor Control
+	 */
+	public void clawIntake() {
+		//called on button press or via auto
+		/* if limit switch is not pressed (object not fully in)
+		 * run motors on claw to intake object
+		 * otherwise do nothing
+		 */
+	}
+
+	public void clawSpit() {
+		//called under same conditions as intakeWheel and is meant for placing cubes
+		/* if limit switch is/was pressed
+		 * run motors opposite to intakeWheel to launch cube to score
+		 */
 	}
 
 	/*
