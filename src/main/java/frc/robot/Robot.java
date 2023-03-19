@@ -286,16 +286,7 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		Pose2d pose = position.getVisionPose();
- 
-		Pose2d[] points = {
-			new Pose2d(new Translation2d(Units.inchesToMeters(90), Units.inchesToMeters(110)), new Rotation2d(Math.PI)),
-			new Pose2d(new Translation2d(Units.inchesToMeters(140), Units.inchesToMeters(112)), new Rotation2d(Math.PI))
-		};
-
-		if (status == Robot.CONT) {
-			status = drive.autoDriveToPoints(points, pose);
-		}
+		System.out.println("Button:" + arm.limitButtonPressed());
 	}
 
 	/**
@@ -436,6 +427,11 @@ public class Robot extends TimedRobot {
 					auto.resetArmRoutines();
 				}
 			}
+		}
+
+		if (arm.limitButtonPressed()) {
+			Controls.currentObject = Objects.CONE;
+			currentObject = Objects.CONE;
 		}
 
 		if (currentObject == Objects.EMPTY) {

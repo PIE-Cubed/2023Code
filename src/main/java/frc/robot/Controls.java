@@ -262,18 +262,16 @@ public class Controls {
 	 * @return currentObject
 	 */
 	public Objects getClawState() {
-		// If claw is empty, pressing a bumper will grab an object
-		if (currentObject == Objects.EMPTY) {
-			if (armController.getRightBumperPressed()) {
-				currentObject = Objects.CONE;
-			}
-			else if (armController.getLeftBumperPressed()) {
-				currentObject = Objects.CUBE;
-			}
+		// Pressing a bumper will grab an object or update the object we are holding
+		if (armController.getRightBumperPressed()) {
+			currentObject = Objects.CONE;
 		}
-		// If claw is not empty, pressing a bumper will release the object
+		else if (armController.getLeftBumperPressed()) {
+			currentObject = Objects.CUBE;
+		}
+		// Pressing a trigger will release the object
 		else {
-			if (armController.getLeftBumperPressed() || armController.getRightBumperPressed()) {
+			if (armController.getLeftTriggerAxis() > 0.1 || armController.getRightTriggerAxis() > 0.1) {
 				currentObject = Objects.EMPTY;
 			}
 		}
