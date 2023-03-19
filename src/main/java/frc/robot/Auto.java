@@ -931,40 +931,5 @@ public class Auto {
         
         return Robot.CONT;
     }
-
-    /**
-     * 
-     * @return status
-     */
-    public int driveToPointsTest() {
-        int status = Robot.CONT;
-    
-		if (firstTime == true) {
-			firstTime = false;
-			step = 1;
-		}
-
-        switch(step) {
-            case 1:
-                status = drive.autoDriveToPoints(listOfPoints, position.getVisionPose());
-                break;
-            default:
-                // Finished routine
-                step = 1;
-                firstTime = true;
-
-                // Stops applicable motors
-                drive.stopWheels();
- 
-                return Robot.DONE;
-        }
-
-        //If we are done with a step, we go on to the next one and continue the routine
-        if (status == Robot.DONE) {
-            step++;
-        }
-        
-        return Robot.CONT;
-    }
 }
 // End of the Auto class

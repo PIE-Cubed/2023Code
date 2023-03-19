@@ -47,14 +47,14 @@ public class Drive {
     private SlewRateLimiter rotateLimiter;
 
     // AprilTag Drive PID
-    private final double atdP = 0.67;
+    private final double atdP = 1.5; // 0.67 is safe but slow
     private final double atdI = 0;
     private final double atdD = 0;
     private PIDController atXController;
     private PIDController atYController;
 
     // AprilTag Rotate PID
-    private final double atrP = 0.67;
+    private final double atrP = 1.5;
     private final double atrI = 0;
     private final double atrD = 0;
     private PIDController atRotateController;
@@ -221,80 +221,15 @@ public class Drive {
      * @param currPose
      * @return
      */
-    public int atDrive(Pose2d[] points, Pose2d currPose) {
-        // Grabs the target point
-        Pose2d targetPoint = points[autoPointIndex];
+    public int atDrive(double targetY, Pose2d currPose) {
+        double yPower = atYController.calculate(currPose.getY(), targetY);
+        double rotatePower = atRotateController.calculate(getYawAdjusted(), Math.PI);
 
-        // This runs once for each point in the list
-        if (autoPointFirstTime == true) {
-            autoPointFirstTime = false;
-            atXController.reset();
-            atYController.reset();
-            atRotateController.reset();
-            atXController.setSetpoint(targetPoint.getX());
-            atYController.setSetpoint(targetPoint.getY());
-            atRotateController.setSetpoint(targetPoint.getRotation().getRadians());
-            autoPointAngled = false;
+        teleopDrive(0, yPower, rotatePower, true);
 
-            // For each point except the last
-            if (autoPointIndex < points.length - 1) {
-                atXController.setTolerance(2 * AUTO_DRIVE_TOLERANCE);
-                atYController.setTolerance(2 * AUTO_DRIVE_TOLERANCE);
-                atRotateController.setTolerance(2 * AUTO_DRIVE_ROTATE_TOLERANCE);
-            }
-            else {
-                atXController.setTolerance(AUTO_DRIVE_TOLERANCE);
-                atYController.setTolerance(AUTO_DRIVE_TOLERANCE);
-                atRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
-            }
-
-            initXVelocity      = atXController.calculate(currPose.getX(), targetPoint.getX());
-            initYVelocity      = atYController.calculate(currPose.getY(), targetPoint.getY());
-            initRotateVelocity = atRotateController.calculate(currPose.getRotation().getRadians(), targetPoint.getRotation().getRadians());
-        }
-        // Runs when it's not the first time for a point
-        else {
-            // Angles the wheels if they are not aligned before driving
-            if (autoPointAngled == false) {
-                int rotateStatus = rotateWheels(initXVelocity, initYVelocity, initRotateVelocity);
-                if (rotateStatus == Robot.DONE) {
-                    autoPointAngled = true;
-                }
-            }
-            // Drives normally once wheels are angled
-            else {
-                // Calculating targetVelocity based on distance to targetPoint
-                double targetXVelocity      = atXController.calculate(currPose.getX(), targetPoint.getX());
-                double targetYVelocity      = atYController.calculate(currPose.getY(), targetPoint.getY());
-                double targetRotateVelocity = atRotateController.calculate(currPose.getRotation().getRadians(), targetPoint.getRotation().getRadians());
-
-                targetXVelocity = xLimiter.calculate(targetXVelocity);
-                targetYVelocity = yLimiter.calculate(targetYVelocity);
-                targetRotateVelocity = rotateLimiter.calculate(targetRotateVelocity);
-
-                // Actual movement - only if wheels are rotated
-                double vel = 1;
-                targetXVelocity = MathUtil.clamp(targetXVelocity, -vel, vel);
-                targetYVelocity = MathUtil.clamp(targetYVelocity, -vel, vel);
-                targetRotateVelocity = MathUtil.clamp(targetRotateVelocity, -vel, vel);
-                teleopDrive(targetXVelocity, targetYVelocity, targetRotateVelocity, true);
-            }
-        }
-
-        // If X, Y, and Rotation are at target, moves on to next point
-        if (atXController.atSetpoint() && atYController.atSetpoint() && atRotateController.atSetpoint()) {
-            autoPointIndex++;
-            autoPointFirstTime = true;
-        }
-
-        // Function ends once we pass the last point
-        if (autoPointIndex >= points.length) {
-            autoPointIndex = 0;
-            autoPointFirstTime = true;
-            stopWheels();
+        if (atYController.atSetpoint() && atRotateController.atSetpoint()) {
             return Robot.DONE;
         }
-
         return Robot.CONT;
     }
 
