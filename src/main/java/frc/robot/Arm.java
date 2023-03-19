@@ -5,6 +5,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -24,9 +25,12 @@ public class Arm {
     private AbsoluteEncoder endAbsoluteEncoder;
 
 	private DoubleSolenoid  claw;
-	private final int PNEU_CONTROLLER_ID = 1;
 
+	private DigitalInput limitButton;
+
+	private final int PNEU_CONTROLLER_ID = 1;
 	private double printCount = 0;
+	private int switchCount = 0;
 	
     // Constants
     private final double LENGTH_BASE   = 0.5545;
@@ -84,8 +88,8 @@ public class Arm {
 	public static double[] MID_CUBE_ANGLES = {1.068, 1.826, 0.123};
 	public static double[] TOP_CONE_ANGLES = {2.10, 0.3, 0.1}; // Old base - 2.15, 3/4 and before
 	public static double[] TOP_CUBE_ANGLES = {2.1, 0.4, 0.0};
-	public static double[] SHELF_ANGLES    = {1.0, 0.73, 1.31};
-	public static double[] CHUTE_ANGLES    = {0.767, 2.556, -1.2}; // Pre-comp 0.767, 2.556, -1.288
+	public static double[] SHELF_ANGLES    = {0.825, 1.28, 1.31};
+	public static double[] CHUTE_ANGLES    = {0.767, 2.556, -1.288};
 
 	// Constructor
     public Arm() {
@@ -125,6 +129,8 @@ public class Arm {
 		basePID.setTolerance(BASE_TOLERANCE);
 		middlePID.setTolerance(MIDDLE_TOLERANCE);
 		endPID.setTolerance(END_TOLERANCE);
+
+		limitButton = new DigitalInput(0);
     }
 
 	public void hold(int joint) {
@@ -480,6 +486,27 @@ public class Arm {
 
 	public void closeClaw() {
 		claw.set(Value.kForward);
+	}
+
+	/*
+	 * Button methods
+	 */
+	public boolean limitButtonPressed() {
+		boolean switchVal = !limitButton.get();
+		if (switchVal == false) {
+			switchCount++;
+		}
+
+		if ((switchCount > 25) && (switchVal == true)) {
+			switchCount = 0;
+			return true;
+		}
+
+		if (switchVal == true) {
+			switchCount = 0;
+		}
+
+		return false;
 	}
 
 	/*
