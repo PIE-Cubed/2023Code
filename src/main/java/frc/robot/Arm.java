@@ -5,6 +5,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -24,9 +25,12 @@ public class Arm {
     private AbsoluteEncoder endAbsoluteEncoder;
 
 	private DoubleSolenoid  claw;
-	private final int PNEU_CONTROLLER_ID = 1;
 
+	private DigitalInput limitButton;
+
+	private final int PNEU_CONTROLLER_ID = 1;
 	private double printCount = 0;
+	private int switchCount = 0;
 	
     // Constants
     private final double LENGTH_BASE   = 0.5545;
@@ -125,6 +129,8 @@ public class Arm {
 		basePID.setTolerance(BASE_TOLERANCE);
 		middlePID.setTolerance(MIDDLE_TOLERANCE);
 		endPID.setTolerance(END_TOLERANCE);
+
+		limitButton = new DigitalInput(0);
     }
 
 	public void hold(int joint) {
@@ -480,6 +486,27 @@ public class Arm {
 
 	public void closeClaw() {
 		claw.set(Value.kForward);
+	}
+
+	/*
+	 * Button methods
+	 */
+	public boolean limitButtonPressed() {
+		boolean switchVal = !limitButton.get();
+		if (switchVal == false) {
+			switchCount++;
+		}
+
+		if ((switchCount > 25) && (switchVal == true)) {
+			switchCount = 0;
+			return true;
+		}
+
+		if (switchVal == true) {
+			switchCount = 0;
+		}
+
+		return false;
 	}
 
 	/*

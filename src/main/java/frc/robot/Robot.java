@@ -285,6 +285,7 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
+		System.out.println("Button:" + arm.limitButtonPressed());
 		Pose2d pose = position.getPose();
  
 		Pose2d[] points = {
@@ -439,6 +440,11 @@ public class Robot extends TimedRobot {
 					auto.resetArmRoutines();
 				}
 			}
+		}
+
+		if (arm.limitButtonPressed()) {
+			Controls.currentObject = Objects.CONE;
+			currentObject = Objects.CONE;
 		}
 
 		if (currentObject == Objects.EMPTY) {
