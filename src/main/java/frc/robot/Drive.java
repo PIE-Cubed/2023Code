@@ -221,11 +221,12 @@ public class Drive {
      * @param currPose
      * @return
      */
-    public int atDrive(double targetY, Pose2d currPose) {
-        double yPower = atYController.calculate(currPose.getY(), targetY);
-        double rotatePower = atRotateController.calculate(getYawAdjusted(), Math.PI);
+    public int atDrive(Pose2d targetPose, Pose2d currPose) {
+        double xPower = atXController.calculate(currPose.getX(), targetPose.getX());
+        double yPower = atYController.calculate(currPose.getY(), targetPose.getY());
+        double rotatePower = atRotateController.calculate(currPose.getRotation().getRadians(), targetPose.getRotation().getRadians());
 
-        teleopDrive(0, yPower, rotatePower, true);
+        teleopDrive(xPower, yPower, rotatePower, true);
 
         if (atYController.atSetpoint() && atRotateController.atSetpoint()) {
             return Robot.DONE;

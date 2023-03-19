@@ -358,7 +358,7 @@ public class Robot extends TimedRobot {
 			// Stops trying to position once status is done
 			if (placementStatus == Robot.CONT) {
 				//placementStatus = drive.atDrive(placementLocation.getY(), currentLocation);
-				drive.atDrive(placementLocation.getY(), currentLocation);
+				drive.atDrive(placementLocation, currentLocation);
 				position.updateVision = false;
 			}	
 		}
