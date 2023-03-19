@@ -6,17 +6,11 @@ package frc.robot;
 
 import java.io.IOException;
 
-import edu.wpi.first.math.geometry.*;
-import edu.wpi.first.math.kinematics.*;
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-
-import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.numbers.*;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.math.kinematics.*;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;;
 
@@ -42,15 +36,17 @@ public class PoseEstimation {
     );
 
     // Variables
-    private double prevTime = -1;
-    private Pose3d prevPose = new Pose3d();
+    private double prevTime            = -1;
+    private Pose3d prevPose            = new Pose3d();
+    private long   lastAprilTagReading = 0;
+
+    public boolean updateVision = true;
 
     // Object creation
     private Drive drive;
     private CustomTables nTables;
     private AprilTagFieldLayout field;
     private SwerveDriveOdometry odometry;
-    private SwerveDrivePoseEstimator visionEstimator;
 
     /**
      * The constructor for the PoseEstimation class
@@ -71,20 +67,6 @@ public class PoseEstimation {
             new Rotation2d( drive.getYawAdjusted() ),
             moduleStartPosition,
             new Pose2d(0, 0, new Rotation2d(-Math.PI))
-        );
-
-        // Defines the vision pose estimator's trust values (greater means less trusted)
-        Matrix<N3, N1> odometryTrust = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.05, 0.05, Units.degreesToRadians(5 )); // x, y, theta
-        Matrix<N3, N1> visionTrust   = new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.50, 0.50, Units.degreesToRadians(10)); // x, y, theta
-
-        // Creates the vision pose tracker
-        visionEstimator = new SwerveDrivePoseEstimator(
-            drive.swerveDriveKinematics,
-            new Rotation2d( drive.getYawAdjusted() ),
-            moduleStartPosition,
-            new Pose2d(0, 0, new Rotation2d(-Math.PI)),
-            odometryTrust,
-            visionTrust
         );
 
         // Tries to load the AprilTag positions from a json
@@ -116,7 +98,6 @@ public class PoseEstimation {
      */
     public void updatePoseTrackers() {
         updateOdometry();
-        updateVisionEstimator();
     }
 
     /**
@@ -133,34 +114,69 @@ public class PoseEstimation {
         );
     }
 
+
+    /****************************************************************************************** 
+    *
+    *    RESETTER FUNCTIONS
+    * 
+    ******************************************************************************************/
     /**
-     * Updates the VisionEstimator.
+     * Resets both Pose Estimators to a defined position and rotation.
+     * 
+     * @param pose
      */
-    public void updateVisionEstimator() {
+    public void resetPoseTrackers(Pose2d pose) {
+        resetOdometry(pose);
+    }
+
+    /**
+     * Resets the SwerveDriveOdometry to a defined position and rotation.
+     * 
+     * @param pose
+     */
+    private void resetOdometry(Pose2d pose) {
+        // Gets the module positions
+        SwerveModulePosition[] allPositiions = getAllModulePositions();
+
+        // Resets the SwerveOdometry
+        odometry.resetPosition(
+            new Rotation2d(MathUtil.angleModulus(drive.getYawAdjusted())),
+            allPositiions,
+            pose
+        );
+    }
+
+
+    /****************************************************************************************** 
+    *
+    *    GETTER FUNCTIONS
+    * 
+    ******************************************************************************************/
+    /**
+     * Gets the floorPose as calulated by the SwerveDriveOdometry.
+     * 
+     * @return The robot's floor pose
+     */
+    public Pose2d getOdometryPose() {
+        return odometry.getPoseMeters();
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public Pose2d getPose() {
         // Gets current values
         int                    id                = nTables.getBestResultID();
         boolean                tv                = nTables.getTargetValid();
         Pose3d                 detPose           = nTables.getBestResult();
         double                 detTime           = nTables.getDetectionTime();
-        double                 sysTime           = Timer.getFPGATimestamp();
-        SwerveModulePosition[] allModulePosition = getAllModulePositions();
-
-        // Updates the pose estimator (without vision)
-        visionEstimator.updateWithTime(
-            sysTime,
-            new Rotation2d( drive.getYawAdjusted() ),
-            allModulePosition
-        );
 
         // Adds the vision measurement if it hasn't been calculated and a target is visible
-        //if ((prevTime != detTime) && (prevPose != detPose) && (tv == true)) {
-        if (tv == true) {
+        if ((prevTime != detTime) && (prevPose != detPose) && (tv == true)) {
             // Sets the prev variables
             prevTime = detTime;
             prevPose = detPose;
-
-            // To make VSCode stop complaining
-            if ((prevTime != detTime) && (prevPose != detPose)) {}
 
             // Adds the vision measurement if the tag id is valid
             if ((id != -1) && ((id > 0) && (id <= 8))) {
@@ -189,87 +205,29 @@ public class PoseEstimation {
                 // Tranforms the camera's pose to the robot's center
                 Pose3d measurement = camPose.transformBy(CAMERA_TO_ROBOT);
 
-                // Adds the vision measurement
-                visionEstimator.addVisionMeasurement(
-                    measurement.toPose2d(),
-                    sysTime
-                );
+                // Resets the odometry to the vision estimate
+                if (x < Units.feetToMeters(10) && updateVision) {
+                    System.out.println("Updating vision (should not be here if moving)");
+                    lastAprilTagReading = System.currentTimeMillis();
+                    resetOdometry(measurement.toPose2d());
+                }
+                else {
+                    System.out.println("nvm we're not updating");
+                }
+
+                return getOdometryPose();
             }
         }
-    }
 
-
-    /****************************************************************************************** 
-    *
-    *    RESETTER FUNCTIONS
-    * 
-    ******************************************************************************************/
-    /**
-     * Resets both Pose Estimators to a defined position and rotation.
-     * 
-     * @param pose
-     */
-    public void resetPoseTrackers(Pose2d pose) {
-        resetOdometry(pose);
-        resetVisionEstimator(pose);
+        return getOdometryPose();
     }
 
     /**
-     * Resets the SwerveDriveOdometry to a defined position and rotation.
-     * 
-     * @param pose
+     * Checks if we had an April Tag update within the last 5 seconds
+     * @return
      */
-    private void resetOdometry(Pose2d pose) {
-        // Gets the module positions
-        SwerveModulePosition[] allPositiions = getAllModulePositions();
-
-        // Resets the SwerveOdometry
-        odometry.resetPosition(
-            new Rotation2d(MathUtil.angleModulus(drive.getYawAdjusted())),
-            allPositiions,
-            pose
-        );
-    }
-
-    /**
-     * Resets the VisionEstimator to a defined position and rotation.
-     * 
-     * @param pose
-     */
-    private void resetVisionEstimator(Pose2d pose) {
-        // Gets the module positions
-        SwerveModulePosition[] allPositiions = getAllModulePositions();
-
-        // Resets the SwerveOdometry
-        visionEstimator.resetPosition(
-            pose.getRotation(),
-            allPositiions,
-            pose
-        );
-    }
-
-
-    /****************************************************************************************** 
-    *
-    *    GETTER FUNCTIONS
-    * 
-    ******************************************************************************************/
-    /**
-     * Gets the floorPose as calulated by the SwerveDriveOdometry.
-     * 
-     * @return The robot's floor pose
-     */
-    public Pose2d getOdometryPose() {
-        return odometry.getPoseMeters();
-    }
-
-    /**
-     * Gets the floorPose as calulated by the VisionEstimator.
-     * 
-     * @return The robot's floor pose
-     */
-    public Pose2d getVisionPose() {
-        return visionEstimator.getEstimatedPosition();
+    public boolean recentAprilTag() {
+        return (System.currentTimeMillis() < lastAprilTagReading + 5000);
     }
 
 
