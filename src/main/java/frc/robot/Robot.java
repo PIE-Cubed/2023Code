@@ -411,7 +411,7 @@ public class Robot extends TimedRobot {
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.MID_CUBE) {
-					armStatus = auto.armToMidPosition(Arm.MID_CUBE_ANGLES);
+					armStatus = auto.armToMidCube();
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CONE) {
