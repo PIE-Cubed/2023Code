@@ -173,6 +173,7 @@ public class PoseEstimation {
         double                 detTime           = nTables.getDetectionTime();
 
         // Adds the vision measurement if it hasn't been calculated and a target is visible
+       /*  TJM  I think you need to use prevPose.equals(detPose)   */
         if ((prevTime != detTime) && (prevPose != detPose) && (tv == true)) {
             // Sets the prev variables
             prevTime = detTime;
