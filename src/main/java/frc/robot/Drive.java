@@ -240,23 +240,6 @@ public class Drive {
      * @param currPose
      * @return
      */
-     /*
-     * TJM For consideration only.  Nothing broken & probably don't want to change right
-     * before comp with no time to test.
-     * These comments were made only after a quick look.  There may be something I'm missing here.
-     * Could rotateWheels() be teleopDrive() with x,y same as last point?
-     * If above works it could be an additional listOfPoints with x,y the same as previous point.
-     * It could simplify the code, but not really fix any errors.  Easier to maintain...
-     * If you do this then autoPointAngled would go away I think.
-     * 
-     * 
-     * Of course there is changing x,y pid into hypotonouse pid
-     * 
-     * Seems like rotateWheels() only needs Z.  x & y would always be 0.  No need to desaturate to 0.
-     * 
-     * If you agree you could always leave this routine alone & write a new one
-     * you could test when ready
-     */
     public int autoDriveToPoints(Pose2d[] listOfPoints, Pose2d currPose) {
         // Grabs the target point
         Pose2d targetPoint = listOfPoints[autoPointIndex];
