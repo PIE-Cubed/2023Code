@@ -467,15 +467,15 @@ public class Arm {
 	 * For physics calculations
 	 */
 	public double getActualBaseAngle() {
-        return MathUtil.angleModulus(baseAbsoluteEncoder.getPosition() + 0.810);
+        return MathUtil.angleModulus(baseAbsoluteEncoder.getPosition() + 0.810); // At rest, actual wrist angle is 0.792
     }
 
     public double getActualMiddleAngle() {
-        return MathUtil.angleModulus(middleAbsoluteEncoder.getPosition() + 2.881);
+        return MathUtil.angleModulus(middleAbsoluteEncoder.getPosition() + 2.881); // At rest, actual mid angle is 2.862
     }
 
     public double getActualEndAngle() {
-        return MathUtil.angleModulus(-1 * endAbsoluteEncoder.getPosition() + -3.010);
+        return MathUtil.angleModulus(-1 * endAbsoluteEncoder.getPosition() + -3.010); // At rest, actual end angle is -3.053
     }
 
 	/*
