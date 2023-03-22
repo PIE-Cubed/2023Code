@@ -34,6 +34,9 @@ public class Robot extends TimedRobot {
 	LED            led;
 	Arm            arm;
 
+	// Constants
+	private final double ROTATE_SPEED_OFFSET = -0.16;
+
 	// Variables
 	private int count  = 0;
 	private int status = CONT;
@@ -285,19 +288,7 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		System.out.println("Button:" + arm.limitButtonPressed());
-		Pose2d pose = position.getPose();
- 
-		Pose2d[] points = {
-			new Pose2d(new Translation2d(Units.inchesToMeters(110), Units.inchesToMeters(85)), new Rotation2d(Math.PI))
-		};
-
-		if (status == Robot.CONT) {
-			status = drive.autoDriveToPoints(points, pose);
-		}
-		else {
-			drive.stopWheels();
-		}
+		drive.teleopDrive(1, 0, 6, true);
 	}
 
 	/**
@@ -333,7 +324,16 @@ public class Robot extends TimedRobot {
 				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3, true);
 			}
 			else {
-				drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+				// Calculated line of best fit for relationship between rotate speed and drift angle
+				double angleTransform = ROTATE_SPEED_OFFSET * rotateSpeed;
+				Translation2d velocity = new Translation2d(forwardSpeed, strafeSpeed);
+				Translation2d newVelocity = velocity.rotateBy(new Rotation2d(angleTransform));
+
+				double newXVel = newVelocity.getX();
+				double newYVel = newVelocity.getY();
+
+				//drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
+				drive.teleopDrive(newXVel, newYVel, rotateSpeed, true);
 			}
 			drive.resetDriveToPoints();
 			previousPlacementLocation = null;
