@@ -31,6 +31,7 @@ public class Drive {
     // Instance Variables
     private int     printCount         = 0;
     private int     autoPointIndex     = 0;
+    private int     tgtPointIndex      = 0;
     private boolean autoPointFirstTime = true;
     private boolean autoPointAngled    = false; // Tracks if wheels have been angled before driving
     private boolean rampFirstTime      = true;  // Used by all ramp-related functions b/c only 1 called at a time
@@ -312,6 +313,91 @@ public class Drive {
 
         return Robot.CONT;
     }
+
+
+ /* alternative drive to points using distance to target
+  * quickly written so code NOT verified
+  * Written for discussion and as an alternative if original 
+  * drive to points was having issues.  I'm not clear if that is 
+  * the case or not.
+  * Haven't added features used above...
+  * currently driving at constant 1 m/sec
+  * Did not changed tolerance on last target
+  * Did not rotate wheels before driving.  Ok to drive at odd angle to start
+  * since always updating pose?
+  */
+ public int TJM_DriveToPoints(Pose2d[] listOfPoints, Pose2d currPose) {
+    double    distX;
+    double    distY;
+    double    tgtDist;
+    double    tgtAngle;
+    double    velocityX;
+    double    velocityY;
+    double    velocityRotate;
+    Pose2d    tgtPose;
+
+    /* Goto next target in list of points */
+    tgtPose = listOfPoints[tgtPointIndex];
+
+    /* Calculate distance to target from current pose 
+     * Positive X drives forward
+     * Positive Y strafes to left
+     * current Pose - target Pose produces proper sign +-
+     * distance in meters
+    */
+    distX = currPose.getX() - tgtPose.getX();
+    distY = currPose.getY() - tgtPose.getY();
+    tgtDist = Math.sqrt( Math.pow(distX, 2) + Math.pow(distY, 2) );
+
+    /* goto next target if within distance tolerance 
+     * .0508 = 2 inches
+     * AND
+     * robot has rotated to correct location
+    */
+    if ((tgtDist < .0508) && (autoDriveRotateController.atSetpoint()))  {
+        tgtPointIndex++;
+        autoDriveRotateController.reset();
+        /* Goto next target in list of points */
+        tgtPose = listOfPoints[tgtPointIndex];
+
+        /* Got to the last target in the list */
+        if (tgtPointIndex >= listOfPoints.length)  {
+            tgtPointIndex = 0;
+            stopWheels();
+            autoDriveRotateController.reset();
+            return Robot.DONE;
+        }
+    }
+
+    /* Set point for rotation pid controller */
+    autoDriveRotateController.setSetpoint(tgtPose.getRotation().getRadians());
+
+
+    /* Calculate angle to target from current pose
+     * angle in radians -pi/2 to pi/2
+     */
+    tgtAngle = Math.atan(distY / distX);
+
+    /* Want to drive at angle calculated above
+     * start out by driving at velocity 1 m/sec
+     * So to calculate x,y velocity to wheels need to drive at calculated angle
+     * with a velocity of 1 m/sec
+     */
+    velocityX = 1 / Math.cos(tgtAngle);
+    velocityY = 1 / Math.sin(tgtAngle);
+
+    /* Calculate rotate velocity */
+    velocityRotate = autoDriveRotateController.calculate(getYawAdjusted(), tgtPose.getRotation().getRadians());
+    velocityRotate = rotateLimiter.calculate(velocityRotate);
+
+
+    /* Drive to the target */
+    teleopDrive(velocityX, velocityY, velocityRotate, true);
+
+    return Robot.CONT;
+ }
+
+
 
     /*
      * Resets all instance variables used in driveToPoints
