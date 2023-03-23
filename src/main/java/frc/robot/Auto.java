@@ -310,8 +310,8 @@ public class Auto {
                 status = drive.leaveRamp(false);
                 break;
             case 7:
-                // Storing a pose 1.25 meter beyond ramp and straightened so we ensure we leave community
-                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.25, currPose.getY(), currPose.getRotation());
+                // Storing a pose 1.55 meter beyond ramp and straightened so we ensure we leave community
+                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY(), currPose.getRotation());
                 status = Robot.DONE;
                 break;
             case 8:
@@ -770,7 +770,6 @@ public class Auto {
                 break;
             case 4:
                 // Finished routine
-                System.out.println("Holding arm (why am I oscillating)");
                 arm.hold(1);
                 arm.hold(2);
                 arm.hold(3);
