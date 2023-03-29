@@ -87,13 +87,25 @@ public class Auto {
             case 1:
                 // Delay
                 status = autoDelay(delaySeconds);
-                drive.rotateWheels(-1, 0, 0);
+
+                if (isRed == true) {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }
                 break;
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
-                drive.rotateWheels(-1, 0, 0);
-		Robot.acceptedArmState = ArmStates.TOP_CONE;
+                
+                if (isRed == true) {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }
+		        Robot.acceptedArmState = ArmStates.TOP_CONE;
                 break;
             case 3:
                 arm.openClaw();
@@ -102,8 +114,8 @@ public class Auto {
                 break;
             case 4:
                 AngleStates armStatus = armToRestPosition(true);
+                Robot.acceptedArmState = ArmStates.REST;
                 if (armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) {
-		    Robot.acceptedArmState = ArmStates.REST;
                     status = Robot.DONE;
                 }
                 break;
@@ -205,13 +217,25 @@ public class Auto {
             case 1:
                 // Delay
                 status = autoDelay(delaySeconds);
-                drive.rotateWheels(-1, 0, 0);
+
+                if (isRed == true) {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
                 break;
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
 		        Robot.acceptedArmState = ArmStates.TOP_CONE;
-                drive.rotateWheels(-1, 0, 0);
+
+                if (isRed == true) {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
                 break;
             case 3:
                 arm.openClaw();
