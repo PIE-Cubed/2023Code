@@ -26,7 +26,8 @@ public class Arm {
 
 	private DoubleSolenoid  claw;
 
-	private DigitalInput limitButton;
+	private DigitalInput limitButton0;
+	private DigitalInput limitButton9;
 
 	private final int PNEU_CONTROLLER_ID = 1;
 	private double printCount = 0;
@@ -85,7 +86,7 @@ public class Arm {
 	// Angles for all positions
 	public static double[] REST_ANGLES     = {0.825, 2.8, -2.9};
 	public static double[] MID_CONE_ANGLES = {1.135, 1.86, -0.32};
-	public static double[] MID_CUBE_ANGLES = {1.068, 1.826, 0.123};
+	public static double[] MID_CUBE_ANGLES = {0.825, 1.826, 0.45};
 	public static double[] TOP_CONE_ANGLES = {2.10, 0.3, 0.1}; // Old base - 2.15, 3/4 and before
 	public static double[] TOP_CUBE_ANGLES = {2.1, 0.4, 0.0};
 	public static double[] SHELF_ANGLES    = {0.825, 1.28, 1.31};
@@ -109,6 +110,7 @@ public class Arm {
 
 		baseMotor.setInverted(true);
 		middleMotor.setInverted(false);
+		endMotor.setInverted(true);
 
         baseAbsoluteEncoder   = baseMotor.getAbsoluteEncoder(Type.kDutyCycle);
         middleAbsoluteEncoder = middleMotor.getAbsoluteEncoder(Type.kDutyCycle);
@@ -130,7 +132,8 @@ public class Arm {
 		middlePID.setTolerance(MIDDLE_TOLERANCE);
 		endPID.setTolerance(END_TOLERANCE);
 
-		limitButton = new DigitalInput(0);
+		limitButton0 = new DigitalInput(0);
+		limitButton9 = new DigitalInput(9);
     }
 
 	public void hold(int joint) {
@@ -464,15 +467,15 @@ public class Arm {
 	 * For physics calculations
 	 */
 	public double getActualBaseAngle() {
-        return MathUtil.angleModulus(baseAbsoluteEncoder.getPosition() + 0.810);
+        return MathUtil.angleModulus(baseAbsoluteEncoder.getPosition() + 0.810); // At rest, actual wrist angle is 0.792
     }
 
     public double getActualMiddleAngle() {
-        return MathUtil.angleModulus(middleAbsoluteEncoder.getPosition() + 2.881);
+        return MathUtil.angleModulus(middleAbsoluteEncoder.getPosition() + 2.881); // At rest, actual mid angle is 2.862
     }
 
     public double getActualEndAngle() {
-        return MathUtil.angleModulus(-1 * endAbsoluteEncoder.getPosition() + -3.010);
+        return MathUtil.angleModulus(-1 * endAbsoluteEncoder.getPosition() + -3.010); // At rest, actual end angle is -3.053
     }
 
 	/*
@@ -492,7 +495,7 @@ public class Arm {
 	 * Button methods
 	 */
 	public boolean limitButtonPressed() {
-		boolean switchVal = !limitButton.get();
+		boolean switchVal = (!limitButton0.get()) || (!limitButton9.get());
 		if (switchVal == false) {
 			switchCount++;
 		}

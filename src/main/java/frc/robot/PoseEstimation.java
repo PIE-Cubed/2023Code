@@ -208,12 +208,10 @@ public class PoseEstimation {
 
                 // Resets the odometry to the vision estimate
                 if (x < Units.feetToMeters(10) && updateVision) {
-                    System.out.println("Updating vision (should not be here if moving)");
                     lastAprilTagReading = System.currentTimeMillis();
                     resetOdometry(measurement.toPose2d());
                 }
                 else {
-                    System.out.println("nvm we're not updating");
                 }
 
                 return getOdometryPose();

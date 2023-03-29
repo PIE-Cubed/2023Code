@@ -310,8 +310,8 @@ public class Auto {
                 status = drive.leaveRamp(false);
                 break;
             case 7:
-                // Storing a pose 1.25 meter beyond ramp and straightened so we ensure we leave community
-                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.25, currPose.getY(), currPose.getRotation());
+                // Storing a pose 1.55 meter beyond ramp and straightened so we ensure we leave community
+                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY(), currPose.getRotation());
                 status = Robot.DONE;
                 break;
             case 8:
@@ -614,12 +614,14 @@ public class Auto {
      * @return
      */
     public int armToGrabPosition() {    
-		AngleStates status = arm.jointToAngle(3, -0.28, 2.5);
+		AngleStates status = arm.jointToAngle(3, -0.14, 2.5);
         arm.jointToAngle(1, Arm.REST_ANGLES[0]);
         arm.jointToAngle(2, Arm.REST_ANGLES[1], 2);
 
         if (status == AngleStates.DONE) {
-            arm.stopArm();
+            arm.hold(1);
+            arm.hold(2);
+            arm.hold(3);
             return Robot.DONE;
         }
         return Robot.CONT;
@@ -666,6 +668,51 @@ public class Auto {
                 arm.jointToAngle(1, armAngles[0]);
                 arm.jointToAngle(2, armAngles[1]);
                 arm.jointToAngle(3, armAngles[2]);
+                armFirstTime = true;
+                armStep = 1;
+                return Robot.DONE;
+        }
+        
+        return Robot.CONT;
+    }
+
+    public int armToMidCube() {    
+		if (armFirstTime == true) {
+			armFirstTime = false;
+			armStep = 1;
+		}
+
+        double[] armAngles = Arm.MID_CUBE_ANGLES;
+
+        switch(armStep) {
+            case 1:
+                // Base and middle out
+                arm.hold(1);
+                //AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 6);
+                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 6);
+                arm.hold(3);
+
+                // If base and middle are close to or at target position, go to next step
+                if (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) {
+                    armStep++;
+                }
+                break;
+            case 2:
+                // Wrist out
+                arm.hold(1);
+                //AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0], 2);
+                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1], 4);
+                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2], 2);
+                if ((middleStatusEnd == AngleStates.DONE || middleStatusEnd == AngleStates.CLOSE) &&
+                    (endStatusEnd    == AngleStates.DONE || endStatusEnd    == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            default:
+                // Finished routine
+                arm.jointToAngle(1, armAngles[0], 2);
+                arm.jointToAngle(2, armAngles[1], 4);
+                arm.jointToAngle(3, armAngles[2], 2);
                 armFirstTime = true;
                 armStep = 1;
                 return Robot.DONE;
@@ -723,7 +770,6 @@ public class Auto {
                 break;
             case 4:
                 // Finished routine
-                System.out.println("Holding arm (why am I oscillating)");
                 arm.hold(1);
                 arm.hold(2);
                 arm.hold(3);
