@@ -58,14 +58,11 @@ public class Robot extends TimedRobot {
 	// Auto path
 	private static final String wallAuto     = "Wall";
 	private static final String rampAuto     = "Ramp";
-	private static final String rampAutoFull = "Full Ramp";
+	private static final String rampAutoFullShiftRight = "Full Ramp Shift Right";
+	private static final String rampAutoFullShiftLeft  = "Full Ramp Shift Left";
 	private static final String centerAuto   = "Center";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
-
-	// Auto number of objects
-	private int m_objectsToPlace;
-	private final SendableChooser<Integer> m_objectChooser = new SendableChooser<>();
 
 	// Auto Delay
 	private long delaySec = 0;
@@ -98,16 +95,11 @@ public class Robot extends TimedRobot {
 	public void robotInit() {
 		// Auto start location
 		m_chooser.setDefaultOption(rampAuto, rampAuto);
-		m_chooser.addOption(rampAutoFull, rampAutoFull);
+		m_chooser.addOption(rampAutoFullShiftRight, rampAutoFullShiftRight);
+		m_chooser.addOption(rampAutoFullShiftLeft,  rampAutoFullShiftLeft);
 		m_chooser.addOption(wallAuto, wallAuto);
 		m_chooser.addOption(centerAuto, centerAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
-
-		// Auto objects placed
-		m_objectChooser.setDefaultOption("1", 1);
-		m_objectChooser.addOption("2", 2);
-		m_objectChooser.addOption("3", 3);
-		SmartDashboard.putData("Auto objects placed", m_objectChooser);
 
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
@@ -149,9 +141,6 @@ public class Robot extends TimedRobot {
 		// Choses start position
 		m_autoSelected = m_chooser.getSelected();
 
-		// Gets the number of objects to place in auto
-		m_objectsToPlace = m_objectChooser.getSelected();
-
 		// Resets the NavX Yaw
 		drive.resetYaw();
 
@@ -179,7 +168,15 @@ public class Robot extends TimedRobot {
 					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
-			case rampAutoFull:
+			case rampAutoFullShiftRight:
+				if (isRed == true) {
+					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
+				}
+				else {
+					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
+				}
+				break;
+			case rampAutoFullShiftLeft:
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -220,7 +217,10 @@ public class Robot extends TimedRobot {
 				case "Ramp":
 					status = auto.rampAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
 					break;
-				case "Full Ramp":
+				case "Full Ramp Shift Right":
+					status = auto.rampAutoFull(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
+					break;
+				case "Full Ramp Shift Left":
 					status = auto.rampAutoFull(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
 					break;
 				case "Center":
