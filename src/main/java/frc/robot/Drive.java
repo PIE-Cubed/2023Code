@@ -322,6 +322,30 @@ public class Drive {
     }
 
     /**
+     * Drives toward cone until limit button is hit or distance is exceeded
+     * @param maxDistance
+     */
+    public int driveToCone(double maxDistance, boolean buttonHit, Translation2d currLocation) {
+        if (autoPointFirstTime) {
+            startLocation = currLocation;
+            autoPointFirstTime = false;
+        }
+
+        teleopDrive(0.5, 0, 0, false);
+
+        xDist = startLocation.getX() - currLocation.getX();
+        yDist = startLocation.getY() - currLocation.getY();
+        boolean maxDistanceReached = Math.hypot(xDist, yDist) > maxDistance;
+
+        if (buttonHit || maxDistanceReached) {
+            stopWheels();
+            autoPointFirstTime = true;
+            return Robot.DONE;
+        }
+        return Robot.CONT;
+    }
+
+    /**
      * Drives toward ramp until it has been pressed down
      * @param frontEndFirst
      * @return

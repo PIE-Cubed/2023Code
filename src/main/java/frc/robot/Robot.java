@@ -56,16 +56,15 @@ public class Robot extends TimedRobot {
 	private int             armStatus                 = CONT;
 
 	// Auto path
-	private static final String wallAuto     = "Wall";
-	private static final String rampAuto     = "Ramp";
-	private static final String rampAutoFull = "Full Ramp";
-	private static final String centerAuto   = "Center";
+	private static final String wallAuto              = "Wall";
+	private static final String rampAutoCone          = "Ramp Cone";
+	private static final String rampAutoCube          = "Ramp Cube";
+	private static final String rampAutoFullLeftCone  = "Full Ramp Left Cone";
+	private static final String rampAutoFullCube      = "Full Ramp Cube";
+	private static final String rampAutoFullRightCone = "Full Ramp Right Cone";
+	private static final String centerAuto            = "Center";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
-
-	// Auto number of objects
-	private int m_objectsToPlace;
-	private final SendableChooser<Integer> m_objectChooser = new SendableChooser<>();
 
 	// Auto Delay
 	private long delaySec = 0;
@@ -97,17 +96,14 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// Auto start location
-		m_chooser.setDefaultOption(rampAuto, rampAuto);
-		m_chooser.addOption(rampAutoFull, rampAutoFull);
+		m_chooser.setDefaultOption(rampAutoCone, rampAutoCone);
+		m_chooser.addOption(rampAutoCube, rampAutoCube);
+		m_chooser.addOption(rampAutoFullLeftCone, rampAutoFullLeftCone);
+		m_chooser.addOption(rampAutoFullCube, rampAutoFullCube);
+		m_chooser.addOption(rampAutoFullRightCone, rampAutoFullRightCone);
 		m_chooser.addOption(wallAuto, wallAuto);
 		m_chooser.addOption(centerAuto, centerAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
-
-		// Auto objects placed
-		m_objectChooser.setDefaultOption("1", 1);
-		m_objectChooser.addOption("2", 2);
-		m_objectChooser.addOption("3", 3);
-		SmartDashboard.putData("Auto objects placed", m_objectChooser);
 
 		// Auto delay
 		SmartDashboard.putNumber("Auto delay seconds", 0);
@@ -149,9 +145,6 @@ public class Robot extends TimedRobot {
 		// Choses start position
 		m_autoSelected = m_chooser.getSelected();
 
-		// Gets the number of objects to place in auto
-		m_objectsToPlace = m_objectChooser.getSelected();
-
 		// Resets the NavX Yaw
 		drive.resetYaw();
 
@@ -171,7 +164,7 @@ public class Robot extends TimedRobot {
 					startPose = new Pose2d(auto.WALL_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
-			case rampAuto:
+			case rampAutoCone:
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -179,7 +172,31 @@ public class Robot extends TimedRobot {
 					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
-			case rampAutoFull:
+			case rampAutoCube:
+				if (isRed == true) {
+					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
+				}
+				else {
+					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
+				}
+				break;
+			case rampAutoFullLeftCone:
+				if (isRed == true) {
+					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
+				}
+				else {
+					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
+				}
+				break;
+			case rampAutoFullCube:
+				if (isRed == true) {
+					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
+				}
+				else {
+					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
+				}
+				break;
+			case rampAutoFullRightCone:
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -215,16 +232,25 @@ public class Robot extends TimedRobot {
 		if (status == Robot.CONT) {
 			switch (m_autoSelected) {
 				case "Wall":
-					status = auto.wallAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
+					status = auto.wallAuto(nTables.getIsRedAlliance(), delaySec);
 					break;
-				case "Ramp":
-					status = auto.rampAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
+				case "Ramp Cone":
+					status = auto.rampAuto(nTables.getIsRedAlliance(), Objects.CONE, delaySec);
 					break;
-				case "Full Ramp":
-					status = auto.rampAutoFull(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
+				case "Ramp Cube":
+					status = auto.rampAuto(nTables.getIsRedAlliance(), Objects.CUBE, delaySec);
+					break;	
+				case "Full Ramp Left Cone":
+					status = auto.rampAutoFull(nTables.getIsRedAlliance(), Objects.CONE, false, delaySec);
+					break;
+				case "Full Ramp Cube":
+					status = auto.rampAutoFull(nTables.getIsRedAlliance(), Objects.CUBE, false, delaySec);
+					break;
+				case "Full Ramp Right Cone":
+					status = auto.rampAutoFull(nTables.getIsRedAlliance(), Objects.CONE, true, delaySec);
 					break;
 				case "Center":
-					status = auto.centerAuto(nTables.getIsRedAlliance(), m_objectsToPlace, delaySec);
+					status = auto.centerAuto(nTables.getIsRedAlliance(), delaySec);
 					break;
 				default:
 					status = Robot.DONE;
