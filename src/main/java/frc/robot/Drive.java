@@ -41,6 +41,7 @@ public class Drive {
     private double  initRotateVelocity = 0;
     private int     rampStep           = 1;
     private double  yawAdjustment      = Math.PI;
+    private Translation2d startLocation = null;
 
     // Rate limiters for auto drive
     private SlewRateLimiter xLimiter;
@@ -405,6 +406,30 @@ public class Drive {
     public void resetDriveToPoints() {
         autoPointFirstTime = true;
         autoPointIndex = 0;
+    }
+
+    /**
+     * Drives toward cone until limit button is hit or distance is exceeded
+     * @param maxDistance
+     */
+    public int driveToCone(double maxDistance, boolean buttonHit, Translation2d currLocation) {
+        if (autoPointFirstTime) {
+            startLocation = currLocation;
+            autoPointFirstTime = false;
+        }
+
+        teleopDrive(0.5, 0, 0, false);
+
+        xDist = startLocation.getX() - currLocation.getX();
+        yDist = startLocation.getY() - currLocation.getY();
+        boolean maxDistanceReached = Math.hypot(xDist, yDist) > maxDistance;
+
+        if (buttonHit || maxDistanceReached) {
+            stopWheels();
+            autoPointFirstTime = true;
+            return Robot.DONE;
+        }
+        return Robot.CONT;
     }
 
     /**
