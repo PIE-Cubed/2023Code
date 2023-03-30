@@ -333,13 +333,13 @@ public class Auto {
             case 7:
                 // Storing a pose 1.55 meter beyond ramp and straightened so we ensure we leave community
                 if (objectPlaced == Objects.CUBE) {
-                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY(), Math.PI);
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY(), new Rotation2d(Math.PI));
                 }
                 else if (shiftLeft) {
-                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() + 0.56, Math.PI);
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() + 0.56, new Rotation2d(Math.PI));
                 }
                 else {
-                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() - 0.56, Math.PI);
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() - 0.56, new Rotation2d(Math.PI));
                 }
 
                 status = Robot.DONE;

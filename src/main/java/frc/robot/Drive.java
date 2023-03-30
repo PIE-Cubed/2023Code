@@ -40,6 +40,7 @@ public class Drive {
     private double  initRotateVelocity = 0;
     private int     rampStep           = 1;
     private double  yawAdjustment      = Math.PI;
+    private Translation2d startLocation;
 
     // Rate limiters for auto drive
     private SlewRateLimiter xLimiter;
@@ -165,6 +166,8 @@ public class Drive {
 
         rampBalanceController = new PIDController(rbP, rbI, rbD);
         rampBalanceController.setTolerance(RAMP_BALANCE_TOLERANCE);
+
+        startLocation = new Translation2d();
     }
 
     /**
@@ -333,8 +336,8 @@ public class Drive {
 
         teleopDrive(0.5, 0, 0, false);
 
-        xDist = startLocation.getX() - currLocation.getX();
-        yDist = startLocation.getY() - currLocation.getY();
+        double xDist = startLocation.getX() - currLocation.getX();
+        double yDist = startLocation.getY() - currLocation.getY();
         boolean maxDistanceReached = Math.hypot(xDist, yDist) > maxDistance;
 
         if (buttonHit || maxDistanceReached) {

@@ -9,7 +9,6 @@ import frc.robot.Controls.Objects;
 import frc.robot.Controls.ArmStates;
 
 import edu.wpi.first.math.geometry.*;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -125,7 +124,7 @@ public class Robot extends TimedRobot {
 		position.updatePoseTrackers();
 
 		// Prints the pose
-		var pose = position.getOdometryPose();
+		// var pose = position.getOdometryPose();
 		if (count % 10 == 0) {
 			//System.out.println("X: " + Units.metersToInches(pose.getX()) + " Y: " + Units.metersToInches(pose.getY()) + " Yaw: " + pose.getRotation().getDegrees());
 		}
