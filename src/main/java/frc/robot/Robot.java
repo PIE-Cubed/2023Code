@@ -288,7 +288,7 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		drive.teleopDrive(1, 0, 6, true);
+		arm.testAbsEncoders();
 	}
 
 	/**
