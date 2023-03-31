@@ -368,7 +368,7 @@ public class Robot extends TimedRobot {
 	private void armControl() {
 		// Add the grabber controls
 		Objects   currentObject    = controls.getClawState();
-		double    manualWristPower = 0; //controls.getManualWristPower();
+		double    manualWristPower = controls.getManualWristPower();
 		ArmStates inputArmState    = controls.getArmState();
 		boolean   autoKill         = controls.autoKill();
 

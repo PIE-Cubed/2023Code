@@ -315,21 +315,21 @@ public class Controls {
 		// Higher power if we are grabbing heavier object
 		double manualPower;
 		if (getClawState() == Objects.EMPTY) {
-			manualPower = 0.06;
+			manualPower = 0.08;
 		}
 		else if (getClawState() == Objects.CONE) {
-			manualPower = 0.18;
+			manualPower = 0.24;
 		}
 		else {
-			manualPower = 0.12;
+			manualPower = 0.16;
 		}
 
 		// Up on D-pad
 		if (armController.getPOV() == 0) {
-			return manualPower;
+			return -1 * manualPower;
 		}
 		else if (armController.getPOV() == 180) {
-			return -1 * manualPower;
+			return manualPower;
 		}
 		else {
 			return 0;
