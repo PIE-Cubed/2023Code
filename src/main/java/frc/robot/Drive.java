@@ -325,6 +325,27 @@ public class Drive {
     }
 
     /**
+     * Turns toward game piece until within tolerance for 10 loops
+     * Center X is from camera, with range of (-160, 160)
+     * @param centerX 
+     */
+    public int alignWithPiece(double centerX) {
+        double PIXEL_TO_ANGLE = Math.PI/2 / 320.0; // 320 pixels make up 90 degree FOV
+        double angleError = centerX * PIXEL_TO_ANGLE;
+
+        double speed = autoDriveRotateController.calculate(angleError);
+        autoDriveRotateController.setSetpoint(0);
+
+        teleopDrive(0, 0, speed, false);
+
+        if (autoDriveRotateController.atSetpoint()) {
+            stopWheels();
+            return Robot.DONE;
+        }
+        return Robot.CONT;
+    }
+
+    /**
      * Drives toward cone until limit button is hit or distance is exceeded
      * @param maxDistance
      */

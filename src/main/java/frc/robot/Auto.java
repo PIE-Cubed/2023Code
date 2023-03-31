@@ -24,9 +24,10 @@ public class Auto {
     private long delayEnd = 0; // Stores when delay() should return Robot.DONE
 
     // Object Creation
-    private Drive drive;
+    private Drive          drive;
     private PoseEstimation position;
-    private Arm arm;
+    private Arm            arm;
+    private CustomTables   nTables;
 
     // Constants for starting poses for each auto
     public final Translation2d RAMP_RED_START    = new Translation2d(1.767, 4.699);
@@ -61,6 +62,7 @@ public class Auto {
         this.drive    = drive;
         this.position = position;
         this.arm      = arm;
+        this.nTables  = CustomTables.getInstance();
     }
 
     /**
@@ -146,7 +148,8 @@ public class Auto {
                 break;
             case 7:
                 // Align with cone
-                status = autoDelay(2);
+                angleError = nTables.getGamePieceX();
+                status = drive.alignWithPiece(angleError);
                 break;
             case 8:
                 // Drive to cone
@@ -467,7 +470,8 @@ public class Auto {
                 break;
             case 7:
                 // Align with cone
-                status = autoDelay(2);
+                angleError = nTables.getGamePieceX();
+                status = drive.alignWithPiece(angleError);
                 break;
             case 8:
                 // Drive to cone
