@@ -18,11 +18,13 @@ public class CustomTables {
     
     // The TagInfo Table and its entries
     private NetworkTable TagInfo;
+   	private NetworkTable PieceData;
     private NetworkTableEntry time;
     private NetworkTableEntry bestResult;
     private NetworkTableEntry targetValid;
     private NetworkTableEntry BestResultId;
     private NetworkTableEntry detectionTime;
+	private NetworkTableEntry centerX;
 
     // Singleton for CustomTables to ensure only one NetworkTables server is created
     private static CustomTables instance = null;
@@ -52,6 +54,9 @@ public class CustomTables {
         bestResult    = TagInfo.getEntry("BestResult");    // double[]
         BestResultId  = TagInfo.getEntry("BestResultId");  // double
         detectionTime = TagInfo.getEntry("DetectionTime"); // double
+	
+	    // Creates the PieceData table and its entries
+	    centerX = PieceData.getEntry("CenterX");
     }
 
     /****************************************************************************************** 
@@ -132,6 +137,20 @@ public class CustomTables {
      */
     public void setTime(double currTime) {
         time.setDouble(currTime);
+    }
+	
+	/****************************************************************************************** 
+    *
+    *    GETS VALUES FROM PIECEDATA
+    * 
+    ******************************************************************************************/
+    /**
+     * Determines if there are valid targets from the Jetson.
+     * 
+     * @return targetValid
+     */
+    public double getGamePieceX() {
+        return centerX.getDouble(0);
     }
 }
 
