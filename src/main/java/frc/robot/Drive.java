@@ -38,6 +38,7 @@ public class Drive {
     private double  initXVelocity      = 0;
     private double  initYVelocity      = 0;
     private double  initRotateVelocity = 0;
+    private int     pieceAlignedCount  = 0;
     private int     rampStep           = 1;
     private double  yawAdjustment      = Math.PI;
     private Translation2d startLocation;
@@ -339,6 +340,14 @@ public class Drive {
         teleopDrive(0, 0, speed, false);
 
         if (autoDriveRotateController.atSetpoint()) {
+            pieceAlignedCount++;
+        }
+        else {
+            pieceAlignedCount = 0;
+        }
+
+        if (pieceAlignedCount > 10) {
+            pieceAlignedCount = 0;
             stopWheels();
             return Robot.DONE;
         }
