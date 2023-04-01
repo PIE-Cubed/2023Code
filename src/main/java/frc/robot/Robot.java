@@ -59,7 +59,6 @@ public class Robot extends TimedRobot {
 	private static final String rampAutoCone          = "Ramp Cone";
 	private static final String rampAutoCube          = "Ramp Cube";
 	private static final String rampAutoFullLeftCone  = "Full Ramp Left Cone";
-	private static final String rampAutoFullCube      = "Full Ramp Cube";
 	private static final String rampAutoFullRightCone = "Full Ramp Right Cone";
 	private static final String centerAuto            = "Center";
 	private String m_autoSelected;
@@ -98,7 +97,6 @@ public class Robot extends TimedRobot {
 		m_chooser.setDefaultOption(rampAutoCone, rampAutoCone);
 		m_chooser.addOption(rampAutoCube, rampAutoCube);
 		m_chooser.addOption(rampAutoFullLeftCone, rampAutoFullLeftCone);
-		m_chooser.addOption(rampAutoFullCube, rampAutoFullCube);
 		m_chooser.addOption(rampAutoFullRightCone, rampAutoFullRightCone);
 		m_chooser.addOption(wallAuto, wallAuto);
 		m_chooser.addOption(centerAuto, centerAuto);
@@ -187,14 +185,6 @@ public class Robot extends TimedRobot {
 					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
 				}
 				break;
-			case rampAutoFullCube:
-				if (isRed == true) {
-					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
-				}
-				else {
-					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
-				}
-				break;
 			case rampAutoFullRightCone:
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
@@ -240,13 +230,10 @@ public class Robot extends TimedRobot {
 					status = auto.rampAuto(nTables.getIsRedAlliance(), Objects.CUBE, delaySec);
 					break;	
 				case "Full Ramp Left Cone":
-					status = auto.rampAutoFull(nTables.getIsRedAlliance(), Objects.CONE, false, delaySec);
-					break;
-				case "Full Ramp Cube":
-					status = auto.rampAutoFull(nTables.getIsRedAlliance(), Objects.CUBE, false, delaySec);
+					status = auto.rampAutoFull(nTables.getIsRedAlliance(), false, delaySec);
 					break;
 				case "Full Ramp Right Cone":
-					status = auto.rampAutoFull(nTables.getIsRedAlliance(), Objects.CONE, true, delaySec);
+					status = auto.rampAutoFull(nTables.getIsRedAlliance(), true, delaySec);
 					break;
 				case "Center":
 					status = auto.centerAuto(nTables.getIsRedAlliance(), delaySec);

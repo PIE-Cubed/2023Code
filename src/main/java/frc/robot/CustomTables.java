@@ -44,11 +44,11 @@ public class CustomTables {
         NetworkTableInstance ntInst = NetworkTableInstance.getDefault();
 
         // Creates the FMSInfo table and its entries
-		FMSInfo = ntInst.getTable("FMSInfo");
+		FMSInfo       = ntInst .getTable("FMSInfo");
 		isRedAlliance = FMSInfo.getEntry("IsRedAlliance"); // boolean
 
         // Creates the TagInfo table and its entries
-		TagInfo = ntInst.getTable("TagInfo");
+		TagInfo       = ntInst .getTable("TagInfo");
 		targetValid   = TagInfo.getEntry("tv");            // boolean
         time          = TagInfo.getEntry("time");          // double
         bestResult    = TagInfo.getEntry("BestResult");    // double[]
@@ -56,7 +56,8 @@ public class CustomTables {
         detectionTime = TagInfo.getEntry("DetectionTime"); // double
 	
 	    // Creates the PieceData table and its entries
-	    centerX = PieceData.getEntry("CenterX");
+        PieceData = ntInst   .getTable("PieceData");
+	    centerX   = PieceData.getEntry("CenterX");   // double
     }
 
     /****************************************************************************************** 

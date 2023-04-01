@@ -276,12 +276,11 @@ public class Auto {
      * Places cube or cone, leaves community, and balances on ramp
      * For cone placements, the robot shifts toward the middle of the ramp based on param shiftLeft
      * @param isRed
-     * @param objectsPlaced
      * @param shiftLeft
      * @param delaySeconds
      * @return status
      */
-    public int rampAutoFull(boolean isRed, Objects objectPlaced, boolean shiftLeft, long delaySeconds) {
+    public int rampAutoFull(boolean isRed, boolean shiftLeft, long delaySeconds) {
         int    status   = Robot.CONT;
         Pose2d currPose = position.getOdometryPose();
     
@@ -290,7 +289,7 @@ public class Auto {
 			step = 1;
 
             arm.closeClaw();
-            Controls.currentObject = objectPlaced;
+            Controls.currentObject = Objects.CONE;
 		}
 
         switch(step) {
@@ -301,15 +300,9 @@ public class Auto {
                 break;
             case 2:
                 // Place object we're holding
-                if (objectPlaced == Objects.CONE) {
-                    status = armToTopCone();
-                    Robot.acceptedArmState = ArmStates.TOP_CONE;
-                }
-                else {
-                    status = armToTopCube();
-                    Robot.acceptedArmState = ArmStates.TOP_CUBE;
-                }
-
+                status = armToTopCone();
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
+                
                 drive.rotateWheels(-1, 0, 0);
                 break;
             case 3:
@@ -335,16 +328,12 @@ public class Auto {
                 break;
             case 7:
                 // Storing a pose 1.55 meter beyond ramp and straightened so we ensure we leave community
-                if (objectPlaced == Objects.CUBE) {
-                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY(), new Rotation2d(Math.PI));
-                }
-                else if (shiftLeft) {
+                if (shiftLeft) {
                     rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() + 0.56, new Rotation2d(Math.PI));
                 }
                 else {
                     rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() - 0.56, new Rotation2d(Math.PI));
                 }
-
                 status = Robot.DONE;
                 break;
             case 8:
