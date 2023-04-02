@@ -405,7 +405,6 @@ public class Robot extends TimedRobot {
 		Objects   currentObject    = controls.getClawState();
 		double    manualWristPower = controls.getManualWristPower();
 		ArmStates inputArmState    = controls.getArmState();
-		double    manualWristPower = controls.getManualWristPower();
 
 		// Manual wrist control overrides automatic control
 		if (manualWristPower != 0) {
