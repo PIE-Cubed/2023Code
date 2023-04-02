@@ -24,6 +24,11 @@ public class CustomTables {
     private NetworkTableEntry BestResultId;
     private NetworkTableEntry detectionTime;
 
+    // The PieceData table and its entries
+    private NetworkTable PieceData;
+    private NetworkTableEntry width;
+	private NetworkTableEntry centerX;
+
     // Singleton for CustomTables to ensure only one NetworkTables server is created
     private static CustomTables instance = null;
     public static synchronized CustomTables getInstance() {
@@ -42,16 +47,21 @@ public class CustomTables {
         NetworkTableInstance ntInst = NetworkTableInstance.getDefault();
 
         // Creates the FMSInfo table and its entries
-		FMSInfo = ntInst.getTable("FMSInfo");
+		FMSInfo       = ntInst .getTable("FMSInfo");
 		isRedAlliance = FMSInfo.getEntry("IsRedAlliance"); // boolean
 
         // Creates the TagInfo table and its entries
-		TagInfo = ntInst.getTable("TagInfo");
+		TagInfo       = ntInst .getTable("TagInfo");
 		targetValid   = TagInfo.getEntry("tv");            // boolean
         time          = TagInfo.getEntry("time");          // double
         bestResult    = TagInfo.getEntry("BestResult");    // double[]
         BestResultId  = TagInfo.getEntry("BestResultId");  // double
         detectionTime = TagInfo.getEntry("DetectionTime"); // double
+	
+	    // Creates the PieceData table and its entries
+        PieceData = ntInst   .getTable("PieceData");
+        width     = PieceData.getEntry("Width");   // double
+	    centerX   = PieceData.getEntry("CenterX");   // double
     }
 
     /****************************************************************************************** 
@@ -132,6 +142,29 @@ public class CustomTables {
      */
     public void setTime(double currTime) {
         time.setDouble(currTime);
+    }
+	
+	/****************************************************************************************** 
+    *
+    *    GETS VALUES FROM PIECEDATA
+    * 
+    ******************************************************************************************/
+    /**
+     * Determines the width of the OpenCV stream.
+     * 
+     * @return width
+     */
+    public double getCamWidth() {
+        return width.getDouble(0);
+    }
+
+    /**
+     * Determines the distance pieces are away from the OpenCV stream's center.
+     * 
+     * @return centerX
+     */
+    public double getGamePieceX() {
+        return centerX.getDouble(0);
     }
 }
 

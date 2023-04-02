@@ -24,9 +24,10 @@ public class Auto {
     private long delayEnd = 0; // Stores when delay() should return Robot.DONE
 
     // Object Creation
-    private Drive drive;
+    private Drive          drive;
     private PoseEstimation position;
-    private Arm arm;
+    private Arm            arm;
+    private CustomTables   nTables;
 
     // Constants for starting poses for each auto
     public final Translation2d RAMP_RED_START    = new Translation2d(1.767, 4.699);
@@ -39,6 +40,7 @@ public class Auto {
 
     // Variables
     private Pose2d[] rampAutoExitCommunity = new Pose2d[1]; // Stores location that will ensure we leave community
+    private Pose2d[] autoSecondPieceRotate = new Pose2d[1];
     private double balancedRoll = 0;
 
     // Coordinates to be used in routines
@@ -61,16 +63,16 @@ public class Auto {
         this.drive    = drive;
         this.position = position;
         this.arm      = arm;
+        this.nTables  = CustomTables.getInstance();
     }
 
     /**
      * 
      * @param isRed
-     * @param numObjects
      * @param delaySeconds
      * @return status
      */
-    public int wallAuto(boolean isRed, int numObjects, long delaySeconds) {
+    public int wallAuto(boolean isRed, long delaySeconds) {
         int    status   = Robot.CONT;
         Pose2d currPose = position.getOdometryPose();
     
@@ -87,13 +89,25 @@ public class Auto {
             case 1:
                 // Delay
                 status = autoDelay(delaySeconds);
-                drive.rotateWheels(-1, 0, 0);
+
+                if (isRed == true) {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }                
                 break;
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
-                drive.rotateWheels(-1, 0, 0);
-		Robot.acceptedArmState = ArmStates.TOP_CONE;
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
+
+                if (isRed == true) {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }	
                 break;
             case 3:
                 arm.openClaw();
@@ -102,8 +116,8 @@ public class Auto {
                 break;
             case 4:
                 AngleStates armStatus = armToRestPosition(true);
+                Robot.acceptedArmState = ArmStates.REST;
                 if (armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) {
-		    Robot.acceptedArmState = ArmStates.REST;
                     status = Robot.DONE;
                 }
                 break;
@@ -116,59 +130,61 @@ public class Auto {
                 if (isRed == true) {
                     pose1 = new Pose2d(2.6, 7.401, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 7.401, new Rotation2d(0));
-                    pose3 = new Pose2d(6.0, 7.101, new Rotation2d(0));
+                    pose3 = new Pose2d(6.3, 7.101, new Rotation2d(0));
                 }
                 else {
                     pose1 = new Pose2d(2.6, 0.8, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 0.8, new Rotation2d(0));
-                    pose3 = new Pose2d(6.0, 1.0, new Rotation2d(0));
+                    pose3 = new Pose2d(6.3, 1.0, new Rotation2d(0));
                 }
 
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, currPose);
+                status = drive.autoDriveToPoints(new Pose2d[]{pose2, pose3}, currPose);
                 resetArmRoutines();
                 break;
-            /*
             case 6:
-                status = armToGrabPosition();
-                break;
-            case 5:
                 // Bring down wrist
-                status = autoDelay(2);
-                break;
-            case 6:
-                // Close claw
-                status = Robot.DONE;
+                status = armToGrabPosition();
+                Robot.acceptedArmState = ArmStates.GRAB;
                 break;
             case 7:
-                // Approach community
-                if (isRed == true) {
-                    pose1 = new Pose2d(3, 7.2, new Rotation2d(0));
-                    pose2 = new Pose2d(3, 7.2, new Rotation2d(Math.PI));
-                    pose3 = new Pose2d(WALL_RED_START, new Rotation2d(Math.PI));
-                }
-                else {
-                    pose1 = new Pose2d(3, 0.6, new Rotation2d(0));
-                    pose2 = new Pose2d(3, 0.6, new Rotation2d(Math.PI));
-                    pose3 = new Pose2d(WALL_BLUE_START, new Rotation2d(Math.PI));
-                }
-                
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getVisionPose());
+                // Align with cone
+                double angleError = nTables.getGamePieceX();
+                status = drive.alignWithPiece(angleError, 320);
                 break;
             case 8:
-                // Reach arm to top
-                status = autoDelay(2);
+                // Drive to cone
+                status = drive.driveToCone(1.0, arm.limitButtonPressed(), currPose.getTranslation());
                 break;
             case 9:
-                // Open claw
+                // Pick up cone
+                arm.closeClaw();
+                Controls.currentObject = Objects.CONE;
                 status = Robot.DONE;
-                break;*/
+                break;
+            case 10:
+                // Retract arm
+                AngleStates armStatus2 = armToRestPosition(false);
+                Robot.acceptedArmState = ArmStates.REST;
+                if (armStatus2 == AngleStates.DONE) {
+                    status = Robot.DONE;
+                }
+                break;
+            case 11:
+                // Storing current location
+                autoSecondPieceRotate[0] = new Pose2d(currPose.getX(), currPose.getY(), new Rotation2d(Math.PI));
+                status = Robot.DONE;
+                break;
+            case 12:
+                // Rotating
+                status = drive.autoDriveToPoints(autoSecondPieceRotate, currPose);
+                break;
             default:
                 // Finished routine
                 step = 1;
                 firstTime = true;
 
-                Controls.armState = ArmStates.GRAB;
-                Robot.acceptedArmState = ArmStates.GRAB;
+                Controls.armState = ArmStates.REST;
+                Robot.acceptedArmState = ArmStates.REST;
 
                 // Stops applicable motors
                 drive.stopWheels();
@@ -184,13 +200,13 @@ public class Auto {
     }
 
     /**
-     * Places cone and balances on ramp - safe choice
+     * Places ojbect and balances on ramp - safe choice
      * @param isRed
-     * @param numObjects
+     * @param objectPlaced
      * @param delaySeconds
      * @return status
      */
-    public int rampAuto(boolean isRed, double numObjects, long delaySeconds) {
+    public int rampAuto(boolean isRed, Objects objectPlaced, long delaySeconds) {
         int status = Robot.CONT;
     
 		if (firstTime == true) {
@@ -198,7 +214,7 @@ public class Auto {
 			step = 1;
 
             arm.closeClaw();
-            Controls.currentObject = Objects.CONE;
+            Controls.currentObject = objectPlaced;
 		}
 
         switch(step) {
@@ -209,8 +225,15 @@ public class Auto {
                 break;
             case 2:
                 // Place object we're holding
-                status = armToTopCone();
-		        Robot.acceptedArmState = ArmStates.TOP_CONE;
+                if (objectPlaced == Objects.CONE) {
+                    status = armToTopCone();
+                    Robot.acceptedArmState = ArmStates.TOP_CONE;
+                }
+                else {
+                    status = armToTopCube();
+                    Robot.acceptedArmState = ArmStates.TOP_CUBE;
+                }
+                
                 drive.rotateWheels(-1, 0, 0);
                 break;
             case 3:
@@ -258,13 +281,14 @@ public class Auto {
     }
 	
 	/**
-     * Places cone, leaves community, and balances on ramp
+     * Places cube or cone, leaves community, and balances on ramp
+     * For cone placements, the robot shifts toward the middle of the ramp based on param shiftLeft
      * @param isRed
-     * @param numObjects
+     * @param shiftLeft
      * @param delaySeconds
      * @return status
      */
-    public int rampAutoFull(boolean isRed, double numObjects, long delaySeconds) {
+    public int rampAutoFull(boolean isRed, boolean shiftLeft, long delaySeconds) {
         int    status   = Robot.CONT;
         Pose2d currPose = position.getOdometryPose();
     
@@ -280,12 +304,13 @@ public class Auto {
             case 1:
                 // Delay
                 status = autoDelay(delaySeconds);
-                drive.rotateWheels(-1, 0, 0);
+                drive.rotateWheels(-1, 0, 0);         
                 break;
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
-		        Robot.acceptedArmState = ArmStates.TOP_CONE;
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
+                
                 drive.rotateWheels(-1, 0, 0);
                 break;
             case 3:
@@ -311,7 +336,12 @@ public class Auto {
                 break;
             case 7:
                 // Storing a pose 1.55 meter beyond ramp and straightened so we ensure we leave community
-                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY(), currPose.getRotation());
+                if (shiftLeft) {
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() + 0.56, new Rotation2d(Math.PI));
+                }
+                else {
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() - 0.56, new Rotation2d(Math.PI));
+                }
                 status = Robot.DONE;
                 break;
             case 8:
@@ -357,11 +387,10 @@ public class Auto {
     /**
      * 
      * @param isRed
-     * @param numObjects
      * @param delaySeconds
      * @return status
      */
-    public int centerAuto(boolean isRed, int numObjects, long delaySeconds) {
+    public int centerAuto(boolean isRed, long delaySeconds) {
         int    status   = Robot.CONT;
         Pose2d currPose = position.getOdometryPose();
     
@@ -378,13 +407,25 @@ public class Auto {
             case 1:
                 // Delay
                 status = autoDelay(delaySeconds);
-                drive.rotateWheels(-1, 0, 0);
+
+                if (isRed == true) {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }                       
                 break;
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
-                drive.rotateWheels(-1, 0, 0);
-		        Robot.acceptedArmState = ArmStates.TOP_CONE;
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
+
+                if (isRed == true) {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
                 break;
             case 3:
                 arm.openClaw();
@@ -415,75 +456,53 @@ public class Auto {
                     pose3 = new Pose2d(6.3, 1.05, new Rotation2d(0));
                 }
 
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, currPose);
+                status = drive.autoDriveToPoints(new Pose2d[]{pose2, pose3}, currPose);
                 resetArmRoutines();
                 break;
-            /*
-            case 6:
+                case 6:
+                // Bring down wrist
                 status = armToGrabPosition();
                 Robot.acceptedArmState = ArmStates.GRAB;
                 break;
             case 7:
-                arm.hold(1);
-                arm.hold(2);
-                arm.hold(3);
-
-                if (isRed == false) {
-                    status = drive.autoDriveToPoints(new Pose2d[]{new Pose2d(6.7, 7.151, new Rotation2d(0))}, position.getOdometryPose());
-                }
-                else {
-                    status = drive.autoDriveToPoints(new Pose2d[]{new Pose2d(6.7, 1.05, new Rotation2d(0))}, position.getOdometryPose());
-                }
+                // Align with cone
+                double angleError = nTables.getGamePieceX();
+                status = drive.alignWithPiece(angleError, 320);
                 break;
             case 8:
-                status = Robot.DONE;
-                Controls.currentObject = Objects.CONE;
-                arm.closeClaw();
+                // Drive to cone
+                status = drive.driveToCone(1.0, arm.limitButtonPressed(), currPose.getTranslation());
                 break;
             case 9:
-                armStatus = armToRestPosition(false);
-                if (armStatus == AngleStates.DONE) {
-                    status = Robot.DONE;
-                }
-                else {
-                    status = Robot.CONT;
-                }
-                Robot.acceptedArmState = ArmStates.REST;
+                // Pick up cone
+                arm.closeClaw();
+                Controls.currentObject = Objects.CONE;
+                status = Robot.DONE;
                 break;
             case 10:
-                arm.stopArm();
-                status = Robot.DONE;
-                break;     
-            case 7:
-                // Approach community
-                if (isRed == true) {
-                    pose1 = new Pose2d(3, 7.2, new Rotation2d(0));
-                    pose2 = new Pose2d(3, 7.2, new Rotation2d(Math.PI));
-                    pose3 = new Pose2d(WALL_RED_START, new Rotation2d(Math.PI));
+                // Retract arm
+                AngleStates armStatus2 = armToRestPosition(false);
+                Robot.acceptedArmState = ArmStates.REST;
+                if (armStatus2 == AngleStates.DONE) {
+                    status = Robot.DONE;
                 }
-                else {
-                    pose1 = new Pose2d(3, 0.6, new Rotation2d(0));
-                    pose2 = new Pose2d(3, 0.6, new Rotation2d(Math.PI));
-                    pose3 = new Pose2d(WALL_BLUE_START, new Rotation2d(Math.PI));
-                }
-                
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, position.getVisionPose());
                 break;
-            case 8:
-                // Reach arm to top
-                status = autoDelay(2);
-                break;
-            case 9:
-                // Open claw
+            case 11:
+                // Storing current location
+                autoSecondPieceRotate[0] = new Pose2d(currPose.getX(), currPose.getY(), new Rotation2d(Math.PI));
                 status = Robot.DONE;
-                break;*/
+                break;
+            case 12:
+                // Rotating
+                status = drive.autoDriveToPoints(autoSecondPieceRotate, currPose);
+                break;
             default:
                 // Finished routine
                 step = 1;
                 firstTime = true;
 
-                Controls.armState = ArmStates.GRAB;
-                Robot.acceptedArmState = ArmStates.GRAB;
+                Controls.armState = ArmStates.REST;
+                Robot.acceptedArmState = ArmStates.REST;
 
                 // Stops applicable motors
                 drive.stopWheels();

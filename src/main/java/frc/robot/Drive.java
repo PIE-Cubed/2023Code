@@ -38,8 +38,10 @@ public class Drive {
     private double  initXVelocity      = 0;
     private double  initYVelocity      = 0;
     private double  initRotateVelocity = 0;
+    private int     pieceAlignedCount  = 0;
     private int     rampStep           = 1;
     private double  yawAdjustment      = Math.PI;
+    private Translation2d startLocation;
 
     // Rate limiters for auto drive
     private SlewRateLimiter xLimiter;
@@ -71,6 +73,12 @@ public class Drive {
     private static final double adri = 0;
     private static final double adrd = 0;
     PIDController autoDriveRotateController;
+
+    // OpenCV rotate controller
+    private static final double ocvp = 0.05; //0.025
+    private static final double ocvi = 0.01; //0.01
+    private static final double ocvd = 0;
+    PIDController openCVRotateController;
 
     // Ramp balance controller
     private static final double rbP = -0.03; // -0.06 with slow bug 
@@ -163,8 +171,15 @@ public class Drive {
         autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
         autoDriveRotateController.enableContinuousInput(Math.PI, -Math.PI);
 
+        openCVRotateController = new PIDController(ocvp, ocvi, ocvd);
+        openCVRotateController.setTolerance(3);
+        openCVRotateController.enableContinuousInput(180, -180);
+        openCVRotateController.setIntegratorRange(-0.25, 0.25);
+
         rampBalanceController = new PIDController(rbP, rbI, rbD);
         rampBalanceController.setTolerance(RAMP_BALANCE_TOLERANCE);
+
+        startLocation = new Translation2d();
     }
 
     /**
@@ -319,6 +334,60 @@ public class Drive {
     public void resetDriveToPoints() {
         autoPointFirstTime = true;
         autoPointIndex = 0;
+    }
+
+    /**
+     * Turns toward game piece until within tolerance for 5 loops.
+     * Center X is from camera.
+     * 
+     * @param centerX 
+     */
+    public int alignWithPiece(double centerX, double width) {
+        double angleError = centerX * (120.0 / width);
+
+        double speed = openCVRotateController.calculate(angleError, 0);
+        autoDriveRotateController.setSetpoint(0);
+
+        speed = MathUtil.clamp(speed, -0.5, 0.5);
+        teleopDrive(0, 0, speed, false);
+
+        if (openCVRotateController.atSetpoint()) {
+            pieceAlignedCount++;
+        }
+        else {
+            pieceAlignedCount = 0;
+        }
+
+        if (pieceAlignedCount > 0) {
+            pieceAlignedCount = 0;
+            stopWheels();
+            return Robot.DONE;
+        }
+        return Robot.CONT;
+    }
+
+    /**
+     * Drives toward cone until limit button is hit or distance is exceeded
+     * @param maxDistance
+     */
+    public int driveToCone(double maxDistance, boolean buttonHit, Translation2d currLocation) {
+        if (autoPointFirstTime) {
+            startLocation = currLocation;
+            autoPointFirstTime = false;
+        }
+
+        teleopDrive(0.5, 0, 0, false);
+
+        double xDist = startLocation.getX() - currLocation.getX();
+        double yDist = startLocation.getY() - currLocation.getY();
+        boolean maxDistanceReached = Math.hypot(xDist, yDist) > maxDistance;
+
+        if (buttonHit || maxDistanceReached) {
+            stopWheels();
+            autoPointFirstTime = true;
+            return Robot.DONE;
+        }
+        return Robot.CONT;
     }
 
     /**
