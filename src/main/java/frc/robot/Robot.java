@@ -300,7 +300,15 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		arm.testAbsEncoders();
+		if (status == Robot.CONT) {
+			double x = nTables.getGamePieceX();
+			double width = nTables.getCamWidth();
+			//System.out.println("Game piece X:" + x);
+			status = drive.alignWithPiece(x, width);
+		}
+		else {
+			System.out.println("Done");
+		}
 	}
 
 	/**

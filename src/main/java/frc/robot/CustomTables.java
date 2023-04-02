@@ -18,12 +18,15 @@ public class CustomTables {
     
     // The TagInfo Table and its entries
     private NetworkTable TagInfo;
-   	private NetworkTable PieceData;
     private NetworkTableEntry time;
     private NetworkTableEntry bestResult;
     private NetworkTableEntry targetValid;
     private NetworkTableEntry BestResultId;
     private NetworkTableEntry detectionTime;
+
+    // The PieceData table and its entries
+    private NetworkTable PieceData;
+    private NetworkTableEntry width;
 	private NetworkTableEntry centerX;
 
     // Singleton for CustomTables to ensure only one NetworkTables server is created
@@ -57,6 +60,7 @@ public class CustomTables {
 	
 	    // Creates the PieceData table and its entries
         PieceData = ntInst   .getTable("PieceData");
+        width     = PieceData.getEntry("Width");   // double
 	    centerX   = PieceData.getEntry("CenterX");   // double
     }
 
@@ -146,9 +150,18 @@ public class CustomTables {
     * 
     ******************************************************************************************/
     /**
-     * Determines if there are valid targets from the Jetson.
+     * Determines the width of the OpenCV stream.
      * 
-     * @return targetValid
+     * @return width
+     */
+    public double getCamWidth() {
+        return width.getDouble(0);
+    }
+
+    /**
+     * Determines the distance pieces are away from the OpenCV stream's center.
+     * 
+     * @return centerX
      */
     public double getGamePieceX() {
         return centerX.getDouble(0);
