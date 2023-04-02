@@ -891,7 +891,7 @@ public class Auto {
             case 1:
                 // Wrist out
                 AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
-                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1], 2);
+                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1], 3);
                 AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
                 if ((baseStatusEnd   == AngleStates.DONE || baseStatusEnd   == AngleStates.CLOSE) &&
                     (middleStatusEnd == AngleStates.DONE || middleStatusEnd == AngleStates.CLOSE) &&
@@ -902,7 +902,7 @@ public class Auto {
             default:
                 // Finished routine - does not move claw
                 arm.jointToAngle(1, armAngles[0]);
-                arm.jointToAngle(2, armAngles[1], 2);
+                arm.jointToAngle(2, armAngles[1], 3);
                 arm.jointToAngle(3, armAngles[2]);
                 armFirstTime = true;
                 armStep = 1;

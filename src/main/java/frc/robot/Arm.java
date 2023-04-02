@@ -267,7 +267,7 @@ public class Arm {
 			hold(1);
 			hold(2);
 		}
-		setEndPower(power + restArmPowers[3]);
+		setEndPower(power + restArmPowers[2]);
 	}
 
 	public double[] restArmPowers() {
