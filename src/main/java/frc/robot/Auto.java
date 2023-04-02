@@ -14,14 +14,14 @@ import frc.robot.Controls.Objects;
 public class Auto {
     // State tracking variables - each variable can only be used in one function at any time
     // All top level routines use firstTime and step, all helper routines have their own variables
-    private boolean firstTime = true;
     private int step;
+    private boolean firstTime = true;
 
-    private boolean armFirstTime = true;
     private int armStep;
+    private boolean armFirstTime = true;
 
-    private boolean delayFirstTime = true;
     private long delayEnd = 0; // Stores when delay() should return Robot.DONE
+    private boolean delayFirstTime = true;
 
     // Object Creation
     private Drive          drive;
@@ -149,11 +149,11 @@ public class Auto {
             case 7:
                 // Align with cone
                 double angleError = nTables.getGamePieceX();
-                status = drive.alignWithPiece(angleError, 320);
+                status = drive.alignWithPiece(angleError, false);
                 break;
             case 8:
                 // Drive to cone
-                status = drive.driveToCone(1.0, arm.limitButtonPressed(), currPose.getTranslation());
+                status = drive.driveToCone(1.0, arm.limitSwitchPressed(), currPose.getTranslation());
                 break;
             case 9:
                 // Pick up cone
@@ -467,11 +467,11 @@ public class Auto {
             case 7:
                 // Align with cone
                 double angleError = nTables.getGamePieceX();
-                status = drive.alignWithPiece(angleError, 320);
+                status = drive.alignWithPiece(angleError, false);
                 break;
             case 8:
                 // Drive to cone
-                status = drive.driveToCone(1.0, arm.limitButtonPressed(), currPose.getTranslation());
+                status = drive.driveToCone(1.0, arm.limitSwitchPressed(), currPose.getTranslation());
                 break;
             case 9:
                 // Pick up cone

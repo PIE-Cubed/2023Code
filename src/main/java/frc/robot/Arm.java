@@ -491,10 +491,12 @@ public class Arm {
 		claw.set(Value.kForward);
 	}
 
-	/*
-	 * Button methods
+	/**
+	 * Checks if the limit switch is pressed.
+	 * 
+	 * @return limitSwitch
 	 */
-	public boolean limitButtonPressed() {
+	public boolean limitSwitchPressed() {
 		boolean switchVal = (!limitButton0.get()) || (!limitButton9.get());
 		if (switchVal == false) {
 			switchCount++;

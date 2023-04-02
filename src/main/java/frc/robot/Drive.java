@@ -34,6 +34,7 @@ public class Drive {
     private boolean autoPointFirstTime = true;
     private boolean autoPointAngled    = false; // Tracks if wheels have been angled before driving
     private boolean rampFirstTime      = true;  // Used by all ramp-related functions b/c only 1 called at a time
+    private double  camWidth           = 0;
     private double  rampInitRoll       = 0;
     private double  initXVelocity      = 0;
     private double  initYVelocity      = 0;
@@ -78,7 +79,7 @@ public class Drive {
     private static final double ocvp = 0.05; //0.025
     private static final double ocvi = 0.01; //0.01
     private static final double ocvd = 0;
-    PIDController openCVRotateController;
+    PIDController openCVController;
 
     // Ramp balance controller
     private static final double rbP = -0.03; // -0.06 with slow bug 
@@ -171,10 +172,10 @@ public class Drive {
         autoDriveRotateController.setTolerance(AUTO_DRIVE_ROTATE_TOLERANCE);
         autoDriveRotateController.enableContinuousInput(Math.PI, -Math.PI);
 
-        openCVRotateController = new PIDController(ocvp, ocvi, ocvd);
-        openCVRotateController.setTolerance(3);
-        openCVRotateController.enableContinuousInput(180, -180);
-        openCVRotateController.setIntegratorRange(-0.25, 0.25);
+        openCVController = new PIDController(ocvp, ocvi, ocvd);
+        openCVController.setTolerance(3);
+        openCVController.enableContinuousInput(180, -180);
+        openCVController.setIntegratorRange(-0.25, 0.25);
 
         rampBalanceController = new PIDController(rbP, rbI, rbD);
         rampBalanceController.setTolerance(RAMP_BALANCE_TOLERANCE);
@@ -342,23 +343,34 @@ public class Drive {
      * 
      * @param centerX 
      */
-    public int alignWithPiece(double centerX, double width) {
-        double angleError = centerX * (120.0 / width);
+    public int alignWithPiece(double centerX, boolean teleop) {
+        double speed = 0;
+        double angleError = centerX * (120.0 / camWidth);
 
-        double speed = openCVRotateController.calculate(angleError, 0);
-        autoDriveRotateController.setSetpoint(0);
-
+        speed = openCVController.calculate(angleError, 0);
         speed = MathUtil.clamp(speed, -0.5, 0.5);
-        teleopDrive(0, 0, speed, false);
+        openCVController.setSetpoint(0);
 
-        if (openCVRotateController.atSetpoint()) {
+        // Cone-based drive
+        double radians = Math.toRadians(angleError);
+        double xPower = 1.2 * Math.cos(radians);
+        double yPower = 1.2 * Math.sin(radians);
+
+        if (teleop == true) {
+            teleopDrive(xPower, yPower, speed, false);
+        }
+        else {
+            teleopDrive(0, 0, speed, false);
+        }
+
+        if (openCVController.atSetpoint() == true) {
             pieceAlignedCount++;
         }
         else {
             pieceAlignedCount = 0;
         }
 
-        if (pieceAlignedCount > 0) {
+        if ((pieceAlignedCount > 0) && (teleop == false)) {
             pieceAlignedCount = 0;
             stopWheels();
             return Robot.DONE;
@@ -599,6 +611,15 @@ public class Drive {
         frontRight.setDesiredState(desiredStates[1]);
         backLeft  .setDesiredState(desiredStates[2]);
         backRight .setDesiredState(desiredStates[3]);
+    }
+
+    /**
+     * Sets the width of the OpenCV camera.
+     * 
+     * @param width
+     */
+    public void setCamWidth(double width) {
+        camWidth = width;
     }
 
     /****************************************************************************************** 

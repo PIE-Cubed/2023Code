@@ -110,6 +110,9 @@ public class Robot extends TimedRobot {
 			firstTime = false;
 			nTables.setTime(Timer.getFPGATimestamp());
 		}
+
+		// Sets the camera's width
+		drive.setCamWidth(nTables.getCamWidth());
 	}
 
 	@Override
@@ -302,9 +305,7 @@ public class Robot extends TimedRobot {
 	public void testPeriodic() {
 		if (status == Robot.CONT) {
 			double x = nTables.getGamePieceX();
-			double width = nTables.getCamWidth();
-			//System.out.println("Game piece X:" + x);
-			status = drive.alignWithPiece(x, width);
+			status = drive.alignWithPiece(x, false);
 		}
 		else {
 			System.out.println("Done");
@@ -315,31 +316,46 @@ public class Robot extends TimedRobot {
 	 * Controls the wheels in TeleOp
 	 */
 	private void wheelControl() {
-		// Gets Joystick Values
+		// Variables
+		double  centerX           = nTables.getGamePieceX(); 
 		Pose2d  currentLocation   = position.getPose();
-		double  forwardSpeed      = controls.getForwardSpeed();
-		double  strafeSpeed       = controls.getStrafeSpeed();
+		boolean switchPressed     = arm.limitSwitchPressed();
+		boolean recentAprilTag    = position.recentAprilTag(); // Check in pose estimation if we read April Tag within last 5 seconds
+
+		// Gets the Drive Values
 		double  rotateSpeed       = controls.getRotateSpeed();
-		Pose2d  placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
+		double  strafeSpeed       = controls.getStrafeSpeed();
+		double  forwardSpeed      = controls.getForwardSpeed();
+		boolean alignWithPiece    = controls.allignWithPiece();
+		boolean precisionDrive    = controls.enablePrecisionDrive();
+
+		// Gets the Manipulator values
+		boolean zeroYaw           = controls.zeroYaw();
 		boolean autoKill          = controls.autoKill();
 		boolean lockWheels        = controls.lockWheels();
-		boolean zeroYaw           = controls.zeroYaw();
-		boolean precisionDrive    = controls.enablePrecisionDrive();
-		boolean recentAprilTag    = position.recentAprilTag(); // Check in pose estimation if we read April Tag within last 5 seconds
-		
+		Pose2d  placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
+
 		position.updateVision = true;
 
-		if (zeroYaw) {
+		if (zeroYaw == true) {
 			drive.resetYaw();
 		}
 
-		if (lockWheels) {
+		if (lockWheels == true) {
 			drive.crossWheels();
 			drive.resetDriveToPoints();
 			previousPlacementLocation = null;
 			placementPositionError = false;
 		}
-		else if (placementLocation == null || autoKill || (!recentAprilTag)) {
+		else if (alignWithPiece == true) {
+			if (switchPressed == false) {
+				drive.alignWithPiece(centerX, true);
+			}
+			drive.resetDriveToPoints();
+			previousPlacementLocation = null;
+			placementPositionError = false;
+		}
+		else if (placementLocation == null || autoKill == true || (!recentAprilTag)) {
 			if (precisionDrive)  {
 				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3, true);
 			}
@@ -352,7 +368,6 @@ public class Robot extends TimedRobot {
 				double newXVel = newVelocity.getX();
 				double newYVel = newVelocity.getY();
 
-				//drive.teleopDrive(forwardSpeed, strafeSpeed, rotateSpeed, true);
 				drive.teleopDrive(newXVel, newYVel, rotateSpeed, true);
 			}
 			drive.resetDriveToPoints();
@@ -378,7 +393,6 @@ public class Robot extends TimedRobot {
 
 			// Stops trying to position once status is done
 			if (placementStatus == Robot.CONT) {
-				//placementStatus = drive.atDrive(placementLocation.getY(), currentLocation);
 				drive.atDrive(placementLocation, currentLocation);
 				position.updateVision = false;
 			}	
@@ -387,10 +401,10 @@ public class Robot extends TimedRobot {
 
 	private void armControl() {
 		// Add the grabber controls
-		Objects   currentObject    = controls.getClawState();
-		double    manualWristPower = 0; //controls.getManualWristPower();
-		ArmStates inputArmState    = controls.getArmState();
 		boolean   autoKill         = controls.autoKill();
+		Objects   currentObject    = controls.getClawState();
+		ArmStates inputArmState    = controls.getArmState();
+		double    manualWristPower = controls.getManualWristPower();
 
 		// Manual wrist control overrides automatic control
 		if (manualWristPower != 0) {
@@ -462,7 +476,7 @@ public class Robot extends TimedRobot {
 			}
 		}
 
-		if (arm.limitButtonPressed()) {
+		if (arm.limitSwitchPressed()) {
 			Controls.currentObject = Objects.CONE;
 			currentObject = Objects.CONE;
 		}

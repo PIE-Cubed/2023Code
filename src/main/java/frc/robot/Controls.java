@@ -139,10 +139,10 @@ public class Controls {
 	}
 
 	/**
-	 * Gets target location for placing objects in the grid
-	 * When in front of 1 of the 3 sets, holding X, A, and B will
-	 * align with the left cones, cubes, or right cones
-	 * Returns null if nothing is held
+	 * Gets target location for placing objects in the grid.
+	 * When in front of 1 of the 3 sets, holding X, A, and B will align with the left cones, cubes, or right cones
+	 * <p>Returns null if nothing is held
+	 * 
 	 * @return location
 	 */
 	public Pose2d getPlacementLocation(double yLocation, boolean redSide) {
@@ -228,22 +228,37 @@ public class Controls {
 		}
 	}
 
-	/*
+	/**
+	 * Pressing and holding the Y button will automatically align with a gamepiece.
+	 * 
+	 * @return YButton
+	 */
+	public boolean allignWithPiece() {
+		return driveController.getYButton();
+	}
+
+	/**
 	 * Any press on the d-pad will lock the wheels for balancing
+	 * 
+	 * @return lockWheels
 	 */
 	public boolean lockWheels() {
 		return (driveController.getPOV() != -1);
 	}
 	
-	/*
+	/**
 	 * Pressing left joystick will zero yaw in case of emergency
+	 * 
+	 * @return zeroYaw
 	 */
 	public boolean zeroYaw() {
 		return driveController.getLeftStickButtonPressed();
 	}
 	
-	/*
+	/**
 	 * Holding right trigger will enable precision control
+	 * 
+	 * @return precisionControl
 	 */
 	public boolean enablePrecisionDrive() {
 		return driveController.getRightTriggerAxis() > 0.05;
