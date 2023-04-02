@@ -807,6 +807,69 @@ public class Auto {
      * 
      * @return
      */
+    public int armToTopConeTeleop() {    
+        double[] armAngles = Arm.TOP_CONE_ANGLES;
+
+		if (armFirstTime == true) {
+			armFirstTime = false;
+			armStep = 1;
+		}
+
+        switch(armStep) {
+            case 1:
+                // Middle out, base slightly
+                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6, 2.5);
+                arm.jointToAngle(1, 1.4, 3);
+                arm.jointToAngle(3, -2.4);
+
+                // If base and middle are close to or at target position, go to next step
+                if ((middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            case 2:
+                // Base and middle out
+                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0], 1.5);
+                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 2);
+                arm.hold(3);
+
+                // If base and middle are close to or at target position, go to next step
+                if ((baseStatus2   == AngleStates.DONE || baseStatus2   == AngleStates.CLOSE) &&
+                    (middleStatus2 == AngleStates.DONE || middleStatus2 == AngleStates.CLOSE)) {
+                    armStep++;
+                }
+                break;
+            case 3:
+                // Wrist out
+                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0], 0.7);
+                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
+                AngleStates endStatusEnd    = arm.jointToAngle(3, -0.1, 0.7);
+                if (baseStatusEnd   == AngleStates.DONE &&
+                    middleStatusEnd == AngleStates.DONE &&
+                    endStatusEnd    == AngleStates.DONE) {
+                        armStep++;
+                }
+                break;
+            case 4:
+                // Finished routine
+                arm.hold(1);
+                arm.hold(2);
+                arm.hold(3);
+                //arm.jointToAngle(1, armAngles[0]);
+                //arm.jointToAngle(2, armAngles[1]);
+                //arm.jointToAngle(3, armAngles[2]);
+                armFirstTime = true;
+                armStep = 1;
+                return Robot.DONE;
+        }
+        
+        return Robot.CONT;
+    }
+
+    /**
+     * 
+     * @return
+     */
     public int armToTopCube() {    
         double[] armAngles = Arm.TOP_CUBE_ANGLES;
         

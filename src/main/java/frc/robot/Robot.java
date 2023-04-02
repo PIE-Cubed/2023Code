@@ -449,7 +449,7 @@ public class Robot extends TimedRobot {
 					fromTop = false;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CONE) {
-					armStatus = auto.armToTopCone();
+					armStatus = auto.armToTopConeTeleop();
 					fromTop = true;
 				}
 				else if (acceptedArmState == ArmStates.TOP_CUBE) {

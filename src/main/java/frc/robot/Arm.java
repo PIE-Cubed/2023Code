@@ -502,7 +502,7 @@ public class Arm {
 			switchCount++;
 		}
 
-		if ((switchCount > 25) && (switchVal == true)) {
+		if ((switchCount > 75) && (switchVal == true)) {
 			switchCount = 0;
 			return true;
 		}
