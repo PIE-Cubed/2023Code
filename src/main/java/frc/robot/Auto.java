@@ -145,6 +145,7 @@ public class Auto {
                 // Bring down wrist
                 status = armToGrabPosition();
                 Robot.acceptedArmState = ArmStates.GRAB;
+                Controls.armState = ArmStates.GRAB;
                 break;
             case 7:
                 // Align with cone
@@ -459,10 +460,11 @@ public class Auto {
                 status = drive.autoDriveToPoints(new Pose2d[]{pose2, pose3}, currPose);
                 resetArmRoutines();
                 break;
-                case 6:
+            case 6:
                 // Bring down wrist
                 status = armToGrabPosition();
                 Robot.acceptedArmState = ArmStates.GRAB;
+                Controls.armState = ArmStates.GRAB;
                 break;
             case 7:
                 // Align with cone
