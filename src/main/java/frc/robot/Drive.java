@@ -353,8 +353,8 @@ public class Drive {
 
         // Cone-based drive
         double radians = Math.toRadians(angleError);
-        double xPower = 1.2 * Math.cos(radians);
-        double yPower = 1.2 * Math.sin(radians);
+        double xPower = 0.80 * Math.cos(radians);
+        double yPower = 0.80 * Math.sin(radians);
 
         if (teleop == true) {
             teleopDrive(xPower, yPower, speed, false);
@@ -811,6 +811,13 @@ public class Drive {
             System.out.println("Adjusted angle: " + getYawAdjusted());
         }
         printCount++;
+    }
+
+    /**
+     * 
+     */
+    public void printRoll() {
+        System.out.println("Roll: " + ahrs.getRoll());
     }
 
     /**

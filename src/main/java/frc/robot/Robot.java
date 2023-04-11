@@ -303,13 +303,14 @@ public class Robot extends TimedRobot {
 	 * Runs every 20 miliseconds during Test.
 	 */
 	public void testPeriodic() {
-		if (status == Robot.CONT) {
-			double x = nTables.getGamePieceX();
-			status = drive.alignWithPiece(x, false);
-		}
-		else {
-			System.out.println("Done");
-		}
+		// if (status == Robot.CONT) {
+		// 	double x = nTables.getGamePieceX();
+		// 	status = drive.alignWithPiece(x, false);
+		// }
+		// else {
+		// 	System.out.println("Done");
+		// }
+		drive.printRoll();
 	}
 
 	/**
