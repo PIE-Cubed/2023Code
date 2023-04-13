@@ -28,6 +28,7 @@ public class Auto {
     private PoseEstimation position;
     private Arm            arm;
     private CustomTables   nTables;
+    private Controls       controls;
 
     // Constants for starting poses for each auto
     public final Translation2d RAMP_RED_START    = new Translation2d(1.767, 4.699);
@@ -50,7 +51,7 @@ public class Auto {
     private Pose2d[] listOfPoints = new Pose2d[autoCoordinates.length];
 
     // Constructor
-    public Auto(Drive drive, PoseEstimation position, Arm arm) {
+    public Auto(Drive drive, PoseEstimation position, Arm arm, Controls controls) {
         // Iterating through array of poses
         for (int i = 0; i < autoCoordinates.length; i++) {
             // Passing each item of the inner array as an argument for a Pose object
@@ -63,6 +64,7 @@ public class Auto {
         this.drive    = drive;
         this.position = position;
         this.arm      = arm;
+        this.controls = controls;
         this.nTables  = CustomTables.getInstance();
     }
 
@@ -154,7 +156,7 @@ public class Auto {
                 break;
             case 8:
                 // Drive to cone
-                status = drive.driveToCone(1.0, arm.limitSwitchPressed(), currPose.getTranslation());
+                status = drive.driveToCone(1.0, controls.limitSwitchPressed(), currPose.getTranslation());
                 break;
             case 9:
                 // Pick up cone
@@ -473,7 +475,7 @@ public class Auto {
                 break;
             case 8:
                 // Drive to cone
-                status = drive.driveToCone(1.0, arm.limitSwitchPressed(), currPose.getTranslation());
+                status = drive.driveToCone(1.0, controls.limitSwitchPressed(), currPose.getTranslation());
                 break;
             case 9:
                 // Pick up cone

@@ -5,7 +5,6 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -20,18 +19,17 @@ public class Arm {
     private CANSparkMax middleMotor; 
     private CANSparkMax endMotor;
 
+	private CANSparkMax leadIntake;
+	private CANSparkMax followIntake;
+
     private AbsoluteEncoder baseAbsoluteEncoder;
     private AbsoluteEncoder middleAbsoluteEncoder;
     private AbsoluteEncoder endAbsoluteEncoder;
 
 	private DoubleSolenoid  claw;
 
-	private DigitalInput limitButton0;
-	private DigitalInput limitButton9;
-
 	private final int PNEU_CONTROLLER_ID = 1;
 	private double printCount = 0;
-	private int switchCount = 0;
 	
     // Constants
     private final double LENGTH_BASE   = 0.5545;
@@ -48,11 +46,13 @@ public class Arm {
 
 	// Max motor powers
 	private final double MAX_END_POWER = 0.7; //0.4 is slow
+	private final double INTAKE_POWER  = 0.3;
+	private final double OUTPUT_POWER  = -0.3;
 	
 	// Masses in kg - updated for new arm
 	private final double BASE_MASS    = 3.175;
 	private final double MIDDLE_MASS  = 1.814;
-	private final double END_MASS     = 1.633;
+	private final double END_MASS     = 2.495;
 	private final double JOINT_2_MASS = 0.395;
 	private final double JOINT_3_MASS = 0.671;
 	private final double CONE_MASS    = 0.652;
@@ -123,6 +123,10 @@ public class Arm {
         middleAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
         endAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
 		endAbsoluteEncoder.setInverted(true);
+
+		leadIntake   = new CANSparkMax(8, MotorType.kBrushless);
+		followIntake = new CANSparkMax(9, MotorType.kBrushless);
+		followIntake.follow(leadIntake, true);
 		
 		basePID   = new PIDController(p1, 0, 0);
 		middlePID = new PIDController(p2, 0, 0);
@@ -131,10 +135,19 @@ public class Arm {
 		basePID.setTolerance(BASE_TOLERANCE);
 		middlePID.setTolerance(MIDDLE_TOLERANCE);
 		endPID.setTolerance(END_TOLERANCE);
-
-		limitButton0 = new DigitalInput(0);
-		limitButton9 = new DigitalInput(9);
     }
+
+	public void startIntake() {
+		leadIntake.set(INTAKE_POWER);
+	}
+
+	public void startEject() {
+		leadIntake.set(OUTPUT_POWER);
+	}
+
+	public void stopIntake() {
+		leadIntake.set(0);
+	}
 
 	public void hold(int joint) {
 		if (joint == 1) {
@@ -491,29 +504,6 @@ public class Arm {
 		claw.set(Value.kForward);
 	}
 
-	/**
-	 * Checks if the limit switch is pressed.
-	 * 
-	 * @return limitSwitch
-	 */
-	public boolean limitSwitchPressed() {
-		boolean switchVal = (!limitButton0.get()) || (!limitButton9.get());
-		if (switchVal == false) {
-			switchCount++;
-		}
-
-		if ((switchCount > 75) && (switchVal == true)) {
-			switchCount = 0;
-			return true;
-		}
-
-		if (switchVal == true) {
-			switchCount = 0;
-		}
-
-		return false;
-	}
-
 	/*
 	 * Test functions
 	 */
@@ -568,5 +558,9 @@ public class Arm {
 
 		double baseTorque = torqueJoint1(q1, q2, q3);
 		baseMotor.set(baseTorque * -0.01);
+	}
+
+	public void testIntakeMotors() {
+		leadIntake.set(0.3);
 	}
 }

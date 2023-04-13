@@ -67,6 +67,17 @@ public class Robot extends TimedRobot {
 	// Auto Delay
 	private long delaySec = 0;
 
+	// Grabber states
+	public static enum GrabberStates {
+		EMPTY,
+		HOLDING_CONE,
+		HOLDING_CUBE,
+		INTAKING_CONE,
+		INTAKING_CUBE,
+		EJECTING
+	}
+	public static GrabberStates grabberState = GrabberStates.EMPTY;
+
 	/**
 	 * Constructor
 	 */
@@ -76,7 +87,7 @@ public class Robot extends TimedRobot {
 		drive    = new Drive();
 		controls = new Controls();
 		position = new PoseEstimation(drive);
-		auto     = new Auto(drive, position, arm);
+		auto     = new Auto(drive, position, arm, controls);
 
 		// Instance getters
 		led      = LED.getInstance();
@@ -157,6 +168,7 @@ public class Robot extends TimedRobot {
 		// Sets the auto path to the selected one
 		switch (m_autoSelected) {
 			case wallAuto:
+				grabberState = GrabberStates.HOLDING_CONE;
 				if (isRed == true) {
 					startPose = new Pose2d(auto.WALL_RED_START, new Rotation2d(Math.PI));
 				}
@@ -165,6 +177,7 @@ public class Robot extends TimedRobot {
 				}
 				break;
 			case rampAutoCone:
+				grabberState = GrabberStates.HOLDING_CONE;
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -173,6 +186,7 @@ public class Robot extends TimedRobot {
 				}
 				break;
 			case rampAutoCube:
+				grabberState = GrabberStates.HOLDING_CUBE;
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -181,6 +195,7 @@ public class Robot extends TimedRobot {
 				}
 				break;
 			case rampAutoFullLeftCone:
+				grabberState = GrabberStates.HOLDING_CONE;
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -189,6 +204,7 @@ public class Robot extends TimedRobot {
 				}
 				break;
 			case rampAutoFullRightCone:
+				grabberState = GrabberStates.HOLDING_CONE;
 				if (isRed == true) {
 					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
 				}
@@ -197,6 +213,7 @@ public class Robot extends TimedRobot {
 				}
 				break;
 			case centerAuto:
+				grabberState = GrabberStates.HOLDING_CONE;
 				if (isRed == true) {
 					startPose = new Pose2d(auto.CENTER_RED_START, new Rotation2d(Math.PI));
 				}
@@ -263,6 +280,7 @@ public class Robot extends TimedRobot {
 	 * Runs ever 20 miliseconds during TeleOp.
 	 */
 	public void teleopPeriodic() {
+		grabberControl();
 		armControl();
 		wheelControl();
 		ledControl();
@@ -310,7 +328,7 @@ public class Robot extends TimedRobot {
 		// else {
 		// 	System.out.println("Done");
 		// }
-		drive.printRoll();
+		arm.startIntake();
 	}
 
 	/**
@@ -320,7 +338,7 @@ public class Robot extends TimedRobot {
 		// Variables
 		double  centerX           = nTables.getGamePieceX(); 
 		Pose2d  currentLocation   = position.getPose();
-		boolean switchPressed     = arm.limitSwitchPressed();
+		boolean switchPressed     = controls.limitSwitchPressed();
 		boolean recentAprilTag    = position.recentAprilTag(); // Check in pose estimation if we read April Tag within last 5 seconds
 
 		// Gets the Drive Values
@@ -403,7 +421,6 @@ public class Robot extends TimedRobot {
 	private void armControl() {
 		// Add the grabber controls
 		boolean   autoKill         = controls.autoKill();
-		Objects   currentObject    = controls.getClawState();
 		double    manualWristPower = controls.getManualWristPower();
 		ArmStates inputArmState    = controls.getArmState();
 
@@ -476,18 +493,75 @@ public class Robot extends TimedRobot {
 				}
 			}
 		}
+	}
 
-		if (arm.limitSwitchPressed()) {
-			Controls.currentObject = Objects.CONE;
-			currentObject = Objects.CONE;
-		}
+	private void grabberControl() {
+		boolean intakeCube = controls.getLeftBumper(); // Checks if we are holding L bumper to intake cube
+		boolean intakeCone = controls.getRightBumper(); // Checks if we are holding R bumper to intake cone
+		boolean eject = controls.getTrigger(); // Checks if we are holding a trigger to eject our object
+		boolean limitButton = controls.limitSwitchPressed(); // Checks if button on back of claw is hit
 
-		if (currentObject == Objects.EMPTY) {
+		if (grabberState == GrabberStates.EMPTY) {
+			// Action
+			arm.stopIntake();
 			arm.openClaw();
+
+			// Next states
+			if (intakeCone) {
+				grabberState = GrabberStates.INTAKING_CONE;
+			}
+			else if (intakeCube) {
+				grabberState = GrabberStates.INTAKING_CUBE;
+			}
 		}
-		else {
+		else if (grabberState == GrabberStates.INTAKING_CONE) {
+			// Action
+			arm.startIntake();
+			arm.openClaw();
+
+			// Next states
+			if (limitButton || (!intakeCone)) {
+				grabberState = GrabberStates.HOLDING_CONE;
+			}
+		}
+		else if (grabberState == GrabberStates.INTAKING_CUBE) {
+			// Action
+			arm.startIntake();
+			arm.openClaw();
+
+			// Next states
+			if (limitButton || (!intakeCube)) {
+				grabberState = GrabberStates.HOLDING_CUBE;
+			}
+		}
+		else if (grabberState == GrabberStates.HOLDING_CONE || grabberState == GrabberStates.HOLDING_CUBE) {
+			// Action
+			arm.stopIntake();
 			arm.closeClaw();
+
+			// Next states
+			if (eject) {
+				grabberState = GrabberStates.EJECTING;
+			}
+			// Can switch objects in case of mistake while holding
+			else if (intakeCone) {
+				grabberState = GrabberStates.HOLDING_CONE;
+			}
+			else if (intakeCube) {
+				grabberState = GrabberStates.HOLDING_CUBE;
+			}
 		}
+		else if (grabberState == GrabberStates.EJECTING) {
+			// Action
+			arm.startEject();
+			arm.openClaw();
+
+			// Next states
+			if (!eject) {
+				grabberState = GrabberStates.EMPTY;
+			}
+		}
+
 	}
 
 	private void ledControl() {

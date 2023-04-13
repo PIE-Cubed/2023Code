@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DigitalInput;
 
 /**
  * Start of the Controls class
@@ -26,6 +27,11 @@ public class Controls {
 	private XboxController driveController;
 	private XboxController armController;
 
+	private boolean lastTriggerPressed = false;
+
+	// Limit button on claw
+	private DigitalInput limitButton;
+
 	// Rate limiters
 	private SlewRateLimiter xLimiter;
 	private SlewRateLimiter yLimiter;
@@ -37,6 +43,7 @@ public class Controls {
 		CUBE,
 		EMPTY
 	};
+	private Objects lastObjectInput;
 	public static Objects currentObject;
 
 	// Enumeration for which position the arm is at
@@ -60,13 +67,16 @@ public class Controls {
 		driveController = new XboxController(DRIVE_ID);
 		armController   = new XboxController(ARM_ID);
 
+		limitButton = new DigitalInput(0);
+
 		// Create the rate limiters
 		xLimiter      = new SlewRateLimiter(12); // -6 to 6 in two seconds
 		yLimiter      = new SlewRateLimiter(12); // -6 to 6 in two seconds
 		rotateLimiter = new SlewRateLimiter(6 * Math.PI);
 
-		currentObject = Objects.EMPTY;
-		armState      = ArmStates.REST;
+		lastObjectInput = Objects.CONE;
+		currentObject   = Objects.EMPTY;
+		armState        = ArmStates.REST;
 	}
 
 	/****************************************************************************************** 
@@ -276,22 +286,58 @@ public class Controls {
 	 * Cone and cube have different weight, so the arm should know which one we are holding.
 	 * @return currentObject
 	 */
-	public Objects getClawState() {
-		// Pressing a bumper will grab an object or update the object we are holding
+	public boolean getStartIntake() {
+		if (armController.getLeftBumperPressed()) {
+			lastObjectInput = Objects.CUBE;
+			return true;
+		}
 		if (armController.getRightBumperPressed()) {
-			currentObject = Objects.CONE;
+			lastObjectInput = Objects.CONE;
+			return true;
 		}
-		else if (armController.getLeftBumperPressed()) {
-			currentObject = Objects.CUBE;
+		return false;
+	}
+
+	public boolean getEndIntake() {
+		// Releasing bumper stops intake and stores an object
+		if (armController.getLeftBumperReleased() || armController.getRightBumperReleased()) {
+			currentObject   = lastObjectInput;
+			lastObjectInput = Objects.CONE; // If the limit button gets hit before we start the wheels, it was most likely a cone
+			return true;
 		}
-		// Pressing a trigger will release the object
-		else {
-			if (armController.getLeftTriggerAxis() > 0.1 || armController.getRightTriggerAxis() > 0.1) {
-				currentObject = Objects.EMPTY;
-			}
+		// Releasing trigger stops eject and stores empty
+		if (getArmTriggerReleased()) {
+			currentObject = Objects.EMPTY;
+			lastObjectInput = Objects.CONE; // If the limit button gets hit before we start the wheels, it was most likely a cone
+			return true;
+		}
+		// Hitting limit button while holding bumpers stops intake and stores an object
+		if ((armController.getLeftBumper() || armController.getRightBumper()) && limitSwitchPressed()) {
+			currentObject   = lastObjectInput;
+			lastObjectInput = Objects.CONE; // If the limit button gets hit before we start the wheels, it was most likely a cone
+			return true;
 		}
 
-		return currentObject;
+		// Nothing happened, do not stop intake
+		return false;
+	}
+
+	public boolean getStartEject() {
+		lastObjectInput = Objects.CONE;
+		currentObject   = Objects.EMPTY;
+		return getArmTriggerPressed();
+	}
+
+	public boolean getLeftBumper() {
+		return armController.getLeftBumper();
+	}
+
+	public boolean getRightBumper() {
+		return armController.getRightBumper();
+	}
+
+	public boolean getTrigger() {
+		return (armController.getLeftTriggerAxis() > 0.01 || armController.getRightTriggerAxis() > 0.01);
 	}
 
 	/**
@@ -307,10 +353,10 @@ public class Controls {
 			armState = ArmStates.REST;
 		}
 		else if (armController.getBButton()) {
-			armState = (getClawState() == Objects.CONE)? ArmStates.MID_CONE : ArmStates.MID_CUBE;
+			armState = (Robot.grabberState == Robot.GrabberStates.HOLDING_CONE)? ArmStates.MID_CONE : ArmStates.MID_CUBE;
 		}
 		else if (armController.getYButton()) {
-			armState = (getClawState() == Objects.CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
+			armState = (Robot.grabberState == Robot.GrabberStates.HOLDING_CONE)? ArmStates.TOP_CONE : ArmStates.TOP_CUBE;
 		}
 		else if (armController.getPOV() == 270) {
 			armState = ArmStates.SHELF;
@@ -348,6 +394,47 @@ public class Controls {
 		}
 		else {
 			return 0;
+		}
+	}
+
+	public Objects getClawState() {
+		return currentObject;
+	}
+
+	/**
+	 * Checks if the limit switch is pressed.
+	 * @return limitSwitch
+	 */
+	public boolean limitSwitchPressed() {
+		return !limitButton.get();
+	}
+
+	/*
+	 * These two functions implement logic of only activating once upon pressing or releasing trigger
+	 */
+	public boolean getArmTriggerPressed() {
+		boolean triggerPressed = (armController.getLeftTriggerAxis() > 0.01 || armController.getRightTriggerAxis() > 0.01);
+
+		if (triggerPressed && (!lastTriggerPressed)) {
+			lastTriggerPressed = triggerPressed;
+			return true;
+		}
+		else {
+			lastTriggerPressed = triggerPressed;
+			return false;
+		}
+	}
+
+	public boolean getArmTriggerReleased() {
+		boolean triggerOff = (armController.getLeftTriggerAxis() <= 0.01 && armController.getRightTriggerAxis() <= 0.01);
+
+		if (triggerOff && lastTriggerPressed) {
+			lastTriggerPressed = !triggerOff;
+			return true;
+		}
+		else {
+			lastTriggerPressed = !triggerOff;
+			return false;
 		}
 	}
 
