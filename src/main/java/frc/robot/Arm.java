@@ -308,7 +308,7 @@ public class Arm {
 	// Positive torque --> toward positive angle. If arm is back to positive X, it will have a negative torque, therefore, X is multiplied by -1
 	// kg * m^2/s^2
     public double torqueJoint1(double q1, double q2, double q3) {
-		// Note: gravity lever arm is simply the X distance from the joint
+		// Gravity
 		double joint2X       = LENGTH_BASE * Math.cos(q1);
 		double joint3X       = joint2X + LENGTH_MIDDLE * Math.cos(q1 + q2);
 		double endX          = joint3X + LENGTH_END * Math.cos(q1 + q2 + q3);
@@ -333,6 +333,23 @@ public class Arm {
 		double baseTorque    = BASE_MASS    * -1 * baseCenterX;
 		double middleTorque  = MIDDLE_MASS  * -1 * middleCenterX;
 		double endTorque     = END_MASS     * -1 * endCenterX;
+
+		// Centripetal force from middle movement (which swings middle and end together)
+		double centripetalForceMiddle = MIDDLE_MASS * middleAbsoluteEncoder.getVelocity() * (LENGTH_MIDDLE / 2); // Fc = m * w * r
+		double centripetalLeverMiddle = LENGTH_BASE * Math.sin(q2);
+
+		double joint2Y        = LENGTH_BASE * Math.sin(q1);
+		double joint3Y        = joint2Y + LENGTH_MIDDLE * Math.sin(q1 + q2);
+		double endCenterY     = joint3Y + (LENGTH_END / 2) * Math.sin(q1 + q2 + q3);
+		double endCenterDist  = Math.hypot(endCenterX-joint2X, endCenterY-joint2Y);
+		double endCenterAngle = Math.atan2(endCenterY-joint2X, endCenterX-joint2Y);
+
+		double centripetalForceEnd = END_MASS * middleAbsoluteEncoder.getVelocity() * endCenterDist; // Fc = m * w * r
+		double centripetalLeverEnd = LENGTH_BASE * Math.sin(endCenterAngle);
+		double centripetalTorque   = centripetalForceMiddle * centripetalLeverMiddle + centripetalForceEnd * centripetalLeverEnd;
+		SmartDashboard.putNumber("Centripetal Torque 1", centripetalTorque);
+		SmartDashboard.putNumber("q2", q2);
+		SmartDashboard.putNumber("q3", q3);
 		
 		return joint2Torque + joint3Torque + clawTorque + baseTorque + middleTorque + endTorque;
 	}
@@ -359,6 +376,13 @@ public class Arm {
 		
 		double middleTorque  = MIDDLE_MASS  * -1 * middleCenterX;
 		double endTorque     = END_MASS     * -1 * endCenterX;
+
+		// Centripetal force from end
+		double centripetalForce = END_MASS * endAbsoluteEncoder.getVelocity() * (LENGTH_END / 2); // Fc = m * w * r
+		double centripetalLever = LENGTH_MIDDLE * Math.sin(q3);
+		double centripetalTorque = centripetalForce * centripetalLever;
+		SmartDashboard.putNumber("Centripetal Torque 2", centripetalTorque);
+		SmartDashboard.putNumber("q3", q3);
 		
 		return joint3Torque + clawTorque + middleTorque + endTorque;
 	}
@@ -378,6 +402,8 @@ public class Arm {
 		
 		double clawTorque    = objectMass * -1 * (endX - 0.15); // Implement cone/cube mass
 		double endTorque     = END_MASS   * -1 * endCenterX;
+
+		// No centripetal force
 		
 		return clawTorque + endTorque;
 	}
