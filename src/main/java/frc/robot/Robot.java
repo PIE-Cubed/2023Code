@@ -328,7 +328,8 @@ public class Robot extends TimedRobot {
 		// else {
 		// 	System.out.println("Done");
 		// }
-		arm.startIntake();
+		//arm.startIntake();
+		arm.hold(3);
 	}
 
 	/**

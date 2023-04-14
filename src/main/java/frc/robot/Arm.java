@@ -46,7 +46,7 @@ public class Arm {
 
 	// Max motor powers
 	private final double MAX_END_POWER = 0.7; //0.4 is slow
-	private final double INTAKE_POWER  = 0.3;
+	private final double INTAKE_POWER  = 0.6;
 	private final double OUTPUT_POWER  = -0.3;
 	
 	// Masses in kg - updated for new arm
@@ -124,9 +124,12 @@ public class Arm {
         endAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
 		endAbsoluteEncoder.setInverted(true);
 
-		leadIntake   = new CANSparkMax(8, MotorType.kBrushless);
-		followIntake = new CANSparkMax(9, MotorType.kBrushless);
+		leadIntake   = new CANSparkMax(9, MotorType.kBrushless);
+		followIntake = new CANSparkMax(8, MotorType.kBrushless);
 		followIntake.follow(leadIntake, true);
+
+		leadIntake.setIdleMode(IdleMode.kBrake);
+		followIntake.setIdleMode(IdleMode.kBrake);
 		
 		basePID   = new PIDController(p1, 0, 0);
 		middlePID = new PIDController(p2, 0, 0);
