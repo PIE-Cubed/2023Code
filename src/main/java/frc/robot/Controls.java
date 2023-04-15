@@ -5,6 +5,7 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.XboxController;
+import frc.robot.Robot.GrabberStates;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -375,14 +376,14 @@ public class Controls {
 	public double getManualWristPower() {
 		// Higher power if we are grabbing heavier object
 		double manualPower;
-		if (getClawState() == Objects.EMPTY) {
-			manualPower = 0.08;
+		if (Robot.grabberState == GrabberStates.HOLDING_CONE) {
+			manualPower = 0.32;
 		}
-		else if (getClawState() == Objects.CONE) {
-			manualPower = 0.24;
+		else if (Robot.grabberState == GrabberStates.HOLDING_CUBE) {
+			manualPower = 0.20;
 		}
 		else {
-			manualPower = 0.16;
+			manualPower = 0.12;
 		}
 
 		// Up on D-pad

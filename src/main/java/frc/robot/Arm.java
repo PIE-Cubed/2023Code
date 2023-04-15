@@ -12,6 +12,8 @@ import edu.wpi.first.math.MathUtil;
 import com.revrobotics.CANSparkMax.IdleMode;
 import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
+import frc.robot.Robot.GrabberStates;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Arm {
     // Object Creation
@@ -85,9 +87,9 @@ public class Arm {
 
 	// Angles for all positions
 	public static double[] REST_ANGLES     = {0.825, 2.8, -2.9};
-	public static double[] MID_CONE_ANGLES = {1.135, 1.86, -0.32};
+	public static double[] MID_CONE_ANGLES = {1.05, 2.0, -0.32};
 	public static double[] MID_CUBE_ANGLES = {0.825, 1.826, 0.45};
-	public static double[] TOP_CONE_ANGLES = {2.10, 0.3, 0.1}; // Old base - 2.15, 3/4 and before
+	public static double[] TOP_CONE_ANGLES = {2.15, 0.1, 0.6};
 	public static double[] TOP_CUBE_ANGLES = {2.1, 0.4, 0.0};
 	public static double[] SHELF_ANGLES    = {0.825, 1.28, 1.31};
 	public static double[] CHUTE_ANGLES    = {0.825, 2.512, -1.12};//{0.825, 2.512, -1.24};
@@ -321,10 +323,10 @@ public class Arm {
 		double joint3Torque  = JOINT_3_MASS * -1 * joint3X;
 
 		double objectMass = 0;
-		if (Controls.currentObject == Objects.CONE) {
+		if (Robot.grabberState == GrabberStates.HOLDING_CONE) {
 			objectMass = CONE_MASS;
 		}
-		else if (Controls.currentObject == Objects.CUBE) {
+		else if (Robot.grabberState == GrabberStates.HOLDING_CUBE) {
 			objectMass = CUBE_MASS;
 		}
 
@@ -347,9 +349,9 @@ public class Arm {
 		double centripetalForceEnd = END_MASS * middleAbsoluteEncoder.getVelocity() * endCenterDist; // Fc = m * w * r
 		double centripetalLeverEnd = LENGTH_BASE * Math.sin(endCenterAngle);
 		double centripetalTorque   = centripetalForceMiddle * centripetalLeverMiddle + centripetalForceEnd * centripetalLeverEnd;
-		SmartDashboard.putNumber("Centripetal Torque 1", centripetalTorque);
-		SmartDashboard.putNumber("q2", q2);
-		SmartDashboard.putNumber("q3", q3);
+		//SmartDashboard.putNumber("Centripetal Torque 1", centripetalTorque);
+		//SmartDashboard.putNumber("q2", q2);
+		//SmartDashboard.putNumber("q3", q3);
 		
 		return joint2Torque + joint3Torque + clawTorque + baseTorque + middleTorque + endTorque;
 	}
@@ -365,10 +367,10 @@ public class Arm {
 		double joint3Torque  = JOINT_3_MASS * -1 * joint3X;
 
 		double objectMass = 0;
-		if (Controls.currentObject == Objects.CONE) {
+		if (Robot.grabberState == GrabberStates.HOLDING_CONE) {
 			objectMass = CONE_MASS;
 		}
-		else if (Controls.currentObject == Objects.CUBE) {
+		else if (Robot.grabberState == GrabberStates.HOLDING_CUBE) {
 			objectMass = CUBE_MASS;
 		}
 
@@ -382,6 +384,7 @@ public class Arm {
 		double centripetalLever = LENGTH_MIDDLE * Math.sin(q3);
 		double centripetalTorque = centripetalForce * centripetalLever;
 		SmartDashboard.putNumber("Centripetal Torque 2", centripetalTorque);
+		SmartDashboard.putNumber("Gravity torque q2", joint3Torque + clawTorque + middleTorque + endTorque);
 		SmartDashboard.putNumber("q3", q3);
 		
 		return joint3Torque + clawTorque + middleTorque + endTorque;
@@ -393,10 +396,10 @@ public class Arm {
 		double endCenterX    = endX / 2;
 
 		double objectMass = 0;
-		if (Controls.currentObject == Objects.CONE) {
+		if (Robot.grabberState == GrabberStates.HOLDING_CONE) {
 			objectMass = CONE_MASS;
 		}
-		else if (Controls.currentObject == Objects.CUBE) {
+		else if (Robot.grabberState == GrabberStates.HOLDING_CUBE) {
 			objectMass = CUBE_MASS;
 		}
 		
