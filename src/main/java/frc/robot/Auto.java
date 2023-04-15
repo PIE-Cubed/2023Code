@@ -708,9 +708,9 @@ public class Auto {
     public int armToMidCube() {    
         double[] armAngles = Arm.MID_CUBE_ANGLES;
 
-        AngleStates baseState   = arm.jointToAngle(1, armAngles[0], 2);
-        AngleStates middleState = arm.jointToAngle(2, armAngles[1], 4);
-        AngleStates endState    = arm.jointToAngle(3, armAngles[2], 2);
+        AngleStates baseState   = arm.jointToAngle(1, armAngles[0], 1);
+        AngleStates middleState = arm.jointToAngle(2, armAngles[1], 2);
+        AngleStates endState    = arm.jointToAngle(3, armAngles[2], 1);
         
         if (baseState   == AngleStates.DONE &&
             middleState == AngleStates.DONE &&
@@ -877,6 +877,18 @@ public class Auto {
     public int armToTopCube() {    
         double[] armAngles = Arm.TOP_CUBE_ANGLES;
         
+        AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 1); // 0.75 speed
+        AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 2);
+        AngleStates endStatus    = arm.jointToAngle(3, armAngles[2], 0.75);
+
+        if ((baseStatus   == AngleStates.DONE || baseStatus   == AngleStates.CLOSE) &&
+            (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
+            (endStatus    == AngleStates.DONE || endStatus   == AngleStates.CLOSE)) {
+                return Robot.DONE;
+        }
+        return Robot.CONT;
+
+        /*
 		if (armFirstTime == true) {
 			armFirstTime = false;
 			armStep = 1;
@@ -884,40 +896,30 @@ public class Auto {
 
         switch(armStep) {
             case 1:
-                // Middle out
-                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6, 3);
-                arm.jointToAngle(1, 1.25);
-                arm.jointToAngle(3, -2.2);
+                // Base and middle out
+                AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 1);
+                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 1);
 
                 // If base and middle are close to or at target position, go to next step
-                if ((middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
+                if ((middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
+                    (baseStatus == AngleStates.DONE || baseStatus == AngleStates.CLOSE)) {
                     armStep++;
                 }
                 break;
             case 2:
-                // Base and middle out
-                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0], 1.2);
-                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 2);
-                arm.hold(3);
+                // End last
+                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0], 1);
+                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 1);
+                AngleStates endStatus     = arm.jointToAngle(3, armAngles[2], 1);
 
-                // If base and middle are close to or at target position, go to next step
+                // Everything is close, go to last step
                 if ((baseStatus2   == AngleStates.DONE || baseStatus2   == AngleStates.CLOSE) &&
-                    (middleStatus2 == AngleStates.DONE || middleStatus2 == AngleStates.CLOSE)) {
+                    (middleStatus2 == AngleStates.DONE || middleStatus2 == AngleStates.CLOSE) &&
+                    (endStatus     == AngleStates.DONE || endStatus     == AngleStates.CLOSE)) {
                     armStep++;
                 }
                 break;
             case 3:
-                // Wrist out
-                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
-                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
-                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
-                if (baseStatusEnd   == AngleStates.DONE &&
-                    middleStatusEnd == AngleStates.DONE &&
-                    endStatusEnd    == AngleStates.DONE) {
-                        armStep++;
-                }
-                break;
-            case 4:
                 // Finished routine
                 arm.jointToAngle(1, armAngles[0]);
                 arm.jointToAngle(2, armAngles[1]);
@@ -927,7 +929,7 @@ public class Auto {
                 return Robot.DONE;
         }
         
-        return Robot.CONT;
+        return Robot.CONT;*/
     }
 
     /**

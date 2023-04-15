@@ -48,7 +48,8 @@ public class Arm {
 	// Max motor powers
 	private final double MAX_END_POWER = 0.7;
 	private final double INTAKE_POWER  = 0.6;
-	private final double OUTPUT_POWER  = -0.3; //-0.85 is good for shooting at a range
+	private final double OUTPUT_POWER  = -0.3;
+	private final double LAUNCH_POWER  = -0.85;
 	
 	// Masses in kg - updated for new arm
 	private final double BASE_MASS    = 3.175;
@@ -87,9 +88,9 @@ public class Arm {
 	// Angles for all positions
 	public static double[] REST_ANGLES       = {0.825, 2.8, -2.9};
 	public static double[] MID_CONE_ANGLES   = {1.05, 2.0, -0.32};
-	public static double[] MID_CUBE_ANGLES   = {0.825, 0.85, -2.15};
+	public static double[] MID_CUBE_ANGLES   = {0.825, 1.986, -0.08};
 	public static double[] TOP_CONE_ANGLES   = {2.15, 0.1, 0.6};
-	public static double[] TOP_CUBE_ANGLES   = {2.1, 0.4, 0.0};
+	public static double[] TOP_CUBE_ANGLES   = {1.6, 1.19, 0.3};
 	public static double[] SHELF_ANGLES      = {0.825, 1.28, 1.31};
 	public static double[] CHUTE_CONE_ANGLES = {0.825, 1.7, -2.8}; // Reaching backwards
 	public static double[] CHUTE_CUBE_ANGLES = {0.825, 2.18, -2.8}; // Reaching backwards
@@ -148,6 +149,10 @@ public class Arm {
 
 	public void startEject() {
 		leadIntake.set(OUTPUT_POWER);
+	}
+
+	public void startLaunch() {
+		leadIntake.set(LAUNCH_POWER);
 	}
 
 	public void stopIntake() {

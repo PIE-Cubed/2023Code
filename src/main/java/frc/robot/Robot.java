@@ -503,9 +503,10 @@ public class Robot extends TimedRobot {
 	}
 
 	private void grabberControl() {
-		boolean intakeCube = controls.getLeftBumper(); // Checks if we are holding L bumper to intake cube
-		boolean intakeCone = controls.getRightBumper(); // Checks if we are holding R bumper to intake cone
-		boolean eject = controls.getTrigger(); // Checks if we are holding a trigger to eject our object
+		boolean intakeCube  = controls.getLeftBumper(); // Checks if we are holding L bumper to intake cube
+		boolean intakeCone  = controls.getRightBumper(); // Checks if we are holding R bumper to intake cone
+		boolean eject       = controls.getEject(); // Checks if we are holding R trigger to eject our object
+		boolean launch      = controls.getLaunch(); // Checks if we are holding L trigger to shoot our object
 		boolean limitButton = controls.limitSwitchPressed(); // Checks if button on back of claw is hit
 
 		if (grabberState == GrabberStates.EMPTY) {
@@ -520,7 +521,7 @@ public class Robot extends TimedRobot {
 			else if (intakeCube) {
 				grabberState = GrabberStates.INTAKING_CUBE;
 			}
-			else if (eject) {
+			else if (eject || launch) {
 				grabberState = GrabberStates.EJECTING;
 			}
 		}
@@ -550,7 +551,7 @@ public class Robot extends TimedRobot {
 			arm.closeClaw();
 
 			// Next states
-			if (eject) {
+			if (eject || launch) {
 				grabberState = GrabberStates.EJECTING;
 			}
 			// Can switch objects in case of mistake while holding
@@ -562,12 +563,17 @@ public class Robot extends TimedRobot {
 			}
 		}
 		else if (grabberState == GrabberStates.EJECTING) {
-			// Action
-			arm.startEject();
+			// Actions
 			arm.openClaw();
 
-			// Next states
-			if (!eject) {
+			if (eject) {
+				arm.startEject();
+			}
+			else if (launch) {
+				arm.startLaunch();
+			}
+			// Next state
+			else {
 				grabberState = GrabberStates.EMPTY;
 			}
 		}

@@ -338,8 +338,12 @@ public class Controls {
 		return armController.getRightBumper();
 	}
 
-	public boolean getTrigger() {
-		return (armController.getLeftTriggerAxis() > 0.01 || armController.getRightTriggerAxis() > 0.01);
+	public boolean getEject() {
+		return (armController.getRightTriggerAxis() > 0.01);
+	}
+
+	public boolean getLaunch() {
+		return (armController.getLeftTriggerAxis() > 0.01);
 	}
 
 	/**
