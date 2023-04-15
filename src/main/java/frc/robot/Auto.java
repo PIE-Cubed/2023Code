@@ -156,7 +156,7 @@ public class Auto {
                 break;
             case 8:
                 // Drive to cone
-                status = drive.driveToCone(1.0, controls.limitSwitchPressed(), currPose.getTranslation());
+                status = drive.driveToCone(1.0, controls.getLimitSwitch(), currPose.getTranslation());
                 break;
             case 9:
                 // Pick up cone
@@ -475,7 +475,7 @@ public class Auto {
                 break;
             case 8:
                 // Drive to cone
-                status = drive.driveToCone(1.0, controls.limitSwitchPressed(), currPose.getTranslation());
+                status = drive.driveToCone(1.0, controls.getLimitSwitch(), currPose.getTranslation());
                 break;
             case 9:
                 // Pick up cone

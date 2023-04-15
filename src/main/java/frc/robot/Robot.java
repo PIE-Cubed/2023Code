@@ -43,12 +43,7 @@ public class Robot extends TimedRobot {
 
 	private long            coneFlashEnd              = 0;
 	private long            cubeFlashEnd              = 0;
-	private long            aprilTagStart             = 0;
-	private long            failAprilTagStart         = 0;
-	private boolean         placementPositionError    = false;
-	private Pose2d          previousPlacementLocation;
-	private boolean         previousRecentAprilTag    = false;
-	private int             placementStatus           = Robot.CONT;
+	private long            clawFlashEnd              = 0;
 	public static ArmStates acceptedArmState;
 	public static boolean   fromTop                   = false;
 	private AngleStates     restStatus                = AngleStates.CONT;
@@ -94,8 +89,7 @@ public class Robot extends TimedRobot {
 		nTables  = CustomTables.getInstance();
 
 		// Variables
-		previousPlacementLocation = new Pose2d();
-		acceptedArmState          = ArmStates.REST;
+		acceptedArmState = ArmStates.REST;
 	}
 
 	@Override
@@ -339,14 +333,14 @@ public class Robot extends TimedRobot {
 	private void wheelControl() {
 		// Variables
 		double  centerX           = nTables.getGamePieceX(); 
-		Pose2d  currentLocation   = position.getPose();
-		boolean switchPressed     = controls.limitSwitchPressed();
+		boolean switchPressed     = controls.getLimitSwitch();
 		boolean recentAprilTag    = position.recentAprilTag(); // Check in pose estimation if we read April Tag within last 5 seconds
 
 		// Gets the Drive Values
 		double  rotateSpeed       = controls.getRotateSpeed();
 		double  strafeSpeed       = controls.getStrafeSpeed();
 		double  forwardSpeed      = controls.getForwardSpeed();
+		double  robotOriented     = controls.robotOrientedSpeed();
 		boolean alignWithPiece    = controls.allignWithPiece();
 		boolean precisionDrive    = controls.enablePrecisionDrive();
 
@@ -354,7 +348,6 @@ public class Robot extends TimedRobot {
 		boolean zeroYaw           = controls.zeroYaw();
 		boolean autoKill          = controls.autoKill();
 		boolean lockWheels        = controls.lockWheels();
-		Pose2d  placementLocation = controls.getPlacementLocation(currentLocation.getY(), nTables.getIsRedAlliance());
 
 		position.updateVision = true;
 
@@ -365,18 +358,17 @@ public class Robot extends TimedRobot {
 		if (lockWheels == true) {
 			drive.crossWheels();
 			drive.resetDriveToPoints();
-			previousPlacementLocation = null;
-			placementPositionError = false;
 		}
 		else if (alignWithPiece == true) {
 			if (switchPressed == false) {
 				drive.alignWithPiece(centerX, true);
 			}
 			drive.resetDriveToPoints();
-			previousPlacementLocation = null;
-			placementPositionError = false;
 		}
-		else if (placementLocation == null || autoKill == true || (!recentAprilTag)) {
+		else if (robotOriented != 0) {
+			drive.teleopDrive(robotOriented, 0, rotateSpeed, false);
+		}
+		else if (autoKill == true || (!recentAprilTag)) {
 			if (precisionDrive)  {
 				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3, true);
 			}
@@ -392,31 +384,6 @@ public class Robot extends TimedRobot {
 				drive.teleopDrive(newXVel, newYVel, rotateSpeed, true);
 			}
 			drive.resetDriveToPoints();
-			previousPlacementLocation = null;
-				
-			// Red LED's if we tried to go to placement position without an April Tag reading
-			if (placementLocation != null && (!recentAprilTag)) {
-				placementPositionError = true;
-			}
-			else {
-				placementPositionError = false;
-			}
-		}
-		else {
-			placementPositionError = false;
-
-			// Resets placement location if we change locations
-			if (!placementLocation.equals(previousPlacementLocation))	{
-				placementStatus = Robot.CONT;
-				drive.resetDriveToPoints();
-			}	
-			previousPlacementLocation = placementLocation;
-
-			// Stops trying to position once status is done
-			if (placementStatus == Robot.CONT) {
-				drive.atDrive(placementLocation, currentLocation);
-				position.updateVision = false;
-			}	
 		}
 	}
 
@@ -503,11 +470,11 @@ public class Robot extends TimedRobot {
 	}
 
 	private void grabberControl() {
-		boolean intakeCube  = controls.getLeftBumper(); // Checks if we are holding L bumper to intake cube
+		boolean intakeCube  = controls.getLeftBumper();  // Checks if we are holding L bumper to intake cube
 		boolean intakeCone  = controls.getRightBumper(); // Checks if we are holding R bumper to intake cone
-		boolean eject       = controls.getEject(); // Checks if we are holding R trigger to eject our object
-		boolean launch      = controls.getLaunch(); // Checks if we are holding L trigger to shoot our object
-		boolean limitButton = controls.limitSwitchPressed(); // Checks if button on back of claw is hit
+		boolean eject       = controls.getEject();       // Checks if we are holding R trigger to eject our object
+		boolean launch      = controls.getLaunch();      // Checks if we are holding L trigger to shoot our object
+		boolean limitButton = controls.getLimitSwitch(); // Checks if button on back of claw is hit
 
 		if (grabberState == GrabberStates.EMPTY) {
 			// Action
@@ -533,6 +500,7 @@ public class Robot extends TimedRobot {
 			// Next states
 			if (limitButton || (!intakeCone)) {
 				grabberState = GrabberStates.HOLDING_CONE;
+				clawFlashEnd = System.currentTimeMillis() + 1000;
 			}
 		}
 		else if (grabberState == GrabberStates.INTAKING_CUBE) {
@@ -543,6 +511,7 @@ public class Robot extends TimedRobot {
 			// Next states
 			if (limitButton || (!intakeCube)) {
 				grabberState = GrabberStates.HOLDING_CUBE;
+				clawFlashEnd = System.currentTimeMillis() + 1000;
 			}
 		}
 		else if (grabberState == GrabberStates.HOLDING_CONE || grabberState == GrabberStates.HOLDING_CUBE) {
@@ -585,8 +554,6 @@ public class Robot extends TimedRobot {
 		boolean cube = controls.getCube();
 		boolean lock = controls.lockWheels();
 		
-		boolean recentAprilTag = position.recentAprilTag(); // Check in pose estimation if we read April Tag within last 5 seconds
-
 		long currentTime = System.currentTimeMillis();
 
 		// Resetting timer for flashing what object we want
@@ -599,33 +566,14 @@ public class Robot extends TimedRobot {
 			coneFlashEnd = 0;
 		}
 		
-		// Just picked up April Tag
-		if (previousRecentAprilTag == false && recentAprilTag == true) {
-			aprilTagStart = currentTime;
-		}
-		// Lost April Tag
-		else if (previousRecentAprilTag == true && recentAprilTag == false) {
-			failAprilTagStart = currentTime;
-		}
-		previousRecentAprilTag = recentAprilTag;
-		
-		// Highest priority - tried to go to placement position without an April Tag reading
-		// Will only happen while holding button to go to position
-		if (placementPositionError) {
-			led.noAprilTag();
-		}
-		else if (lock) {
+		if (lock) {
 			led.party();
 		}
-		// LED's will flash green every 5 seconds if we had a recent April Tag reading
-		else if (recentAprilTag && (currentTime - aprilTagStart) % 5000 < 400) {
-			led.aprilTagVisible();
+		// LED's will flash green when claw closed
+		else if (currentTime < clawFlashEnd) {
+			led.clawClosed();
 		}
-		// LED's will flash red if we lose April Tag reading
-		else if (currentTime < failAprilTagStart + 400) {
-			led.noAprilTag();
-		}
-		// If we signaled for object less than 5 seconds ago, turn LED on half the time to create a flash
+		// If we signaled for object less than 5 seconds ago, turn LED on alternate flashing colors
 		else if (currentTime < coneFlashEnd) {
 			if ((coneFlashEnd - currentTime) % 400 < 200) {
 				led.flashConeOn();

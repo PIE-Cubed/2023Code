@@ -19,11 +19,6 @@ public class Controls {
 	private final int DRIVE_ID = 0;
 	private final int ARM_ID   = 1;
 
-	// Values in meters, field-based pose Y coords
-	private final double GRID_DIVIDER_1 = 1.905;
-	private final double GRID_DIVIDER_2 = 3.581;
-	private final double FIELD_WIDTH    = 8.0137;
-
 	// Controller object declaration
 	private XboxController driveController;
 	private XboxController armController;
@@ -32,6 +27,7 @@ public class Controls {
 
 	// Limit button on claw
 	private DigitalInput limitButton;
+	private boolean lastButtonPressed = false;
 
 	// Rate limiters
 	private SlewRateLimiter xLimiter;
@@ -44,7 +40,6 @@ public class Controls {
 		CUBE,
 		EMPTY
 	};
-	private Objects lastObjectInput;
 	public static Objects currentObject;
 
 	// Enumeration for which position the arm is at
@@ -76,7 +71,6 @@ public class Controls {
 		yLimiter      = new SlewRateLimiter(12); // -6 to 6 in two seconds
 		rotateLimiter = new SlewRateLimiter(6 * Math.PI);
 
-		lastObjectInput = Objects.CONE;
 		currentObject   = Objects.EMPTY;
 		armState        = ArmStates.REST;
 	}
@@ -93,8 +87,7 @@ public class Controls {
 	 * 
 	 * @return forwardSpeed
 	 */
-	public double 
-	getForwardSpeed() {
+	public double getForwardSpeed() {
 		double speed;
 		double power = -1 * driveController.getLeftY();
 		power = Math.pow(power, 3);
@@ -151,96 +144,6 @@ public class Controls {
 	}
 
 	/**
-	 * Gets target location for placing objects in the grid.
-	 * When in front of 1 of the 3 sets, holding X, A, and B will align with the left cones, cubes, or right cones
-	 * <p>Returns null if nothing is held
-	 * 
-	 * @return location
-	 */
-	public Pose2d getPlacementLocation(double yLocation, boolean redSide) {
-		// Left cone
-		if (driveController.getXButton()) {
-			if (redSide) {
-				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 1.626, new Rotation2d(Math.PI));
-				}
-				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 3.302, new Rotation2d(Math.PI));
-				}
-				else {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 4.978, new Rotation2d(Math.PI));
-				}
-			}
-			else {
-				if (yLocation < GRID_DIVIDER_1) {
-					return new Pose2d(1.767+0.450, 1.626, new Rotation2d(Math.PI));
-				}
-				else if (yLocation < GRID_DIVIDER_2) {
-					return new Pose2d(1.767+0.450, 3.302, new Rotation2d(Math.PI));
-				}
-				else {
-					return new Pose2d(1.767+0.450, 4.978, new Rotation2d(Math.PI));
-				}
-			}
-			
-		}
-		// Cube
-		else if (driveController.getAButton()) {
-			if (redSide) {
-				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 1.067, new Rotation2d(Math.PI));
-				}
-				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 2.743, new Rotation2d(Math.PI));
-				}
-				else {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 4.420, new Rotation2d(Math.PI));
-				}
-			}
-			else {
-				if (yLocation < GRID_DIVIDER_1) {
-					return new Pose2d(1.767+0.450, 1.067, new Rotation2d(Math.PI));
-				}
-				else if (yLocation < GRID_DIVIDER_2) {
-					return new Pose2d(1.767+0.450, 2.743, new Rotation2d(Math.PI));
-				}
-				else {
-					return new Pose2d(1.767+0.450, 4.420, new Rotation2d(Math.PI));
-				}
-			}
-			
-		}
-		// Right cone
-		else if (driveController.getBButton()) {
-			if (redSide) {
-				if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_1)) {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 0.508, new Rotation2d(Math.PI));
-				}
-				else if (yLocation > (FIELD_WIDTH - GRID_DIVIDER_2)) {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 2.184, new Rotation2d(Math.PI));
-				}
-				else {
-					return new Pose2d(1.767+0.450, FIELD_WIDTH - 3.861, new Rotation2d(Math.PI));
-				}
-			}
-			else {
-				if (yLocation < GRID_DIVIDER_1) {
-					return new Pose2d(1.767+0.450, 0.508, new Rotation2d(Math.PI));
-				}
-				else if (yLocation < GRID_DIVIDER_2) {
-					return new Pose2d(1.767+0.450, 2.184, new Rotation2d(Math.PI));
-				}
-				else {
-					return new Pose2d(1.767+0.450, 3.861, new Rotation2d(Math.PI));
-				}
-			}
-		}
-		else {
-			return null;
-		}
-	}
-
-	/**
 	 * Pressing and holding the Y button will automatically align with a gamepiece.
 	 * 
 	 * @return YButton
@@ -255,7 +158,17 @@ public class Controls {
 	 * @return lockWheels
 	 */
 	public boolean lockWheels() {
-		return (driveController.getPOV() != -1);
+		return (driveController.getPOV() == 90 || driveController.getPOV() == 270);
+	}
+
+	public double robotOrientedSpeed() {
+		if (driveController.getPOV() == 0) {
+			return 0.7;
+		}
+		else if (driveController.getPOV() == 180) {
+			return -1;
+		}
+		return 0;
 	}
 	
 	/**
@@ -282,54 +195,6 @@ public class Controls {
     *    ARM FUNCTIONS
     * 
     ******************************************************************************************/
-	/**
-	 * Finds which object the claw should be holding.
-	 * If the state is not empty, the arm class should close the claw.
-	 * Cone and cube have different weight, so the arm should know which one we are holding.
-	 * @return currentObject
-	 */
-	public boolean getStartIntake() {
-		if (armController.getLeftBumperPressed()) {
-			lastObjectInput = Objects.CUBE;
-			return true;
-		}
-		if (armController.getRightBumperPressed()) {
-			lastObjectInput = Objects.CONE;
-			return true;
-		}
-		return false;
-	}
-
-	public boolean getEndIntake() {
-		// Releasing bumper stops intake and stores an object
-		if (armController.getLeftBumperReleased() || armController.getRightBumperReleased()) {
-			currentObject   = lastObjectInput;
-			lastObjectInput = Objects.CONE; // If the limit button gets hit before we start the wheels, it was most likely a cone
-			return true;
-		}
-		// Releasing trigger stops eject and stores empty
-		if (getArmTriggerReleased()) {
-			currentObject = Objects.EMPTY;
-			lastObjectInput = Objects.CONE; // If the limit button gets hit before we start the wheels, it was most likely a cone
-			return true;
-		}
-		// Hitting limit button while holding bumpers stops intake and stores an object
-		if ((armController.getLeftBumper() || armController.getRightBumper()) && limitSwitchPressed()) {
-			currentObject   = lastObjectInput;
-			lastObjectInput = Objects.CONE; // If the limit button gets hit before we start the wheels, it was most likely a cone
-			return true;
-		}
-
-		// Nothing happened, do not stop intake
-		return false;
-	}
-
-	public boolean getStartEject() {
-		lastObjectInput = Objects.CONE;
-		currentObject   = Objects.EMPTY;
-		return getArmTriggerPressed();
-	}
-
 	public boolean getLeftBumper() {
 		return armController.getLeftBumper();
 	}
@@ -411,10 +276,10 @@ public class Controls {
 	}
 
 	/**
-	 * Checks if the limit switch is pressed.
+	 * Checks if the limit switch is activated.
 	 * @return limitSwitch
 	 */
-	public boolean limitSwitchPressed() {
+	public boolean getLimitSwitch() {
 		return !limitButton.get();
 	}
 
