@@ -329,7 +329,8 @@ public class Robot extends TimedRobot {
 		// 	System.out.println("Done");
 		// }
 		//arm.startIntake();
-		arm.hold(3);
+		//arm.hold(3);
+		arm.testAbsEncoders();
 	}
 
 	/**
@@ -479,9 +480,14 @@ public class Robot extends TimedRobot {
 					armStatus = auto.armToShelf();
 					fromTop = false;
 				}
-				else if (acceptedArmState == ArmStates.CHUTE) {
+				else if (acceptedArmState == ArmStates.CHUTE_CONE) {
 					// armStatus stays at CONT because PID can stay on when we are close
-					auto.armToChute();
+					auto.armToChuteCone();
+					fromTop = false;
+				}
+				else if (acceptedArmState == ArmStates.CHUTE_CUBE) {
+					// armStatus stays at CONT because PID can stay on when we are close
+					auto.armToChuteCube();
 					fromTop = false;
 				}
 				

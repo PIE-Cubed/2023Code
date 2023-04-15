@@ -13,7 +13,6 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
 import frc.robot.Robot.GrabberStates;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Arm {
     // Object Creation
@@ -86,13 +85,14 @@ public class Arm {
 	};
 
 	// Angles for all positions
-	public static double[] REST_ANGLES     = {0.825, 2.8, -2.9};
-	public static double[] MID_CONE_ANGLES = {1.05, 2.0, -0.32};
-	public static double[] MID_CUBE_ANGLES = {0.825, 1.826, 0.45};
-	public static double[] TOP_CONE_ANGLES = {2.15, 0.1, 0.6};
-	public static double[] TOP_CUBE_ANGLES = {2.1, 0.4, 0.0};
-	public static double[] SHELF_ANGLES    = {0.825, 1.28, 1.31};
-	public static double[] CHUTE_ANGLES    = {0.825, 2.512, -1.12};//{0.825, 2.512, -1.24};
+	public static double[] REST_ANGLES       = {0.825, 2.8, -2.9};
+	public static double[] MID_CONE_ANGLES   = {1.05, 2.0, -0.32};
+	public static double[] MID_CUBE_ANGLES   = {0.825, 1.826, 0.45};
+	public static double[] TOP_CONE_ANGLES   = {2.15, 0.1, 0.6};
+	public static double[] TOP_CUBE_ANGLES   = {2.1, 0.4, 0.0};
+	public static double[] SHELF_ANGLES      = {0.825, 1.28, 1.31};
+	public static double[] CHUTE_CONE_ANGLES = {0.825, 1.7, -2.8}; // Reaching backwards
+	public static double[] CHUTE_CUBE_ANGLES = {0.825, 2.18, -2.8}; // Reaching backwards
 
 	// Constructor
     public Arm() {
@@ -383,9 +383,9 @@ public class Arm {
 		double centripetalForce = END_MASS * endAbsoluteEncoder.getVelocity() * (LENGTH_END / 2); // Fc = m * w * r
 		double centripetalLever = LENGTH_MIDDLE * Math.sin(q3);
 		double centripetalTorque = centripetalForce * centripetalLever;
-		SmartDashboard.putNumber("Centripetal Torque 2", centripetalTorque);
-		SmartDashboard.putNumber("Gravity torque q2", joint3Torque + clawTorque + middleTorque + endTorque);
-		SmartDashboard.putNumber("q3", q3);
+		//SmartDashboard.putNumber("Centripetal Torque 2", centripetalTorque);
+		//SmartDashboard.putNumber("Gravity torque q2", joint3Torque + clawTorque + middleTorque + endTorque);
+		//SmartDashboard.putNumber("q3", q3);
 		
 		return joint3Torque + clawTorque + middleTorque + endTorque;
 	}

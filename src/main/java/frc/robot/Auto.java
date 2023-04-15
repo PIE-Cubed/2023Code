@@ -650,10 +650,16 @@ public class Auto {
         return Robot.CONT;
     }
 
-    public void armToChute() {    
-        arm.jointToAngle(1, Arm.CHUTE_ANGLES[0]);
-        arm.jointToAngle(2, Arm.CHUTE_ANGLES[1], 6);
-		arm.jointToAngle(3, Arm.CHUTE_ANGLES[2], 3);
+    public void armToChuteCone() {    
+        arm.jointToAngle(1, Arm.CHUTE_CONE_ANGLES[0]);
+        arm.jointToAngle(2, Arm.CHUTE_CONE_ANGLES[1], 12);
+		arm.jointToAngle(3, Arm.CHUTE_CONE_ANGLES[2], 3);
+    }
+
+    public void armToChuteCube() {    
+        arm.jointToAngle(1, Arm.CHUTE_CUBE_ANGLES[0]);
+        arm.jointToAngle(2, Arm.CHUTE_CUBE_ANGLES[1], 12);
+		arm.jointToAngle(3, Arm.CHUTE_CUBE_ANGLES[2], 3);
     }
 
     public int armToMidPosition(double[] armAngles) {    
