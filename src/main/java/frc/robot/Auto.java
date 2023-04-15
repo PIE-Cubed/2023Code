@@ -706,47 +706,17 @@ public class Auto {
     }
 
     public int armToMidCube() {    
-		if (armFirstTime == true) {
-			armFirstTime = false;
-			armStep = 1;
-		}
-
         double[] armAngles = Arm.MID_CUBE_ANGLES;
 
-        switch(armStep) {
-            case 1:
-                // Base and middle out
-                arm.hold(1);
-                //AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 6);
-                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 6);
-                arm.hold(3);
-
-                // If base and middle are close to or at target position, go to next step
-                if (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) {
-                    armStep++;
-                }
-                break;
-            case 2:
-                // Wrist out
-                arm.hold(1);
-                //AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0], 2);
-                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1], 4);
-                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2], 2);
-                if ((middleStatusEnd == AngleStates.DONE || middleStatusEnd == AngleStates.CLOSE) &&
-                    (endStatusEnd    == AngleStates.DONE || endStatusEnd    == AngleStates.CLOSE)) {
-                    armStep++;
-                }
-                break;
-            default:
-                // Finished routine
-                arm.jointToAngle(1, armAngles[0], 2);
-                arm.jointToAngle(2, armAngles[1], 4);
-                arm.jointToAngle(3, armAngles[2], 2);
-                armFirstTime = true;
-                armStep = 1;
-                return Robot.DONE;
-        }
+        AngleStates baseState   = arm.jointToAngle(1, armAngles[0], 2);
+        AngleStates middleState = arm.jointToAngle(2, armAngles[1], 4);
+        AngleStates endState    = arm.jointToAngle(3, armAngles[2], 2);
         
+        if (baseState   == AngleStates.DONE &&
+            middleState == AngleStates.DONE &&
+            endState    == AngleStates.DONE) {
+                return Robot.DONE;
+        }        
         return Robot.CONT;
     }
 

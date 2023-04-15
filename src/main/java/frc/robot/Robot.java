@@ -520,6 +520,9 @@ public class Robot extends TimedRobot {
 			else if (intakeCube) {
 				grabberState = GrabberStates.INTAKING_CUBE;
 			}
+			else if (eject) {
+				grabberState = GrabberStates.EJECTING;
+			}
 		}
 		else if (grabberState == GrabberStates.INTAKING_CONE) {
 			// Action
