@@ -76,8 +76,8 @@ public class Drive {
     PIDController autoDriveRotateController;
 
     // OpenCV rotate controller
-    private static final double ocvp = 0.05; //0.025
-    private static final double ocvi = 0.01; //0.01
+    private static final double ocvp = 0.035; //0.025
+    private static final double ocvi = 0.00; //0.01
     private static final double ocvd = 0;
     PIDController openCVController;
 
@@ -175,7 +175,6 @@ public class Drive {
         openCVController = new PIDController(ocvp, ocvi, ocvd);
         openCVController.setTolerance(3);
         openCVController.enableContinuousInput(180, -180);
-        openCVController.setIntegratorRange(-0.25, 0.25);
 
         rampBalanceController = new PIDController(rbP, rbI, rbD);
         rampBalanceController.setTolerance(RAMP_BALANCE_TOLERANCE);
@@ -352,12 +351,12 @@ public class Drive {
         openCVController.setSetpoint(0);
 
         // Cone-based drive
-        double radians = Math.toRadians(angleError);
-        double xPower = 0.80 * Math.cos(radians);
-        double yPower = 0.80 * Math.sin(radians);
+        double xPower = 0.80;
+        double yPower = speed;
 
+        // Drives the robot
         if (teleop == true) {
-            teleopDrive(xPower, yPower, speed, false);
+            teleopDrive(xPower, yPower, 0, false);
         }
         else {
             teleopDrive(0, 0, speed, false);

@@ -332,7 +332,9 @@ public class Robot extends TimedRobot {
 	 */
 	private void wheelControl() {
 		// Variables
-		double  centerX           = nTables.getGamePieceX(); 
+		double  centerX           = nTables.getGamePieceX();
+		double  numCones          = nTables.getNumCones();
+		double  numCubes          = nTables.getNumCubes();
 		boolean switchPressed     = controls.getLimitSwitch();
 		boolean recentAprilTag    = position.recentAprilTag(); // Check in pose estimation if we read April Tag within last 5 seconds
 

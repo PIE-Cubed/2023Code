@@ -7,8 +7,6 @@ package frc.robot;
 import edu.wpi.first.wpilibj.XboxController;
 import frc.robot.Robot.GrabberStates;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DigitalInput;
 
 /**
@@ -196,7 +194,7 @@ public class Controls {
     * 
     ******************************************************************************************/
 	public boolean getLeftBumper() {
-		return armController.getLeftBumper();
+		return armController.getLeftBumper() || allignWithPiece();
 	}
 
 	public boolean getRightBumper() {

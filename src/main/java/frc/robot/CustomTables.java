@@ -28,6 +28,8 @@ public class CustomTables {
     private NetworkTable PieceData;
     private NetworkTableEntry width;
 	private NetworkTableEntry centerX;
+    private NetworkTableEntry numCones;
+    private NetworkTableEntry numCubes;
 
     // Singleton for CustomTables to ensure only one NetworkTables server is created
     private static CustomTables instance = null;
@@ -60,8 +62,10 @@ public class CustomTables {
 	
 	    // Creates the PieceData table and its entries
         PieceData = ntInst   .getTable("PieceData");
-        width     = PieceData.getEntry("Width");   // double
-	    centerX   = PieceData.getEntry("CenterX");   // double
+        width     = PieceData.getEntry("Width");    // double
+	    centerX   = PieceData.getEntry("CenterX");  // double
+        numCones  = PieceData.getEntry("NumCones"); // double
+        numCubes  = PieceData.getEntry("NumCubes"); // double
     }
 
     /****************************************************************************************** 
@@ -165,6 +169,24 @@ public class CustomTables {
      */
     public double getGamePieceX() {
         return centerX.getDouble(0);
+    }
+
+    /**
+     * Determines the number of cones in the stream.
+     * 
+     * @return numCones
+     */
+    public double getNumCones() {
+        return numCones.getDouble(0);
+    }
+
+    /**
+     * Determines the number of cubes in the stream.
+     * 
+     * @return numCubes
+     */
+    public double getNumCubes() {
+        return numCubes.getDouble(0);
     }
 }
 
