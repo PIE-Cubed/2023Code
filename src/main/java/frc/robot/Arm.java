@@ -91,7 +91,7 @@ public class Arm {
 	public static double[] MID_CUBE_ANGLES   = {0.825, 1.986, -0.08};
 	public static double[] TOP_CONE_ANGLES   = {2.15, 0.1, 0.6};
 	public static double[] TOP_CUBE_ANGLES   = {1.6, 1.02, 0.45};
-	public static double[] SHELF_ANGLES      = {0.825, 1.28, 1.31};
+	public static double[] SHELF_ANGLES      = {1.2, 0.67, 1.42};
 	public static double[] CHUTE_CONE_ANGLES = {0.825, 1.7, -2.8}; // Reaching backwards
 	public static double[] CHUTE_CUBE_ANGLES = {0.825, 2.18, -2.8}; // Reaching backwards
 
