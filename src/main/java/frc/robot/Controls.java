@@ -203,6 +203,14 @@ public class Controls {
 		return armController.getRightBumper();
 	}
 
+	public boolean getLeftBumperPressed() {
+		return armController.getLeftBumperPressed();
+	}
+
+	public boolean getRightBumperPressed() {
+		return armController.getRightBumperPressed();
+	}
+
 	public boolean getEject() {
 		return (armController.getRightTriggerAxis() > 0.01);
 	}

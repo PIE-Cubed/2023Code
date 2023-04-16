@@ -475,6 +475,8 @@ public class Robot extends TimedRobot {
 		boolean eject       = controls.getEject();       // Checks if we are holding R trigger to eject our object
 		boolean launch      = controls.getLaunch();      // Checks if we are holding L trigger to shoot our object
 		boolean limitButton = controls.getLimitSwitch(); // Checks if button on back of claw is hit
+		boolean intakeCubePressed = controls.getLeftBumperPressed();
+		boolean intakeConePressed = controls.getRightBumperPressed();
 
 		if (grabberState == GrabberStates.EMPTY) {
 			// Action
@@ -524,11 +526,11 @@ public class Robot extends TimedRobot {
 				grabberState = GrabberStates.EJECTING;
 			}
 			// Can switch objects in case of mistake while holding
-			else if (intakeCone) {
-				grabberState = GrabberStates.HOLDING_CONE;
+			else if (intakeConePressed) {
+				grabberState = GrabberStates.INTAKING_CONE;
 			}
-			else if (intakeCube) {
-				grabberState = GrabberStates.HOLDING_CUBE;
+			else if (intakeCubePressed) {
+				grabberState = GrabberStates.INTAKING_CUBE;
 			}
 		}
 		else if (grabberState == GrabberStates.EJECTING) {

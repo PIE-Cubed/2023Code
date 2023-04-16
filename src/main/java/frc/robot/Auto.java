@@ -792,7 +792,7 @@ public class Auto {
 
         AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 1);
         AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 2);
-        AngleStates endStatus    = arm.jointToAngle(3, -1.0, 1);
+        AngleStates endStatus    = arm.jointToAngle(3, -1.0, 1); //-1.0
 
         if (baseStatus   == AngleStates.DONE &&
             middleStatus == AngleStates.DONE &&
@@ -877,9 +877,9 @@ public class Auto {
     public int armToTopCube() {    
         double[] armAngles = Arm.TOP_CUBE_ANGLES;
         
-        AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 1); // 0.75 speed
-        AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 2);
-        AngleStates endStatus    = arm.jointToAngle(3, armAngles[2], 0.75);
+        AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 0.75); // 0.75 speed
+        AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 1.6);
+        AngleStates endStatus    = arm.jointToAngle(3, armAngles[2], 0.4);
 
         if ((baseStatus   == AngleStates.DONE || baseStatus   == AngleStates.CLOSE) &&
             (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
