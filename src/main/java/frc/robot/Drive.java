@@ -485,13 +485,11 @@ public class Drive {
             default:
                 rampStep = 1;
                 rampFirstTime = true;
-                System.out.println("Returning done");
                 return Robot.DONE;      
         }
 
         if (status == Robot.DONE) {
             rampStep++;
-            System.out.println("Going to step " + rampStep);
         }
             
         return Robot.CONT; 

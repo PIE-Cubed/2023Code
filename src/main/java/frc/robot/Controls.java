@@ -25,7 +25,6 @@ public class Controls {
 
 	// Limit button on claw
 	private DigitalInput limitButton;
-	private boolean lastButtonPressed = false;
 
 	// Rate limiters
 	private SlewRateLimiter xLimiter;

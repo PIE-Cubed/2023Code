@@ -5,7 +5,6 @@
 package frc.robot;
 
 import frc.robot.Arm.AngleStates;
-import frc.robot.Controls.Objects;
 import frc.robot.Controls.ArmStates;
 
 import edu.wpi.first.math.geometry.*;
@@ -135,6 +134,7 @@ public class Robot extends TimedRobot {
 			//System.out.println("X: " + Units.metersToInches(pose.getX()) + " Y: " + Units.metersToInches(pose.getY()) + " Yaw: " + pose.getRotation().getDegrees());
 		}
 		count++;
+		SmartDashboard.putBoolean("Gyro Connected", drive.gyroConnected());
 	}
 
 	@Override
@@ -149,9 +149,6 @@ public class Robot extends TimedRobot {
 
 		// Choses start position
 		m_autoSelected = m_chooser.getSelected();
-
-		// Resets the NavX Yaw
-		drive.resetYaw();
 
 		// Gets alliance color
 		boolean isRed = nTables.getIsRedAlliance();
@@ -182,10 +179,10 @@ public class Robot extends TimedRobot {
 			case rampAutoCube:
 				grabberState = GrabberStates.HOLDING_CUBE;
 				if (isRed == true) {
-					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(Math.PI));
+					startPose = new Pose2d(auto.RAMP_RED_START, new Rotation2d(0));
 				}
 				else {
-					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(Math.PI));
+					startPose = new Pose2d(auto.RAMP_BLUE_START, new Rotation2d(0));
 				}
 				break;
 			case rampAutoFullLeftCone:
@@ -238,10 +235,10 @@ public class Robot extends TimedRobot {
 					status = auto.wallAuto(nTables.getIsRedAlliance(), delaySec);
 					break;
 				case "Ramp Cone":
-					status = auto.rampAuto(nTables.getIsRedAlliance(), Objects.CONE, delaySec);
+					status = auto.rampAuto(nTables.getIsRedAlliance(), delaySec);
 					break;
 				case "Ramp Cube":
-					status = auto.rampAuto(nTables.getIsRedAlliance(), Objects.CUBE, delaySec);
+					status = auto.rampAutoCube(nTables.getIsRedAlliance(), delaySec);
 					break;	
 				case "Full Ramp Left Cone":
 					status = auto.rampAutoFull(nTables.getIsRedAlliance(), false, delaySec);

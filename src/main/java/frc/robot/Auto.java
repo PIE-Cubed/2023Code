@@ -7,6 +7,7 @@ package frc.robot;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Arm.AngleStates;
 import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
@@ -133,36 +134,41 @@ public class Auto {
                 if (isRed == true) {
                     pose1 = new Pose2d(2.6, 7.401, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 7.401, new Rotation2d(0));
-                    pose3 = new Pose2d(6.0, 7.401, new Rotation2d(0));
+                    pose3 = new Pose2d(5.5, 7.401, new Rotation2d(0));
                 }
                 else {
                     pose1 = new Pose2d(2.6, 0.8, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 0.8, new Rotation2d(0));
-                    pose3 = new Pose2d(6.0, 0.8, new Rotation2d(0));
+                    pose3 = new Pose2d(5.5, 0.8, new Rotation2d(0));
                 }
 
                 status = drive.autoDriveToPoints(new Pose2d[]{pose2, pose3}, currPose);
                 resetArmRoutines();
-                break;                
+                break;    
             case 6:
-                // Align with cube
+                status = armToGrabPosition();
+                break;            
+            case 7:
+                // Align with object
                 arm.startIntake();
+                armToGrabPosition();
                 double angleError = nTables.getGamePieceX();
                 status = drive.alignWithPiece(angleError, false);
                 break;
-            case 7:
-                // Drive to cube
+            case 8:
+                // Drive to object
                 arm.startIntake();
+                armToGrabPosition();
                 status = drive.driveToCone(1.5, controls.getLimitSwitch(), currPose.getTranslation());
                 break;
-            case 8:
-                // Pick up cube
+            case 9:
+                // Pick up object
                 arm.closeClaw();
                 arm.stopIntake();
-                Robot.grabberState = GrabberStates.HOLDING_CUBE;
-                status = Robot.DONE;
+                Robot.grabberState = GrabberStates.HOLDING_CONE;
+                status = autoDelayMS(500);
                 break;
-            case 9:
+            case 10:
                 // Retract arm
                 AngleStates armStatus2 = armToRestPosition(false);
                 Robot.acceptedArmState = ArmStates.REST;
@@ -170,13 +176,13 @@ public class Auto {
                     status = Robot.DONE;
                 }
                 break;
-            case 10:
+            case 11:
                 // Storing current location
                 autoSecondPieceRotate[0] = new Pose2d(currPose.getX() - 0.5, currPose.getY(), new Rotation2d(Math.PI));
                 autoSecondPieceRotate[1] = new Pose2d(currPose.getX() - 3, currPose.getY(), new Rotation2d(Math.PI));
                 status = Robot.DONE;
                 break;
-            case 11:
+            case 12:
                 // Rotating
                 status = drive.autoDriveToPoints(autoSecondPieceRotate, currPose);
                 break;
@@ -208,7 +214,7 @@ public class Auto {
      * @param delaySeconds
      * @return status
      */
-    public int rampAuto(boolean isRed, Objects objectPlaced, long delaySeconds) {
+    public int rampAuto(boolean isRed, long delaySeconds) {
         int status = Robot.CONT;
     
 		if (firstTime == true) {
@@ -227,15 +233,8 @@ public class Auto {
                 break;
             case 2:
                 // Place object we're holding
-                if (objectPlaced == Objects.CONE) {
-                    status = armToTopCone();
-                    Robot.acceptedArmState = ArmStates.TOP_CONE;
-                }
-                else {
-                    status = armToTopCube();
-                    Robot.acceptedArmState = ArmStates.TOP_CUBE;
-                }
-                
+                status = armToTopCone();
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
                 drive.rotateWheels(-1, 0, 0);
                 break;
             case 3:
@@ -271,6 +270,133 @@ public class Auto {
 
                 // Stops applicable motors
                 drive.stopWheels();
+                return Robot.DONE;
+        }
+
+        //If we are done with a step, we go on to the next one and continue the routine
+        if (status == Robot.DONE) {
+            step++;
+        }
+        
+        return Robot.CONT;
+    }
+
+    /**
+     * Shoots cube, picks up object, then balances on ramp
+     * @param isRed
+     * @param objectPlaced
+     * @param delaySeconds
+     * @return status
+     */
+    public int rampAutoCube(boolean isRed, long delaySeconds) {
+        int status = Robot.CONT;
+        Pose2d currPose = position.getOdometryPose();
+    
+		if (firstTime == true) {
+			firstTime = false;
+			step = 1;
+
+            arm.closeClaw();
+            Robot.grabberState = GrabberStates.HOLDING_CUBE;
+		}
+
+        switch(step) {
+            case 1:
+                // Delay
+                status = autoDelay(delaySeconds);
+                drive.rotateWheels(-1, 0, 0);
+                break;
+            case 2:
+                arm.openClaw();
+                arm.startLaunch();
+
+                Robot.grabberState = GrabberStates.EMPTY;
+                balancedRoll = drive.getRoll();
+
+                status = autoDelayMS(300);
+                break;
+            case 3:
+                status = drive.chargeRamp(true);
+                arm.stopIntake();
+                break;
+            case 4:
+                status = drive.leaveRamp(true);
+                break;
+            case 5:
+                // Storing a pose 1.55 meter beyond ramp
+                if (isRed) {
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1, currPose.getY() + 0.75, new Rotation2d(0));
+                }
+                else {
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1, currPose.getY() - 0.75, new Rotation2d(0));
+                }
+                status = Robot.DONE;
+                break;
+            case 6:
+                // Exiting community
+                armToGrabPosition();
+                status = drive.autoDriveToPoints(rampAutoExitCommunity, currPose);
+                break;
+            case 7:
+                // Align with cone
+                arm.startIntake();
+                armToGrabPosition();
+                double angleError = nTables.getGamePieceX();
+                status = drive.alignWithPiece(angleError, false);
+
+                // Stops alignment after 1 second
+                int status2 = autoDelay(1);
+                if (status2 == Robot.DONE) {
+                    status = Robot.DONE;
+                }
+                break;
+            case 8:
+                delayFirstTime = true;
+
+                // Drive to cone
+                arm.startIntake();
+                armToGrabPosition();
+                status = drive.driveToCone(1.0, controls.getLimitSwitch(), currPose.getTranslation());
+                break;
+            case 9:
+                // Pick up cone
+                arm.closeClaw();
+                arm.stopIntake();
+                Robot.grabberState = GrabberStates.HOLDING_CONE;
+                balancedRoll = drive.getRoll();
+                status = autoDelayMS(250);
+                break;                
+            case 10:
+                AngleStates armStatus2 = armToRestPosition(false);
+                Robot.acceptedArmState = ArmStates.REST;
+                if (armStatus2 == AngleStates.DONE) {
+                    arm.stopArm();
+                }   
+                             
+                status = drive.chargeRamp(false);
+                break;
+            case 11:
+                armStatus2 = armToRestPosition(false);
+                if (armStatus2 == AngleStates.DONE) {
+                    arm.stopArm();
+                }   
+
+                // Balance on ramp
+                status = drive.balanceRamp(balancedRoll);
+                break;
+            case 12:
+                // Lock wheels
+                status = autoDelay(1);
+                drive.crossWheels();
+                break;
+            default:
+                // Finished routine
+                step = 1;
+                firstTime = true;
+
+                // Stops applicable motors
+                drive.stopWheels();
+                arm.stopArm();
                 return Robot.DONE;
         }
 
@@ -450,36 +576,41 @@ public class Auto {
                 if (isRed == false) {
                     pose1 = new Pose2d(2.6, 7.401, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 7.401, new Rotation2d(0));
-                    pose3 = new Pose2d(6.0, 7.401, new Rotation2d(0));
+                    pose3 = new Pose2d(5.5, 7.401, new Rotation2d(0));
                 }
                 else {
                     pose1 = new Pose2d(2.6, 0.8, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 0.8, new Rotation2d(0));
-                    pose3 = new Pose2d(6.0, 0.8, new Rotation2d(0));
+                    pose3 = new Pose2d(5.5, 0.8, new Rotation2d(0));
                 }
 
                 status = drive.autoDriveToPoints(new Pose2d[]{pose2, pose3}, currPose);
                 resetArmRoutines();
-                break;                
+                break; 
             case 6:
-                // Align with cube
+                status = armToGrabPosition();
+                break;               
+            case 7:
+                // Align with object
                 arm.startIntake();
+                armToGrabPosition();
                 double angleError = nTables.getGamePieceX();
                 status = drive.alignWithPiece(angleError, false);
                 break;
-            case 7:
-                // Drive to cube
+            case 8:
+                // Drive to object
                 arm.startIntake();
+                armToGrabPosition();
                 status = drive.driveToCone(1.5, controls.getLimitSwitch(), currPose.getTranslation());
                 break;
-            case 8:
-                // Pick up cube
+            case 9:
+                // Pick up object
                 arm.closeClaw();
                 arm.stopIntake();
-                Robot.grabberState = GrabberStates.HOLDING_CUBE;
-                status = Robot.DONE;
+                Robot.grabberState = GrabberStates.HOLDING_CONE;
+                status = autoDelayMS(500);
                 break;
-            case 9:
+            case 10:
                 // Retract arm
                 AngleStates armStatus2 = armToRestPosition(false);
                 Robot.acceptedArmState = ArmStates.REST;
@@ -487,13 +618,13 @@ public class Auto {
                     status = Robot.DONE;
                 }
                 break;
-            case 10:
+            case 11:
                 // Storing current location
                 autoSecondPieceRotate[0] = new Pose2d(currPose.getX() - 0.5, currPose.getY(), new Rotation2d(Math.PI));
                 autoSecondPieceRotate[1] = new Pose2d(currPose.getX() - 3, currPose.getY(), new Rotation2d(Math.PI));
                 status = Robot.DONE;
                 break;
-            case 11:
+            case 12:
                 // Rotating
                 status = drive.autoDriveToPoints(autoSecondPieceRotate, currPose);
                 break;
@@ -921,6 +1052,27 @@ public class Auto {
 
         if (delayFirstTime) {
             delayEnd = currentMS + (seconds * 1000);
+            delayFirstTime = false;
+        }
+
+        if (currentMS > delayEnd) {
+            delayFirstTime = true;
+            return Robot.DONE;
+        }
+        return Robot.CONT;
+    }
+
+    /**
+     * Delays the program for a set number of milliseconds.
+     * 
+     * @param seconds
+     * @return status
+     */
+    public int autoDelayMS(long ms) {
+        long currentMS = System.currentTimeMillis();
+
+        if (delayFirstTime) {
+            delayEnd = currentMS + ms;
             delayFirstTime = false;
         }
 
