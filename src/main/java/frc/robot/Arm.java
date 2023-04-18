@@ -5,7 +5,6 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -13,6 +12,7 @@ import edu.wpi.first.math.MathUtil;
 import com.revrobotics.CANSparkMax.IdleMode;
 import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
+import frc.robot.Robot.GrabberStates;
 
 public class Arm {
     // Object Creation
@@ -20,18 +20,17 @@ public class Arm {
     private CANSparkMax middleMotor; 
     private CANSparkMax endMotor;
 
+	private CANSparkMax leadIntake;
+	private CANSparkMax followIntake;
+
     private AbsoluteEncoder baseAbsoluteEncoder;
     private AbsoluteEncoder middleAbsoluteEncoder;
     private AbsoluteEncoder endAbsoluteEncoder;
 
 	private DoubleSolenoid  claw;
 
-	private DigitalInput limitButton0;
-	private DigitalInput limitButton9;
-
 	private final int PNEU_CONTROLLER_ID = 1;
 	private double printCount = 0;
-	private int switchCount = 0;
 	
     // Constants
     private final double LENGTH_BASE   = 0.5545;
@@ -47,12 +46,15 @@ public class Arm {
 	private final double ANGLE_3_MAX   = Math.PI / 2;
 
 	// Max motor powers
-	private final double MAX_END_POWER = 0.7; //0.4 is slow
+	private final double MAX_END_POWER = 0.7;
+	private final double INTAKE_POWER  = 0.6;
+	private final double OUTPUT_POWER  = -0.3;
+	private final double LAUNCH_POWER  = -0.85;
 	
 	// Masses in kg - updated for new arm
 	private final double BASE_MASS    = 3.175;
 	private final double MIDDLE_MASS  = 1.814;
-	private final double END_MASS     = 1.633;
+	private final double END_MASS     = 2.495;
 	private final double JOINT_2_MASS = 0.395;
 	private final double JOINT_3_MASS = 0.671;
 	private final double CONE_MASS    = 0.652;
@@ -84,13 +86,14 @@ public class Arm {
 	};
 
 	// Angles for all positions
-	public static double[] REST_ANGLES     = {0.825, 2.8, -2.9};
-	public static double[] MID_CONE_ANGLES = {1.135, 1.86, -0.32};
-	public static double[] MID_CUBE_ANGLES = {0.825, 1.826, 0.45};
-	public static double[] TOP_CONE_ANGLES = {2.10, 0.3, 0.1}; // Old base - 2.15, 3/4 and before
-	public static double[] TOP_CUBE_ANGLES = {2.1, 0.4, 0.0};
-	public static double[] SHELF_ANGLES    = {0.825, 1.28, 1.31};
-	public static double[] CHUTE_ANGLES    = {0.767, 2.556, -1.288};
+	public static double[] REST_ANGLES       = {0.825, 2.8, -2.9};
+	public static double[] MID_CONE_ANGLES   = {1.05, 2.0, -0.32};
+	public static double[] MID_CUBE_ANGLES   = {0.825, 1.986, -0.08};
+	public static double[] TOP_CONE_ANGLES   = {2.15, 0.1, 0.75};
+	public static double[] TOP_CUBE_ANGLES   = {1.6, 1.02, 0.45};
+	public static double[] SHELF_ANGLES      = {1.2, 0.67, 1.42};
+	public static double[] CHUTE_CONE_ANGLES = {0.825, 1.7, -2.8}; // Reaching backwards
+	public static double[] CHUTE_CUBE_ANGLES = {0.825, 2.18, -2.8}; // Reaching backwards
 
 	// Constructor
     public Arm() {
@@ -123,6 +126,13 @@ public class Arm {
         middleAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
         endAbsoluteEncoder.setVelocityConversionFactor(2 * Math.PI);
 		endAbsoluteEncoder.setInverted(true);
+
+		leadIntake   = new CANSparkMax(9, MotorType.kBrushless);
+		followIntake = new CANSparkMax(8, MotorType.kBrushless);
+		followIntake.follow(leadIntake, true);
+
+		leadIntake.setIdleMode(IdleMode.kBrake);
+		followIntake.setIdleMode(IdleMode.kBrake);
 		
 		basePID   = new PIDController(p1, 0, 0);
 		middlePID = new PIDController(p2, 0, 0);
@@ -131,10 +141,23 @@ public class Arm {
 		basePID.setTolerance(BASE_TOLERANCE);
 		middlePID.setTolerance(MIDDLE_TOLERANCE);
 		endPID.setTolerance(END_TOLERANCE);
-
-		limitButton0 = new DigitalInput(0);
-		limitButton9 = new DigitalInput(9);
     }
+
+	public void startIntake() {
+		leadIntake.set(INTAKE_POWER);
+	}
+
+	public void startEject() {
+		leadIntake.set(OUTPUT_POWER);
+	}
+
+	public void startLaunch() {
+		leadIntake.set(LAUNCH_POWER);
+	}
+
+	public void stopIntake() {
+		leadIntake.set(0);
+	}
 
 	public void hold(int joint) {
 		if (joint == 1) {
@@ -267,7 +290,7 @@ public class Arm {
 			hold(1);
 			hold(2);
 		}
-		setEndPower(power + restArmPowers[3]);
+		setEndPower(power + restArmPowers[2]);
 	}
 
 	public double[] restArmPowers() {
@@ -292,7 +315,7 @@ public class Arm {
 	// Positive torque --> toward positive angle. If arm is back to positive X, it will have a negative torque, therefore, X is multiplied by -1
 	// kg * m^2/s^2
     public double torqueJoint1(double q1, double q2, double q3) {
-		// Note: gravity lever arm is simply the X distance from the joint
+		// Gravity
 		double joint2X       = LENGTH_BASE * Math.cos(q1);
 		double joint3X       = joint2X + LENGTH_MIDDLE * Math.cos(q1 + q2);
 		double endX          = joint3X + LENGTH_END * Math.cos(q1 + q2 + q3);
@@ -305,10 +328,10 @@ public class Arm {
 		double joint3Torque  = JOINT_3_MASS * -1 * joint3X;
 
 		double objectMass = 0;
-		if (Controls.currentObject == Objects.CONE) {
+		if (Robot.grabberState == GrabberStates.HOLDING_CONE) {
 			objectMass = CONE_MASS;
 		}
-		else if (Controls.currentObject == Objects.CUBE) {
+		else if (Robot.grabberState == GrabberStates.HOLDING_CUBE) {
 			objectMass = CUBE_MASS;
 		}
 
@@ -317,6 +340,23 @@ public class Arm {
 		double baseTorque    = BASE_MASS    * -1 * baseCenterX;
 		double middleTorque  = MIDDLE_MASS  * -1 * middleCenterX;
 		double endTorque     = END_MASS     * -1 * endCenterX;
+
+		// Centripetal force from middle movement (which swings middle and end together)
+		double centripetalForceMiddle = MIDDLE_MASS * middleAbsoluteEncoder.getVelocity() * (LENGTH_MIDDLE / 2); // Fc = m * w * r
+		double centripetalLeverMiddle = LENGTH_BASE * Math.sin(q2);
+
+		double joint2Y        = LENGTH_BASE * Math.sin(q1);
+		double joint3Y        = joint2Y + LENGTH_MIDDLE * Math.sin(q1 + q2);
+		double endCenterY     = joint3Y + (LENGTH_END / 2) * Math.sin(q1 + q2 + q3);
+		double endCenterDist  = Math.hypot(endCenterX-joint2X, endCenterY-joint2Y);
+		double endCenterAngle = Math.atan2(endCenterY-joint2X, endCenterX-joint2Y);
+
+		double centripetalForceEnd = END_MASS * middleAbsoluteEncoder.getVelocity() * endCenterDist; // Fc = m * w * r
+		double centripetalLeverEnd = LENGTH_BASE * Math.sin(endCenterAngle);
+		double centripetalTorque   = centripetalForceMiddle * centripetalLeverMiddle + centripetalForceEnd * centripetalLeverEnd;
+		//SmartDashboard.putNumber("Centripetal Torque 1", centripetalTorque);
+		//SmartDashboard.putNumber("q2", q2);
+		//SmartDashboard.putNumber("q3", q3);
 		
 		return joint2Torque + joint3Torque + clawTorque + baseTorque + middleTorque + endTorque;
 	}
@@ -332,10 +372,10 @@ public class Arm {
 		double joint3Torque  = JOINT_3_MASS * -1 * joint3X;
 
 		double objectMass = 0;
-		if (Controls.currentObject == Objects.CONE) {
+		if (Robot.grabberState == GrabberStates.HOLDING_CONE) {
 			objectMass = CONE_MASS;
 		}
-		else if (Controls.currentObject == Objects.CUBE) {
+		else if (Robot.grabberState == GrabberStates.HOLDING_CUBE) {
 			objectMass = CUBE_MASS;
 		}
 
@@ -343,6 +383,14 @@ public class Arm {
 		
 		double middleTorque  = MIDDLE_MASS  * -1 * middleCenterX;
 		double endTorque     = END_MASS     * -1 * endCenterX;
+
+		// Centripetal force from end
+		double centripetalForce = END_MASS * endAbsoluteEncoder.getVelocity() * (LENGTH_END / 2); // Fc = m * w * r
+		double centripetalLever = LENGTH_MIDDLE * Math.sin(q3);
+		double centripetalTorque = centripetalForce * centripetalLever;
+		//SmartDashboard.putNumber("Centripetal Torque 2", centripetalTorque);
+		//SmartDashboard.putNumber("Gravity torque q2", joint3Torque + clawTorque + middleTorque + endTorque);
+		//SmartDashboard.putNumber("q3", q3);
 		
 		return joint3Torque + clawTorque + middleTorque + endTorque;
 	}
@@ -353,15 +401,17 @@ public class Arm {
 		double endCenterX    = endX / 2;
 
 		double objectMass = 0;
-		if (Controls.currentObject == Objects.CONE) {
+		if (Robot.grabberState == GrabberStates.HOLDING_CONE) {
 			objectMass = CONE_MASS;
 		}
-		else if (Controls.currentObject == Objects.CUBE) {
+		else if (Robot.grabberState == GrabberStates.HOLDING_CUBE) {
 			objectMass = CUBE_MASS;
 		}
 		
 		double clawTorque    = objectMass * -1 * (endX - 0.15); // Implement cone/cube mass
 		double endTorque     = END_MASS   * -1 * endCenterX;
+
+		// No centripetal force
 		
 		return clawTorque + endTorque;
 	}
@@ -492,27 +542,6 @@ public class Arm {
 	}
 
 	/*
-	 * Button methods
-	 */
-	public boolean limitButtonPressed() {
-		boolean switchVal = (!limitButton0.get()) || (!limitButton9.get());
-		if (switchVal == false) {
-			switchCount++;
-		}
-
-		if ((switchCount > 25) && (switchVal == true)) {
-			switchCount = 0;
-			return true;
-		}
-
-		if (switchVal == true) {
-			switchCount = 0;
-		}
-
-		return false;
-	}
-
-	/*
 	 * Test functions
 	 */
 	public void testAbsEncoders() {
@@ -566,5 +595,9 @@ public class Arm {
 
 		double baseTorque = torqueJoint1(q1, q2, q3);
 		baseMotor.set(baseTorque * -0.01);
+	}
+
+	public void testIntakeMotors() {
+		leadIntake.set(0.3);
 	}
 }

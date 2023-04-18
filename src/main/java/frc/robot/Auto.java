@@ -7,26 +7,30 @@ package frc.robot;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Arm.AngleStates;
 import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
+import frc.robot.Robot.GrabberStates;
 
 public class Auto {
     // State tracking variables - each variable can only be used in one function at any time
     // All top level routines use firstTime and step, all helper routines have their own variables
-    private boolean firstTime = true;
     private int step;
+    private boolean firstTime = true;
 
-    private boolean armFirstTime = true;
     private int armStep;
+    private boolean armFirstTime = true;
 
-    private boolean delayFirstTime = true;
     private long delayEnd = 0; // Stores when delay() should return Robot.DONE
+    private boolean delayFirstTime = true;
 
     // Object Creation
-    private Drive drive;
+    private Drive          drive;
     private PoseEstimation position;
-    private Arm arm;
+    private Arm            arm;
+    private CustomTables   nTables;
+    private Controls       controls;
 
     // Constants for starting poses for each auto
     public final Translation2d RAMP_RED_START    = new Translation2d(1.767, 4.699);
@@ -39,6 +43,7 @@ public class Auto {
 
     // Variables
     private Pose2d[] rampAutoExitCommunity = new Pose2d[1]; // Stores location that will ensure we leave community
+    private Pose2d[] autoSecondPieceRotate = new Pose2d[2];
     private double balancedRoll = 0;
 
     // Coordinates to be used in routines
@@ -48,7 +53,7 @@ public class Auto {
     private Pose2d[] listOfPoints = new Pose2d[autoCoordinates.length];
 
     // Constructor
-    public Auto(Drive drive, PoseEstimation position, Arm arm) {
+    public Auto(Drive drive, PoseEstimation position, Arm arm, Controls controls) {
         // Iterating through array of poses
         for (int i = 0; i < autoCoordinates.length; i++) {
             // Passing each item of the inner array as an argument for a Pose object
@@ -61,6 +66,8 @@ public class Auto {
         this.drive    = drive;
         this.position = position;
         this.arm      = arm;
+        this.controls = controls;
+        this.nTables  = CustomTables.getInstance();
     }
 
     /**
@@ -79,7 +86,7 @@ public class Auto {
             System.out.println("Starting Wall Auto");
 
             arm.closeClaw();
-            Controls.currentObject = Objects.CONE;
+            Robot.grabberState = GrabberStates.HOLDING_CONE;
 		}
 
         switch(step) {
@@ -92,23 +99,23 @@ public class Auto {
                 }
                 else {
                     drive.rotateWheels(0.833, -1.0256, 0);
-                }
+                }                
                 break;
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
 
                 if (isRed == true) {
                     drive.rotateWheels(0.833, 1.0256, 0);
                 }
                 else {
                     drive.rotateWheels(0.833, -1.0256, 0);
-                }
-		        Robot.acceptedArmState = ArmStates.TOP_CONE;
+                }	
                 break;
             case 3:
                 arm.openClaw();
-                Controls.currentObject = Objects.EMPTY;
+                Robot.grabberState = GrabberStates.EMPTY;
                 status = Robot.DONE;
                 break;
             case 4:
@@ -127,53 +134,66 @@ public class Auto {
                 if (isRed == true) {
                     pose1 = new Pose2d(2.6, 7.401, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 7.401, new Rotation2d(0));
-                    pose3 = new Pose2d(6.0, 7.101, new Rotation2d(0));
+                    pose3 = new Pose2d(5.5, 7.401, new Rotation2d(0));
                 }
                 else {
                     pose1 = new Pose2d(2.6, 0.8, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 0.8, new Rotation2d(0));
-                    pose3 = new Pose2d(6.0, 1.0, new Rotation2d(0));
+                    pose3 = new Pose2d(5.5, 0.8, new Rotation2d(0));
                 }
 
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, currPose);
+                status = drive.autoDriveToPoints(new Pose2d[]{pose2, pose3}, currPose);
                 resetArmRoutines();
-                break;
-            /*
+                break;    
             case 6:
                 // Bring down wrist
                 status = armToGrabPosition();
-                Robot.acceptedArmState= ArmStates.GRAB;
-                break;
+                break;            
             case 7:
-                // Align with cone
-                status = autoDelay(2);
+                // Align with object
+                arm.startIntake();
+                armToGrabPosition();
+                double angleError = nTables.getGamePieceX();
+                status = drive.alignWithPiece(angleError, false);
                 break;
             case 8:
-                // Drive to cone
-                status = drive.driveToCone(1.5, arm.limitButtonPressed(), currPose.getTranslation());
+                // Drive to object
+                arm.startIntake();
+                armToGrabPosition();
+                status = drive.driveToCone(1.5, controls.getLimitSwitch(), currPose.getTranslation());
                 break;
             case 9:
-                // Pick up cone
+                // Pick up object
                 arm.closeClaw();
-                Controls.currentObject = Objects.EMPTY;
-                status = Robot.DONE;
+                arm.stopIntake();
+                Robot.grabberState = GrabberStates.HOLDING_CONE;
+                status = autoDelayMS(500);
                 break;
             case 10:
                 // Retract arm
-                AngleStates armStatus = armToRestPosition(false);
+                AngleStates armStatus2 = armToRestPosition(false);
                 Robot.acceptedArmState = ArmStates.REST;
-                if (armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) {
+                if (armStatus2 == AngleStates.DONE) {
                     status = Robot.DONE;
                 }
                 break;
-            */
+            case 11:
+                // Storing current location
+                autoSecondPieceRotate[0] = new Pose2d(currPose.getX() - 0.5, currPose.getY(), new Rotation2d(Math.PI));
+                autoSecondPieceRotate[1] = new Pose2d(currPose.getX() - 3, currPose.getY(), new Rotation2d(Math.PI));
+                status = Robot.DONE;
+                break;
+            case 12:
+                // Rotating
+                status = drive.autoDriveToPoints(autoSecondPieceRotate, currPose);
+                break;
             default:
                 // Finished routine
                 step = 1;
                 firstTime = true;
 
-                Controls.armState = ArmStates.GRAB;
-                Robot.acceptedArmState = ArmStates.GRAB;
+                Controls.armState = ArmStates.REST;
+                Robot.acceptedArmState = ArmStates.REST;
 
                 // Stops applicable motors
                 drive.stopWheels();
@@ -189,8 +209,9 @@ public class Auto {
     }
 
     /**
-     * Places cone and balances on ramp - safe choice
+     * Places ojbect and balances on ramp - safe choice
      * @param isRed
+     * @param objectPlaced
      * @param delaySeconds
      * @return status
      */
@@ -202,7 +223,7 @@ public class Auto {
 			step = 1;
 
             arm.closeClaw();
-            Controls.currentObject = Objects.CONE;
+            Robot.grabberState = GrabberStates.HOLDING_CONE;
 		}
 
         switch(step) {
@@ -220,18 +241,12 @@ public class Auto {
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
-		        Robot.acceptedArmState = ArmStates.TOP_CONE;
-
-                if (isRed == true) {
-                    drive.rotateWheels(0.833, -1.0256, 0);
-                }
-                else {
-                    drive.rotateWheels(0.833, 1.0256, 0);
-                }
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
+                drive.rotateWheels(-1, 0, 0);
                 break;
             case 3:
                 arm.openClaw();
-                Controls.currentObject = Objects.EMPTY;
+                Robot.grabberState = GrabberStates.EMPTY;
                 status = Robot.DONE;
                 break;
             case 4:
@@ -272,15 +287,16 @@ public class Auto {
         
         return Robot.CONT;
     }
-	
-	/**
-     * Places cone, leaves community, and balances on ramp
+
+    /**
+     * Shoots cube, picks up object, then balances on ramp
      * @param isRed
+     * @param objectPlaced
      * @param delaySeconds
      * @return status
      */
-    public int rampAutoFull(boolean isRed, long delaySeconds) {
-        int    status   = Robot.CONT;
+    public int rampAutoCube(boolean isRed, long delaySeconds) {
+        int status = Robot.CONT;
         Pose2d currPose = position.getOdometryPose();
     
 		if (firstTime == true) {
@@ -288,7 +304,7 @@ public class Auto {
 			step = 1;
 
             arm.closeClaw();
-            Controls.currentObject = Objects.CONE;
+            Robot.grabberState = GrabberStates.HOLDING_CUBE;
 		}
 
         switch(step) {
@@ -298,14 +314,143 @@ public class Auto {
                 drive.rotateWheels(-1, 0, 0);
                 break;
             case 2:
+                arm.openClaw();
+                arm.startLaunch();
+
+                Robot.grabberState = GrabberStates.EMPTY;
+                balancedRoll = drive.getRoll();
+
+                status = autoDelayMS(300);
+                break;
+            case 3:
+                status = drive.chargeRamp(true);
+                arm.stopIntake();
+                break;
+            case 4:
+                status = drive.leaveRamp(true);
+                break;
+            case 5:
+                // Storing a pose 1.55 meter beyond ramp
+                if (isRed) {
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1, currPose.getY() + 0.75, new Rotation2d(0));
+                }
+                else {
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1, currPose.getY() - 0.75, new Rotation2d(0));
+                }
+                status = Robot.DONE;
+                break;
+            case 6:
+                // Exiting community
+                armToGrabPosition();
+                status = drive.autoDriveToPoints(rampAutoExitCommunity, currPose);
+                break;
+            case 7:
+                // Align with cone
+                arm.startIntake();
+                armToGrabPosition();
+                double angleError = nTables.getGamePieceX();
+                status = drive.alignWithPiece(angleError, false);
+
+                // Stops alignment after 1 second
+                int status2 = autoDelay(1);
+                if (status2 == Robot.DONE) {
+                    status = Robot.DONE;
+                }
+                break;
+            case 8:
+                delayFirstTime = true;
+
+                // Drive to cone
+                arm.startIntake();
+                armToGrabPosition();
+                status = drive.driveToCone(1.0, controls.getLimitSwitch(), currPose.getTranslation());
+                break;
+            case 9:
+                // Pick up cone
+                arm.closeClaw();
+                arm.stopIntake();
+                Robot.grabberState = GrabberStates.HOLDING_CONE;
+                balancedRoll = drive.getRoll();
+                status = autoDelayMS(250);
+                break;                
+            case 10:
+                AngleStates armStatus2 = armToRestPosition(false);
+                Robot.acceptedArmState = ArmStates.REST;
+                if (armStatus2 == AngleStates.DONE) {
+                    arm.stopArm();
+                }   
+                             
+                status = drive.chargeRamp(false);
+                break;
+            case 11:
+                armStatus2 = armToRestPosition(false);
+                if (armStatus2 == AngleStates.DONE) {
+                    arm.stopArm();
+                }   
+
+                // Balance on ramp
+                status = drive.balanceRamp(balancedRoll);
+                break;
+            case 12:
+                // Lock wheels
+                status = autoDelay(1);
+                drive.crossWheels();
+                break;
+            default:
+                // Finished routine
+                step = 1;
+                firstTime = true;
+
+                // Stops applicable motors
+                drive.stopWheels();
+                arm.stopArm();
+                return Robot.DONE;
+        }
+
+        //If we are done with a step, we go on to the next one and continue the routine
+        if (status == Robot.DONE) {
+            step++;
+        }
+        
+        return Robot.CONT;
+    }
+	
+	/**
+     * Places cube or cone, leaves community, and balances on ramp
+     * For cone placements, the robot shifts toward the middle of the ramp based on param shiftLeft
+     * @param isRed
+     * @param shiftLeft
+     * @param delaySeconds
+     * @return status
+     */
+    public int rampAutoFull(boolean isRed, boolean shiftLeft, long delaySeconds) {
+        int    status   = Robot.CONT;
+        Pose2d currPose = position.getOdometryPose();
+    
+		if (firstTime == true) {
+			firstTime = false;
+			step = 1;
+
+            arm.closeClaw();
+            Robot.grabberState = GrabberStates.HOLDING_CONE;
+		}
+
+        switch(step) {
+            case 1:
+                // Delay
+                status = autoDelay(delaySeconds);
+                drive.rotateWheels(-1, 0, 0);         
+                break;
+            case 2:
                 // Place object we're holding
                 status = armToTopCone();
-		        Robot.acceptedArmState = ArmStates.TOP_CONE;
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
+                
                 drive.rotateWheels(-1, 0, 0);
                 break;
             case 3:
                 arm.openClaw();
-                Controls.currentObject = Objects.EMPTY;
+                Robot.grabberState = GrabberStates.EMPTY;
                 status = Robot.DONE;
                 break;
             case 4:
@@ -326,7 +471,12 @@ public class Auto {
                 break;
             case 7:
                 // Storing a pose 1.55 meter beyond ramp and straightened so we ensure we leave community
-                rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY(), currPose.getRotation());
+                if (shiftLeft) {
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() + 0.56, new Rotation2d(Math.PI));
+                }
+                else {
+                    rampAutoExitCommunity[0] = new Pose2d(currPose.getX() + 1.55, currPose.getY() - 0.56, new Rotation2d(Math.PI));
+                }
                 status = Robot.DONE;
                 break;
             case 8:
@@ -385,32 +535,44 @@ public class Auto {
             System.out.println("Starting Center Auto");
 
             arm.closeClaw();
-            Controls.currentObject = Objects.CONE;
+            Robot.grabberState = GrabberStates.HOLDING_CONE;
 		}
 
         switch(step) {
             case 1:
                 // Delay
                 status = autoDelay(delaySeconds);
-                drive.rotateWheels(-1, 0, 0);
+
+                if (isRed == false) {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }                
                 break;
             case 2:
                 // Place object we're holding
                 status = armToTopCone();
-                drive.rotateWheels(-1, 0, 0);
-		        Robot.acceptedArmState = ArmStates.TOP_CONE;
+                Robot.acceptedArmState = ArmStates.TOP_CONE;
+
+                if (isRed == false) {
+                    drive.rotateWheels(0.833, 1.0256, 0);
+                }
+                else {
+                    drive.rotateWheels(0.833, -1.0256, 0);
+                }	
                 break;
             case 3:
                 arm.openClaw();
-                Controls.currentObject = Objects.EMPTY;
+                Robot.grabberState = GrabberStates.EMPTY;
                 status = Robot.DONE;
                 break;
             case 4:
                 AngleStates armStatus = armToRestPosition(true);
+                Robot.acceptedArmState = ArmStates.REST;
                 if (armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) {
                     status = Robot.DONE;
                 }
-                Robot.acceptedArmState = ArmStates.REST;
                 break;
             case 5:
                 // Approach 1st object
@@ -421,53 +583,66 @@ public class Auto {
                 if (isRed == false) {
                     pose1 = new Pose2d(2.6, 7.401, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 7.401, new Rotation2d(0));
-                    pose3 = new Pose2d(6.3, 7.151, new Rotation2d(0));
+                    pose3 = new Pose2d(5.5, 7.401, new Rotation2d(0));
                 }
                 else {
                     pose1 = new Pose2d(2.6, 0.8, new Rotation2d(Math.PI));
                     pose2 = new Pose2d(2.6, 0.8, new Rotation2d(0));
-                    pose3 = new Pose2d(6.3, 1.05, new Rotation2d(0));
+                    pose3 = new Pose2d(5.5, 0.8, new Rotation2d(0));
                 }
 
-                status = drive.autoDriveToPoints(new Pose2d[]{pose1, pose2, pose3}, currPose);
+                status = drive.autoDriveToPoints(new Pose2d[]{pose2, pose3}, currPose);
                 resetArmRoutines();
-                break;
-            /*
+                break; 
             case 6:
                 // Bring down wrist
                 status = armToGrabPosition();
-                Robot.acceptedArmState= ArmStates.GRAB;
-                break;
+                break;               
             case 7:
-                // Align with cone
-                status = autoDelay(2);
+                // Align with object
+                arm.startIntake();
+                armToGrabPosition();
+                double angleError = nTables.getGamePieceX();
+                status = drive.alignWithPiece(angleError, false);
                 break;
             case 8:
-                // Drive to cone
-                status = drive.driveToCone(1.5, arm.limitButtonPressed(), currPose.getTranslation());
+                // Drive to object
+                arm.startIntake();
+                armToGrabPosition();
+                status = drive.driveToCone(1.5, controls.getLimitSwitch(), currPose.getTranslation());
                 break;
             case 9:
-                // Pick up cone
+                // Pick up object
                 arm.closeClaw();
-                Controls.currentObject = Objects.EMPTY;
-                status = Robot.DONE;
+                arm.stopIntake();
+                Robot.grabberState = GrabberStates.HOLDING_CONE;
+                status = autoDelayMS(500);
                 break;
             case 10:
                 // Retract arm
-                AngleStates armStatus = armToRestPosition(false);
+                AngleStates armStatus2 = armToRestPosition(false);
                 Robot.acceptedArmState = ArmStates.REST;
-                if (armStatus == AngleStates.DONE || armStatus == AngleStates.CLOSE) {
+                if (armStatus2 == AngleStates.DONE) {
                     status = Robot.DONE;
                 }
                 break;
-            */
+            case 11:
+                // Storing current location
+                autoSecondPieceRotate[0] = new Pose2d(currPose.getX() - 0.5, currPose.getY(), new Rotation2d(Math.PI));
+                autoSecondPieceRotate[1] = new Pose2d(currPose.getX() - 3, currPose.getY(), new Rotation2d(Math.PI));
+                status = Robot.DONE;
+                break;
+            case 12:
+                // Rotating
+                status = drive.autoDriveToPoints(autoSecondPieceRotate, currPose);
+                break;
             default:
                 // Finished routine
                 step = 1;
                 firstTime = true;
 
-                Controls.armState = ArmStates.GRAB;
-                Robot.acceptedArmState = ArmStates.GRAB;
+                Controls.armState = ArmStates.REST;
+                Robot.acceptedArmState = ArmStates.REST;
 
                 // Stops applicable motors
                 drive.stopWheels();
@@ -598,7 +773,7 @@ public class Auto {
      * @return
      */
     public int armToGrabPosition() {    
-		AngleStates status = arm.jointToAngle(3, -0.14, 2.5);
+		AngleStates status = arm.jointToAngle(3, -0.4, 2.5);
         arm.jointToAngle(1, Arm.REST_ANGLES[0]);
         arm.jointToAngle(2, Arm.REST_ANGLES[1], 2);
 
@@ -611,10 +786,16 @@ public class Auto {
         return Robot.CONT;
     }
 
-    public void armToChute() {    
-        arm.jointToAngle(1, Arm.CHUTE_ANGLES[0]);
-        arm.jointToAngle(2, Arm.CHUTE_ANGLES[1], 6);
-		arm.jointToAngle(3, Arm.CHUTE_ANGLES[2], 3);
+    public void armToChuteCone() {    
+        arm.jointToAngle(1, Arm.CHUTE_CONE_ANGLES[0]);
+        arm.jointToAngle(2, Arm.CHUTE_CONE_ANGLES[1], 12);
+		arm.jointToAngle(3, Arm.CHUTE_CONE_ANGLES[2], 3);
+    }
+
+    public void armToChuteCube() {    
+        arm.jointToAngle(1, Arm.CHUTE_CUBE_ANGLES[0]);
+        arm.jointToAngle(2, Arm.CHUTE_CUBE_ANGLES[1], 12);
+		arm.jointToAngle(3, Arm.CHUTE_CUBE_ANGLES[2], 3);
     }
 
     public int armToMidPosition(double[] armAngles) {    
@@ -661,47 +842,17 @@ public class Auto {
     }
 
     public int armToMidCube() {    
-		if (armFirstTime == true) {
-			armFirstTime = false;
-			armStep = 1;
-		}
-
         double[] armAngles = Arm.MID_CUBE_ANGLES;
 
-        switch(armStep) {
-            case 1:
-                // Base and middle out
-                arm.hold(1);
-                //AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 6);
-                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 6);
-                arm.hold(3);
-
-                // If base and middle are close to or at target position, go to next step
-                if (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) {
-                    armStep++;
-                }
-                break;
-            case 2:
-                // Wrist out
-                arm.hold(1);
-                //AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0], 2);
-                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1], 4);
-                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2], 2);
-                if ((middleStatusEnd == AngleStates.DONE || middleStatusEnd == AngleStates.CLOSE) &&
-                    (endStatusEnd    == AngleStates.DONE || endStatusEnd    == AngleStates.CLOSE)) {
-                    armStep++;
-                }
-                break;
-            default:
-                // Finished routine
-                arm.jointToAngle(1, armAngles[0], 2);
-                arm.jointToAngle(2, armAngles[1], 4);
-                arm.jointToAngle(3, armAngles[2], 2);
-                armFirstTime = true;
-                armStep = 1;
-                return Robot.DONE;
-        }
+        AngleStates baseState   = arm.jointToAngle(1, armAngles[0], 1);
+        AngleStates middleState = arm.jointToAngle(2, armAngles[1], 2);
+        AngleStates endState    = arm.jointToAngle(3, armAngles[2], 1);
         
+        if (baseState   == AngleStates.DONE &&
+            middleState == AngleStates.DONE &&
+            endState    == AngleStates.DONE) {
+                return Robot.DONE;
+        }        
         return Robot.CONT;
     }
 
@@ -712,6 +863,37 @@ public class Auto {
     public int armToTopCone() {    
         double[] armAngles = Arm.TOP_CONE_ANGLES;
 
+        AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 1);
+        AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 2);
+        AngleStates endStatus    = arm.jointToAngle(3, armAngles[2], 0.5); //-1.0
+
+        if ((baseStatus   == AngleStates.DONE || baseStatus   == AngleStates.CLOSE) &&
+            (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
+            (endStatus    == AngleStates.DONE || endStatus   == AngleStates.CLOSE)) {
+                return Robot.DONE;
+        }
+        return Robot.CONT;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public int armToTopConeTeleop() {    
+        double[] armAngles = Arm.TOP_CONE_ANGLES;
+
+        AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 1);
+        AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 2);
+        AngleStates endStatus    = arm.jointToAngle(3, -1.0, 1); //-1.0
+
+        if (baseStatus   == AngleStates.DONE &&
+            middleStatus == AngleStates.DONE &&
+            endStatus    == AngleStates.DONE) {
+                return Robot.DONE;
+        }
+        return Robot.CONT;
+
+        /*
 		if (armFirstTime == true) {
 			armFirstTime = false;
 			armStep = 1;
@@ -719,9 +901,21 @@ public class Auto {
 
         switch(armStep) {
             case 1:
+                AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 0.5);
+                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 1);
+                AngleStates endStatus    = arm.jointToAngle(3, -1.0, 0.5);
+
+                if (baseStatus   == AngleStates.DONE &&
+                    middleStatus == AngleStates.DONE &&
+                    endStatus    == AngleStates.DONE) {
+                        armStep++;
+                }
+
+                break;
+            /*case 1:
                 // Middle out, base slightly
-                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6, 2.5);
-                arm.jointToAngle(1, 1.4, 3);
+                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6, 3);
+                arm.jointToAngle(1, 1.4, 6);
                 arm.jointToAngle(3, -2.4);
 
                 // If base and middle are close to or at target position, go to next step
@@ -732,7 +926,7 @@ public class Auto {
             case 2:
                 // Base and middle out
                 AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0], 1.5);
-                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 2);
+                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 6);
                 arm.hold(3);
 
                 // If base and middle are close to or at target position, go to next step
@@ -745,7 +939,7 @@ public class Auto {
                 // Wrist out
                 AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0], 0.7);
                 AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
-                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
+                AngleStates endStatusEnd    = arm.jointToAngle(3, -1.5, 2);
                 if (baseStatusEnd   == AngleStates.DONE &&
                     middleStatusEnd == AngleStates.DONE &&
                     endStatusEnd    == AngleStates.DONE) {
@@ -765,7 +959,7 @@ public class Auto {
                 return Robot.DONE;
         }
         
-        return Robot.CONT;
+        return Robot.CONT;*/
     }
 
     /**
@@ -775,6 +969,18 @@ public class Auto {
     public int armToTopCube() {    
         double[] armAngles = Arm.TOP_CUBE_ANGLES;
         
+        AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 0.75); // 0.75 speed
+        AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 1.6);
+        AngleStates endStatus    = arm.jointToAngle(3, armAngles[2], 0.4);
+
+        if ((baseStatus   == AngleStates.DONE || baseStatus   == AngleStates.CLOSE) &&
+            (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
+            (endStatus    == AngleStates.DONE || endStatus   == AngleStates.CLOSE)) {
+                return Robot.DONE;
+        }
+        return Robot.CONT;
+
+        /*
 		if (armFirstTime == true) {
 			armFirstTime = false;
 			armStep = 1;
@@ -782,40 +988,30 @@ public class Auto {
 
         switch(armStep) {
             case 1:
-                // Middle out
-                AngleStates middleStatus = arm.jointToAngle(2, Math.PI/6, 3);
-                arm.jointToAngle(1, 1.25);
-                arm.jointToAngle(3, -2.2);
+                // Base and middle out
+                AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 1);
+                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 1);
 
                 // If base and middle are close to or at target position, go to next step
-                if ((middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
+                if ((middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE) &&
+                    (baseStatus == AngleStates.DONE || baseStatus == AngleStates.CLOSE)) {
                     armStep++;
                 }
                 break;
             case 2:
-                // Base and middle out
-                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0], 1.2);
-                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 2);
-                arm.hold(3);
+                // End last
+                AngleStates baseStatus2   = arm.jointToAngle(1, armAngles[0], 1);
+                AngleStates middleStatus2 = arm.jointToAngle(2, armAngles[1], 1);
+                AngleStates endStatus     = arm.jointToAngle(3, armAngles[2], 1);
 
-                // If base and middle are close to or at target position, go to next step
+                // Everything is close, go to last step
                 if ((baseStatus2   == AngleStates.DONE || baseStatus2   == AngleStates.CLOSE) &&
-                    (middleStatus2 == AngleStates.DONE || middleStatus2 == AngleStates.CLOSE)) {
+                    (middleStatus2 == AngleStates.DONE || middleStatus2 == AngleStates.CLOSE) &&
+                    (endStatus     == AngleStates.DONE || endStatus     == AngleStates.CLOSE)) {
                     armStep++;
                 }
                 break;
             case 3:
-                // Wrist out
-                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
-                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1]);
-                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
-                if (baseStatusEnd   == AngleStates.DONE &&
-                    middleStatusEnd == AngleStates.DONE &&
-                    endStatusEnd    == AngleStates.DONE) {
-                        armStep++;
-                }
-                break;
-            case 4:
                 // Finished routine
                 arm.jointToAngle(1, armAngles[0]);
                 arm.jointToAngle(2, armAngles[1]);
@@ -825,7 +1021,7 @@ public class Auto {
                 return Robot.DONE;
         }
         
-        return Robot.CONT;
+        return Robot.CONT;*/
     }
 
     /**
@@ -835,45 +1031,15 @@ public class Auto {
     public int armToShelf() { 
         double[] armAngles = Arm.SHELF_ANGLES;
 
-		if (armFirstTime == true) {
-			armFirstTime = false;
-			armStep = 1;
-		}
+		AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0], 0.4);
+        AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 1.2);
+        AngleStates endStatus    = arm.jointToAngle(3, armAngles[2], 0.5);
 
-        switch(armStep) {/*
-            case 1:
-                // Base and middle out
-                AngleStates baseStatus   = arm.jointToAngle(1, armAngles[0]);
-                AngleStates middleStatus = arm.jointToAngle(2, armAngles[1], 4);
-                arm.hold(3);
-
-                // If base and middle are close to or at target position, go to next step
-                if ((baseStatus   == AngleStates.DONE || baseStatus   == AngleStates.CLOSE) &&
-                    (middleStatus == AngleStates.DONE || middleStatus == AngleStates.CLOSE)) {
-                        armStep++;
-                }
-                break;*/
-            case 1:
-                // Wrist out
-                AngleStates baseStatusEnd   = arm.jointToAngle(1, armAngles[0]);
-                AngleStates middleStatusEnd = arm.jointToAngle(2, armAngles[1], 2);
-                AngleStates endStatusEnd    = arm.jointToAngle(3, armAngles[2]);
-                if ((baseStatusEnd   == AngleStates.DONE || baseStatusEnd   == AngleStates.CLOSE) &&
-                    (middleStatusEnd == AngleStates.DONE || middleStatusEnd == AngleStates.CLOSE) &&
-                    (endStatusEnd    == AngleStates.DONE || endStatusEnd    == AngleStates.CLOSE)) {
-                    armStep++;
-                }
-                break;
-            default:
-                // Finished routine - does not move claw
-                arm.jointToAngle(1, armAngles[0]);
-                arm.jointToAngle(2, armAngles[1], 2);
-                arm.jointToAngle(3, armAngles[2]);
-                armFirstTime = true;
-                armStep = 1;
+        if (baseStatus   == AngleStates.DONE &&
+            middleStatus == AngleStates.DONE &&
+            endStatus    == AngleStates.DONE) {
                 return Robot.DONE;
         }
-        
         return Robot.CONT;
     }
 
@@ -894,6 +1060,27 @@ public class Auto {
 
         if (delayFirstTime) {
             delayEnd = currentMS + (seconds * 1000);
+            delayFirstTime = false;
+        }
+
+        if (currentMS > delayEnd) {
+            delayFirstTime = true;
+            return Robot.DONE;
+        }
+        return Robot.CONT;
+    }
+
+    /**
+     * Delays the program for a set number of milliseconds.
+     * 
+     * @param seconds
+     * @return status
+     */
+    public int autoDelayMS(long ms) {
+        long currentMS = System.currentTimeMillis();
+
+        if (delayFirstTime) {
+            delayEnd = currentMS + ms;
             delayFirstTime = false;
         }
 

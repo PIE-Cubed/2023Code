@@ -93,17 +93,10 @@ public class LED {
     /**
      * A function to change the LED's to green
      */
-    public void aprilTagVisible() {
+    public void clawClosed() {
         ledCode = 0.77;
     }
 	
-    /**
-     * A function to change the LED's to red
-     */
-    public void noAprilTag() {
-        ledCode = 0.61;
-    }
-
     /**
      * A function to change to LED's to party mode
      */
