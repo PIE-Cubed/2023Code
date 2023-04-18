@@ -325,15 +325,12 @@ public class Robot extends TimedRobot {
 	}
 
 	/**
-	 * Controls the wheels in TeleOp
+	 * Controls the wheels in TeleOp.
 	 */
 	private void wheelControl() {
 		// Variables
 		double  centerX           = nTables.getGamePieceX();
-		double  numCones          = nTables.getNumCones();
-		double  numCubes          = nTables.getNumCubes();
 		boolean switchPressed     = controls.getLimitSwitch();
-		boolean recentAprilTag    = position.recentAprilTag(); // Check in pose estimation if we read April Tag within last 5 seconds
 
 		// Gets the Drive Values
 		double  rotateSpeed       = controls.getRotateSpeed();
@@ -347,8 +344,6 @@ public class Robot extends TimedRobot {
 		boolean zeroYaw           = controls.zeroYaw();
 		boolean autoKill          = controls.autoKill();
 		boolean lockWheels        = controls.lockWheels();
-
-		position.updateVision = true;
 
 		if (zeroYaw == true) {
 			drive.resetYaw();
@@ -367,7 +362,7 @@ public class Robot extends TimedRobot {
 		else if (robotOriented != 0) {
 			drive.teleopDrive(robotOriented, 0, rotateSpeed, false);
 		}
-		else if (autoKill == true || (!recentAprilTag)) {
+		else if (autoKill == true) {
 			if (precisionDrive)  {
 				drive.teleopDrive(forwardSpeed / 3, strafeSpeed / 3, rotateSpeed / 3, true);
 			}
@@ -386,6 +381,9 @@ public class Robot extends TimedRobot {
 		}
 	}
 
+	/**
+	 * Controls the arm in TeleOp.
+	 */
 	private void armControl() {
 		// Add the grabber controls
 		boolean   autoKill         = controls.autoKill();
@@ -468,6 +466,9 @@ public class Robot extends TimedRobot {
 		}
 	}
 
+	/**
+	 * Controls the grabber in TeleOp.
+	 */
 	private void grabberControl() {
 		boolean intakeCube  = controls.getLeftBumper();  // Checks if we are holding L bumper to intake cube
 		boolean intakeCone  = controls.getRightBumper(); // Checks if we are holding R bumper to intake cone
@@ -550,6 +551,9 @@ public class Robot extends TimedRobot {
 
 	}
 
+	/**
+	 * Controls the LEDs in TeleOp.
+	 */
 	private void ledControl() {
 		boolean cone = controls.getCone();
 		boolean cube = controls.getCube();
