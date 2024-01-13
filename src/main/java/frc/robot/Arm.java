@@ -2,14 +2,15 @@ package frc.robot;
 
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.SparkAbsoluteEncoder.Type;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.math.MathUtil;
-import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkBase.IdleMode;
+
 import frc.robot.Controls.ArmStates;
 import frc.robot.Controls.Objects;
 import frc.robot.Robot.GrabberStates;
